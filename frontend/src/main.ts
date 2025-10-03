@@ -2,7 +2,7 @@ const input = document.getElementById("alias-input") as HTMLInputElement;
 const button = document.getElementById("save-btn") as HTMLButtonElement;
 const message = document.getElementById("message") as HTMLParagraphElement;
 
-button.addEventListener("click", async () => {
+async function saveAlias() {
   const alias = input.value.trim();
   if (!alias) {
     message.textContent = "El alias no puede estar vacío";
@@ -28,5 +28,15 @@ button.addEventListener("click", async () => {
   } catch (err) {
     message.textContent = "Error al conectar con el servidor";
     message.className = "mt-4 text-red-600";
+  }
+  window.location.href = `/pong.html?alias=${encodeURIComponent(alias)}`;
+}
+document.body.style.background = "linear-gradient(to right, red, yellow)";
+
+button.addEventListener("click", saveAlias);
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter"){
+    saveAlias();
   }
 });

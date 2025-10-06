@@ -1,12 +1,19 @@
 const canvas = document.getElementById("pong") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
-// --- Objetos del juego ---
+// function resizeCanvas() {
+//   canvas.width = window.innerWidth * 0.8;  // 80% del ancho de la ventana
+//   canvas.height = window.innerHeight * 0.6; // 60% del alto
+// }
+
+// window.addEventListener("resize", resizeCanvas);
+// resizeCanvas();
+
 const paddleHeight = 80;
 const paddleWidth = 10;
 const ballRadius = 8;
+const scorepoints = 2;
 
-// Jugador
 const player = {
   x: 10,
   y: canvas.height / 2 - paddleHeight / 2,
@@ -17,7 +24,6 @@ const player = {
   score: 0,
 };
 
-// Máquina
 const ai = {
   x: canvas.width - paddleWidth - 10,
   y: canvas.height / 2 - paddleHeight / 2,
@@ -28,7 +34,6 @@ const ai = {
   score: 0,
 };
 
-// Pelota
 const ball = {
   x: canvas.width / 2,
   y: canvas.height / 2,
@@ -36,10 +41,9 @@ const ball = {
   speed: 4,
   dx: 4,
   dy: 4,
-  color: "white",
+  color: "red",
 };
 
-// --- Funciones de dibujo ---
 function drawRect(x: number, y: number, w: number, h: number, color: string) {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
@@ -64,64 +68,87 @@ const keys = {
     down: false,
 };
 
-const aiKeys = { up: false, down: false };
+const aiKeys = { up: false, down: false};
 let lastAiUpdate = 0;
+let paused = true;
+let winnerMessage = "";
 
 function updateAI() {
     lastAiUpdate += 1000/60; // asumiendo 60FPS
     if (lastAiUpdate >= 1000) { // solo una vez por segundo
       lastAiUpdate = 0;
   
-      // Predecir posición futura de la pelota
       let predictedY = ball.y;
       let predictedDy = ball.dy;
       let futureX = ball.x;
       while(futureX < ai.x){
         predictedY += predictedDy * 60; // aproximación 1s
-        if(predictedY<0){ predictedY=-predictedY; predictedDy=-predictedDy; }
-        if(predictedY>canvas.height){ predictedY=2*canvas.height-predictedY; predictedDy=-predictedDy; }
+        if(predictedY<0){ 
+          predictedY=-predictedY; 
+          predictedDy=-predictedDy; 
+        }
+        if(predictedY>canvas.height){ 
+          predictedY=2*canvas.height-predictedY; 
+          predictedDy=-predictedDy;
+        }
         futureX += ball.dx * 60;
       }
-  
+
       // Simular “teclas presionadas” de la IA
       aiKeys.down = ai.y + ai.height/2 < predictedY;
       aiKeys.up = ai.y + ai.height/2 > predictedY;
     }
-  
-    // Mover IA
-    if (aiKeys.up) { ai.y -= ai.dy; if(ai.y<0) ai.y=0; }
-    if (aiKeys.down) { ai.y += ai.dy; if(ai.y+ai.height>canvas.height) ai.y=canvas.height-ai.height; }
+
+    if (aiKeys.up) { 
+      ai.y -= ai.dy; 
+      if(ai.y<0) 
+        ai.y=0; 
+    }
+    if (aiKeys.down) { 
+      ai.y += ai.dy; 
+      if(ai.y+ai.height>canvas.height) 
+        ai.y=canvas.height-ai.height;
+    }
 }
 
-
-//Para hacerlo mas fluido
 document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowUp") keys.up = true;
-    if (e.key === "ArrowDown") keys.down = true;
+    if (e.key === "ArrowUp") 
+      keys.up = true;
+    if (e.key === "ArrowDown") 
+      keys.down = true;
 });
 
 document.addEventListener("keyup", (e) => {
-    if (e.key === "ArrowUp") keys.up = false;
-    if (e.key === "ArrowDown") keys.down = false;
+    if (e.key === "ArrowUp") 
+      keys.up = false;
+    if (e.key === "ArrowDown") 
+      keys.down = false;
 });
 
-
-
-// --- Movimiento jugador con teclado ---
 document.addEventListener("keydown", (e) => {
     if (keys.up) {
         player.y -= player.dy * 2;
-        if (player.y < 0) player.y = 0;
+        if (player.y < 0) 
+          player.y = 0;
+    }
+    if (keys.down) {
+      player.y += player.dy * 2;
+      if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
       }
-      if (keys.down) {
-        player.y += player.dy * 2;
-        if (player.y + player.height > canvas.height) {
-          player.y = canvas.height - player.height;
-        }
-      }
+    }
 });
 
-// --- Colisiones ---
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    paused = !paused;
+  }
+})
+
+canvas.addEventListener("click", () => {
+  paused = !paused;
+});
+
 function collision(_ball: typeof ball, paddle: typeof player) {
   return (
     _ball.x - _ball.radius < paddle.x + paddle.width &&
@@ -131,7 +158,6 @@ function collision(_ball: typeof ball, paddle: typeof player) {
   );
 }
 
-// --- Reiniciar pelota ---
 function resetBall() {
   ball.x = canvas.width / 2;
   ball.y = canvas.height / 2;
@@ -139,9 +165,8 @@ function resetBall() {
   ball.dy = 4 * (Math.random() > 0.5 ? 1 : -1);
 }
 
-// --- Actualizar ---
 function update() {
-  // mover pelota
+
   ball.x += ball.dx;
   ball.y += ball.dy;
 
@@ -152,57 +177,106 @@ function update() {
     ai.y -= ai.dy;
   }
 
-  // Rebote en arriba/abajo
   if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
     ball.dy = -ball.dy;
   }
 
-  // Colisión con jugador
   if (collision(ball, player)) {
-    ball.dx = -ball.dx;
+    if (
+      ball.x - ball.radius < player.x + player.width &&
+      ball.x + ball.radius > player.x &&
+      ball.y + ball.radius > player.y &&
+      ball.y - ball.radius < player.y + player.height
+    ) {
+      let impactPoint = ball.y - player.y;
+      let third = player.height / 25;
+    
+      if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
+        // esquina -> rebote en ambas direcciones
+        ball.dx = -ball.dx;
+        ball.dy = -ball.dy;
+      } else {
+        // centro -> rebote normal (solo cambia dirección horizontal)
+        ball.dx = -ball.dx;
+      }
+    }
     ball.x = player.x + player.width + ball.radius;
   }
 
-  // Colisión con máquina
   if (collision(ball, ai)) {
-    ball.dx = -ball.dx;
+    if (
+      ball.x - ball.radius < ai.x + ai.width &&
+      ball.x + ball.radius > ai.x &&
+      ball.y + ball.radius > ai.y &&
+      ball.y - ball.radius < ai.y + ai.height
+    ) {
+      let impactPoint = ball.y - ai.y;
+      let third = ai.height / 25;
+    
+      if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
+        // esquina -> rebote en ambas direcciones
+        ball.dx = -ball.dx;
+        ball.dy = -ball.dy;
+      } else {
+        // centro -> rebote normal (solo cambia dirección horizontal)
+        ball.dx = -ball.dx;
+      }
+    }
     ball.x = ai.x - ball.radius;
   }
 
-  // Punto para AI
   if (ball.x - ball.radius < 0) {
     ai.score++;
+    if (ai.score === scorepoints) {
+      paused = true;
+      winnerMessage = `Sorry, ai has destroyed you 😈`;
+      ai.score = 0;
+      player.score = 0;
+      resetBall();
+      return; // salimos para no seguir actualizando
+    }
     resetBall();
   }
 
-  // Punto para jugador
   if (ball.x + ball.radius > canvas.width) {
     player.score++;
+    if (player.score === scorepoints) {
+      paused = true;
+      winnerMessage = `🎉 Congratulations! You win! 🏆`;
+      ai.score = 0;
+      player.score = 0;
+      resetBall();
+      return;
+    }
     resetBall();
   }
 }
 
-// --- Render ---
 function render() {
   drawRect(0, 0, canvas.width, canvas.height, "black");
 
-  // Dibujar jugador y AI
   drawRect(player.x, player.y, player.width, player.height, player.color);
   drawRect(ai.x, ai.y, ai.width, ai.height, ai.color);
 
-  // Dibujar pelota
   drawCircle(ball.x, ball.y, ball.radius, ball.color);
 
-  // Dibujar marcador
   drawText(player.score.toString(), canvas.width / 4, 30);
   drawText(ai.score.toString(), (3 * canvas.width) / 4, 30);
+  if (paused && winnerMessage !== "") {
+    ctx.font = "40px Arial";
+    ctx.fillStyle = "yellow";
+    ctx.textAlign = "center";
+    ctx.fillText(winnerMessage, canvas.width / 2, canvas.height / 2);
+  }
 }
 
-// --- Loop principal ---
 function game() {
-  update();
-  render();
+
+  if (!paused) {
+   update();
+   render();
+  }
 }
 
 document.body.style.background = "linear-gradient(to right, blue, yellow)";
-setInterval(game, 1000 / 60); // 60 FPS
+setInterval(game, 1000 / 60); // 60 el tiempo de ejecución será en milisegundos: un segundo tiene 1000 milisegundos y queremos qeu se actualice 60 veces por segundo

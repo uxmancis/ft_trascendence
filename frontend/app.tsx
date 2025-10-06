@@ -1,42 +1,57 @@
+// frontend/src/App.tsx
 import { useState } from "react";
 
-function App() {
-  const [alias, setAlias] = useState("");
-  const [message, setMessage] = useState("");
+// Detect backend URL depending on environment
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3000/api" // development
+    : "http://backend:3000/api";  // Docker Compose network
+
+const App = () => {
+  const [alias, setAlias] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
 
   const saveAlias = async () => {
-    const res = await fetch("http://localhost:3000/alias", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ alias }),
-    });
+    try {
+      const res = await fetch(`${API_BASE}/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias }), // backend expects { alias }
+      });
 
-    const data = await res.json();
-    if (data.success) {
-      setMessage(`Alias guardado con id ${data.id}`);
-    } else {
-      setMessage("Error al guardar alias");
+      if (!res.ok) throw new Error("Network response was not ok");
+
+      const data = await res.json();
+      if (data.success) {
+        setMessage(`Alias saved with id ${data.id}`);
+        setAlias(""); // clear input
+      } else {
+        setMessage("Error saving alias");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Error saving alias");
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-      <h1 className="text-2xl mb-4">Elige tu alias</h1>
+      <h1 className="text-2xl mb-4">Choose your alias</h1>
       <input
         className="border rounded px-3 py-2 mb-2"
         value={alias}
         onChange={(e) => setAlias(e.target.value)}
-        placeholder="Escribe tu alias"
+        placeholder="Enter your alias"
       />
       <button
         onClick={saveAlias}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
+        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
       >
-        Guardar
+        Save
       </button>
-      {message && <p className="mt-4">{message}</p>}
+      {message && <p className="mt-4 text-gray-700">{message}</p>}
     </div>
   );
-}
+};
 
 export default App;

@@ -1,9 +1,18 @@
-version: "3.9"
 services:
+  database:
+    build: ./data
+    user: "1000:1000"     # run rootless
+    volumes:
+      - db_data:/data
+    restart: unless-stopped
+
   backend:
     build: ./backend
+    user: "1000:1000"
+    depends_on:
+      - database
     volumes:
-      - ./data:/data
+      - db_data:/data
     ports:
       - "3000:3000"
 
@@ -14,4 +23,5 @@ services:
     depends_on:
       - backend
 
-
+volumes:
+  db_data:

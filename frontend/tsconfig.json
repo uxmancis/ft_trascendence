@@ -1,13 +1,14 @@
 {
-    "compilerOptions": {
-      "target": "ESNext",
-      "module": "ESNext",
-      "moduleResolution": "Node",
-      "strict": true,
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "skipLibCheck": true
-    },
-    "include": ["src"]
-  }
-  
+  "compilerOptions": {
+    "target": "ES2020",                   // moderno
+    "module": "ESNext",                   // usa módulos de navegador
+    "outDir": "dist",                     // salida de compilación
+    "rootDir": "src",
+    "strict": true,
+    "moduleResolution": "bundler",        // o "node16" / "nodenext" si da error
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

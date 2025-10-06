@@ -1,5 +1,12 @@
-const canvas = document.getElementById("pong") as HTMLCanvasElement;
-const ctx = canvas.getContext("2d")!;
+
+
+export function setupPong() 
+{
+  const canvas = document.getElementById("pong-canvas") as HTMLCanvasElement;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 
 // --- Objetos del juego ---
 const paddleHeight = 80;
@@ -206,3 +213,4 @@ function game() {
 
 document.body.style.background = "linear-gradient(to right, blue, yellow)";
 setInterval(game, 1000 / 60); // 60 FPS
+}

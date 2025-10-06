@@ -5,9 +5,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: 'index.html',
-        pong: 'pong.html'
-      }
+        main: 'index.html'
+            }
     }
   }
 });

@@ -24,7 +24,7 @@ const player = {
   score: 0,
 };
 
-const ai = {
+const player2 = {
   x: canvas.width - paddleWidth - 10,
   y: canvas.height / 2 - paddleHeight / 2,
   width: paddleWidth,
@@ -63,155 +63,66 @@ function drawText(text: string, x: number, y: number) {
   ctx.fillText(text, x, y);
 }
 
-let countdownActive = false;
-let countdownValue = 3;
-let countdownTimer: number | null = null;
-
-function startCountdown() {
-  countdownActive = true;
-  countdownValue = 3;
-  winnerMessage = "";
-  paused = true;
-
-  if (countdownTimer) clearInterval(countdownTimer);
-
-  countdownTimer = window.setInterval(() => {
-    countdownValue--;
-    if (countdownValue <= 0) {
-      clearInterval(countdownTimer!);
-      countdownValue = 0;
-      setTimeout(() => {
-        countdownActive = false;
-        paused = false; // 🔹 aquí arranca el juego
-      }, 500); // medio segundo de margen tras el "GO!"
-    }
-  }, 1000);
-}
-
-function renderCountdown() {
-  if (countdownActive) {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = "60px Arial";
-    ctx.fillStyle = "yellow";
-    ctx.textAlign = "center";
-    let text = countdownValue > 0 ? countdownValue.toString() : "GO!";
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-  }
-}
-
-
-const keys = {
-    up: false,
-    down: false,
+const keysTwoPlayers = {
+  up1: false,
+  down1: false,
+  up2: false,
+  down2: false,
 };
 
-const aiKeys = { up: false, down: false};
-let lastAiUpdate = 0;
+let lastplayerUpdate = 0;
 let paused = true;
 let winnerMessage = "";
 
-function updateAI() {
-    lastAiUpdate += 1000/60; // asumiendo 60FPS
-    if (lastAiUpdate >= 1000) { // solo una vez por segundo
-      lastAiUpdate = 0;
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp") keysTwoPlayers.up2 = true;
+    if (e.key === "ArrowDown") keysTwoPlayers.down2 = true;
+    if (e.key === "w") keysTwoPlayers.up1 = true;
+    if (e.key === "s") keysTwoPlayers.down1 = true;
+  });
   
-      let predictedY = ball.y;
-      let predictedDy = ball.dy;
-      let futureX = ball.x;
-      while(futureX < ai.x){
-        predictedY += predictedDy * 60; // aproximación 1s
-        if(predictedY<0){ 
-          predictedY=-predictedY; 
-          predictedDy=-predictedDy; 
-        }
-        if(predictedY>canvas.height){ 
-          predictedY=2*canvas.height-predictedY; 
-          predictedDy=-predictedDy;
-        }
-        futureX += ball.dx * 60;
-      }
-
-      // Simular “teclas presionadas” de la IA
-      aiKeys.down = ai.y + ai.height/2 < predictedY;
-      aiKeys.up = ai.y + ai.height/2 > predictedY;
-    }
-
-    if (aiKeys.up) { 
-      ai.y -= ai.dy; 
-      if(ai.y<0) 
-        ai.y=0; 
-    }
-    if (aiKeys.down) { 
-      ai.y += ai.dy; 
-      if(ai.y+ai.height>canvas.height) 
-        ai.y=canvas.height-ai.height;
-    }
-}
-
-document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowUp") 
-      keys.up = true;
-    if (e.key === "ArrowDown") 
-      keys.down = true;
-});
-
 document.addEventListener("keyup", (e) => {
-    if (e.key === "ArrowUp") 
-      keys.up = false;
-    if (e.key === "ArrowDown") 
-      keys.down = false;
+    if (e.key === "ArrowUp") keysTwoPlayers.up2 = false;
+    if (e.key === "ArrowDown") keysTwoPlayers.down2 = false;
+    if (e.key === "w") keysTwoPlayers.up1 = false;
+    if (e.key === "s") keysTwoPlayers.down1 = false;
 });
 
 document.addEventListener("keydown", (e) => {
-    if (keys.up) {
+    if (keysTwoPlayers.up2) {
         player.y -= player.dy * 2;
         if (player.y < 0) 
           player.y = 0;
     }
-    if (keys.down) {
+    if (keysTwoPlayers.down2) {
       player.y += player.dy * 2;
       if (player.y + player.height > canvas.height) {
         player.y = canvas.height - player.height;
+      }
+    }
+    if (keysTwoPlayers.up1) {
+        player2.y -= player2.dy * 2;
+        if (player2.y < 0) 
+          player2.y = 0;
+    }
+    if (keysTwoPlayers.down1) {
+      player2.y += player2.dy * 2;
+      if (player2.y + player2.height > canvas.height) {
+        player2.y = canvas.height - player2.height;
       }
     }
 });
 
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
-    if (winnerMessage !== "" && !countdownActive) {
-      winnerMessage = "";
-      ai.score = 0;
-      player.score = 0;
-      resetBall();
-      startCountdown();
-      return;
-    }
-
-    // Si no hay ganador ni cuenta atrás, alterna pausa
-    if (!countdownActive && winnerMessage === "") {
-      paused = !paused;
-    }
-  }
-});
-
-canvas.addEventListener("click", () => {
-  if (winnerMessage !== "" && !countdownActive) {
-    winnerMessage = "";
-    ai.score = 0;
-    player.score = 0;
-    resetBall();
-    startCountdown();
-    return;
-  }
-
-  if (!countdownActive && winnerMessage === "") {
     paused = !paused;
   }
+})
+
+canvas.addEventListener("click", () => {
+  paused = !paused;
 });
-
-
 
 function collision(_ball: typeof ball, paddle: typeof player) {
   return (
@@ -227,19 +138,18 @@ function resetBall() {
   ball.y = canvas.height / 2;
   ball.dx = -ball.dx; // cambia dirección
   ball.dy = 4 * (Math.random() > 0.5 ? 1 : -1);
+  winnerMessage = "";
 }
 
 function update() {
 
+  if (keysTwoPlayers.up1) player.y -= player.dy;
+  if (keysTwoPlayers.down1) player.y += player.dy;
+  if (keysTwoPlayers.up2) player2.y -= player2.dy;
+  if (keysTwoPlayers.down2) player2.y += player2.dy;
+
   ball.x += ball.dx;
   ball.y += ball.dy;
-
-  // mover AI (sigue la pelota)
-  if (ai.y + ai.height / 2 < ball.y) {
-    ai.y += ai.dy;
-  } else {
-    ai.y -= ai.dy;
-  }
 
   if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
     ball.dy = -ball.dy;
@@ -265,35 +175,33 @@ function update() {
     ball.x = player.x + player.width + ball.radius;
   }
 
-  if (collision(ball, ai)) {
+  if (collision(ball, player2)) {
     if (
-      ball.x - ball.radius < ai.x + ai.width &&
-      ball.x + ball.radius > ai.x &&
-      ball.y + ball.radius > ai.y &&
-      ball.y - ball.radius < ai.y + ai.height
+      ball.x - ball.radius < player2.x + player2.width &&
+      ball.x + ball.radius > player2.x &&
+      ball.y + ball.radius > player2.y &&
+      ball.y - ball.radius < player2.y + player2.height
     ) {
-      let impactPoint = ball.y - ai.y;
-      let third = ai.height / 25;
+      let impactPoint = ball.y - player2.y;
+      let third = player2.height / 25;
     
       if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
-        // esquina -> rebote en ambas direcciones
         ball.dx = -ball.dx;
         ball.dy = -ball.dy;
       } else {
-        // centro -> rebote normal (solo cambia dirección horizontal)
         ball.dx = -ball.dx;
       }
     }
-    ball.x = ai.x - ball.radius;
+    ball.x = player2.x - ball.radius;
   }
 
   if (ball.x - ball.radius < 0) {
-    ai.score++;
-    if (ai.score === scorepoints) {
-      paused = true;
-      winnerMessage = `Sorry, ai has destroyed you 😈`;
-      ai.score = 0;
+    player2.score++;
+    if (player2.score === scorepoints) {
+      winnerMessage = `Player 2 has win!🎉`;
       player.score = 0;
+      player2.score = 0;
+      paused = true;
       resetBall();
       return; // salimos para no seguir actualizando
     }
@@ -303,10 +211,10 @@ function update() {
   if (ball.x + ball.radius > canvas.width) {
     player.score++;
     if (player.score === scorepoints) {
-      paused = true;
       winnerMessage = `🎉 Congratulations! You win! 🏆`;
-      ai.score = 0;
       player.score = 0;
+      player2.score = 0;
+      paused = true;
       resetBall();
       return;
     }
@@ -318,12 +226,12 @@ function render() {
   drawRect(0, 0, canvas.width, canvas.height, "black");
 
   drawRect(player.x, player.y, player.width, player.height, player.color);
-  drawRect(ai.x, ai.y, ai.width, ai.height, ai.color);
+  drawRect(player2.x, player2.y, player2.width, player2.height, player2.color);
 
   drawCircle(ball.x, ball.y, ball.radius, ball.color);
 
   drawText(player.score.toString(), canvas.width / 4, 30);
-  drawText(ai.score.toString(), (3 * canvas.width) / 4, 30);
+  drawText(player2.score.toString(), (3 * canvas.width) / 4, 30);
   if (paused && winnerMessage !== "") {
     ctx.font = "40px Arial";
     ctx.fillStyle = "yellow";
@@ -333,13 +241,12 @@ function render() {
 }
 
 function game() {
-  if (!paused) {
-   update();
-   render();
+    if (!paused) {
+      render();
+      update();
+    }
   }
-  renderCountdown();
-}
+  
 
 document.body.style.background = "linear-gradient(to right, blue, yellow)";
-startCountdown();
 setInterval(game, 1000 / 60); // 60 el tiempo de ejecución será en milisegundos: un segundo tiene 1000 milisegundos y queremos qeu se actualice 60 veces por segundo

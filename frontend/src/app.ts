@@ -17,9 +17,11 @@ export function initApp() {
   HighContrastButton();
   BiggerTextButton();
   SmallerTextButton();
+  // LanguageButton();
 
   /* Game customization */
   MusicButton();
+
 
 }
 

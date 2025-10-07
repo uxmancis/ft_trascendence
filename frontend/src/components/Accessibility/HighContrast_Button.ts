@@ -10,17 +10,13 @@ export function HighContrastButton()
   img.alt = "Contraste color - Accesibilidad";
 
   /* CSS style for button*/
-  /* CSS1. Button position in screen */
-  img.style.bottom = "20px"; //separed 20px from bottom
-  img.style.right = "20px"; //separed 20px from bottom
-  
-  /* CSS2. Button image size */
+  img.style.bottom = "20px"; //Position, separed 20px from bottom
+  img.style.right = "20px"; //Position, separed 20px from bottom
   img.style.position = "fixed"; //Mandatory so that width and height actually work
-  img.style.width = "40px";
-  img.style.height = "40px";
-
-  /* CSS3. Background colour */
+  img.style.width = "40px"; //Size
+  img.style.height = "40px"; //Size
   img.style.backgroundColor = "transparent";
+  img.style.cursor = "pointer";
 
 
 
@@ -40,6 +36,18 @@ export function HighContrastButton()
   /* 2nd, we make currentMode iterate each time we clic the button */
   let currentMode = 0;
   img.addEventListener("click", () => {
+
+    /* Micro-animación */
+    img.style.transition = "transform 0.2s ease";
+    img.style.transform = "scale(0.9)"; // presiona hacia dentro
+    setTimeout(() => {
+      img.style.transform = "scale(1.1)"; // rebota hacia fuera
+      setTimeout(() => {
+        img.style.transform = "scale(1)"; // vuelve al tamaño original
+      }, 100);
+    }, 100);
+
+    
     currentMode = (currentMode + 1) % modes.length; // rotar entre 0-1-2
     const { background, color } = modes[currentMode];
 

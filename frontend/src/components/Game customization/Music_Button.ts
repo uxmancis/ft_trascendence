@@ -1,54 +1,84 @@
 /* Export functions can be called from other files */
 export function MusicButton() 
 {
-  // Evitar duplicados si ya existe
-  if (document.getElementById("Music - Customization")) return;
+  // Duplicate prevention
+  if (document.getElementById("music-btn"))
+    return;
 
   /* Create Button */
   const img : HTMLImageElement = document.createElement("img");
-  img.src = new URL("/src/assets/music_icon.png", import.meta.url).href;
+  img.id = "music-btn"
+  img.src = new URL("/src/assets/music_next.png", import.meta.url).href;
   img.alt = "Music - Customization";
 
   /* CSS style for button*/
-  /* CSS1. Button position in screen */
-  img.style.bottom = "20px"; //separed 20px from bottom
-  img.style.left = "20px"; //separed 20px from bottom
-  
-  /* CSS2. Button image size */
+  img.style.bottom = "20px"; //Position in screen, separed 20px from bottom
+  img.style.left = "20px"; //Position in screen, separed 20px from bottom
   img.style.position = "fixed"; //Mandatory so that width and height actually work
   img.style.width = "40px";
   img.style.height = "40px";
-
-  /* CSS3. Background colour */
   img.style.backgroundColor = "transparent";
-
-
-
-
-
+  img.style.cursor = "pointer";
 
 
   /* Let's make button actually do something when clicking */
-  // 1st, we store 4 modes for background-color
-//   const modes = [
-//     { background: "#FFFFFF", color: "#000000" }, // light
-//     { background: "#121212", color: "#FFFFFF" }, // dark
-//     { background: "#000000", color: "#FFFF00" }, // high contrast 1: black - yellow
-//     { background: "#000000", color: "#00FFFF" }, // alto contraste 2: black - cian
-//   ];
+  const tracks = [ 
+    new URL("/src/assets/music1.mp3", import.meta.url).href,
+    new URL("/src/assets/music2.mp3", import.meta.url).href,
+    new URL("/src/assets/music3.mp3", import.meta.url).href,
+  ];
+  const labels = ["🎵 Music 1", "🎵 Music 2", "🎵 Music 3", "🔇 Silence"];
 
-//   /* 2nd, we make currentMode iterate each time we clic the button */
-//   let currentMode = 0;
-//   img.addEventListener("click", () => {
-//     currentMode = (currentMode + 1) % modes.length; // rotar entre 0-1-2
-//     const { background, color } = modes[currentMode];
+  let currentTrack = 0; // 0–3 (last = silence)
+  let isPlaying = false;
+  let audio: HTMLAudioElement | null = null;
 
-//     document.body.style.backgroundColor = background;
-//     document.body.style.color = color;
+  /* When user 'clicks', following action will happen */
+  img.addEventListener("click", () => {
 
-//     console.log(`Modo cambiado a ${currentMode + 1}: fondo ${background}, texto ${color}`);
-//   });
+    /* Micro-animación */
+    img.style.transition = "transform 0.2s ease";
+    img.style.transform = "scale(0.9)"; // presiona hacia dentro
+    setTimeout(() => {
+      img.style.transform = "scale(1.1)"; // rebota hacia fuera
+      setTimeout(() => {
+        img.style.transform = "scale(1)"; // vuelve al tamaño original
+      }, 100);
+    }, 100);
+    
+    
+    // Move to next mode
+    currentTrack = (currentTrack + 1) % (tracks.length + 1); /* tracks.length = 3 | +1 = Silence mode | % returns division's rest, e.g.: 5%2 = 1 (hondarra) */
+    img.textContent = labels[currentTrack];
 
+    //Change icon in front depending on currentTrack
+    if (currentTrack === tracks.length)
+      img.src = new URL("/src/assets/silence.png", import.meta.url).href;
+    else
+      img.src = new URL("/src/assets/music_next.png", import.meta.url).href;
+
+    // if (currentTrack = 0) //Cuando es silencio, icono distinto
+    //     img.src = /* TO DO */ new URL("/src/assets/music_icon.png", import.meta.url).href;
+
+    // Stop any current music: if a song is currently playing (audio exists), stop it before playing a new one.
+    if (audio) {
+      audio.pause();
+      audio = null;
+    }
+
+    // If not "Silence", start the new track
+    if (currentTrack < tracks.length) {
+      audio = new Audio(tracks[currentTrack]);
+      audio.loop = true;
+      audio.volume = 0.5; // optional
+      audio.play();
+      isPlaying = true;
+      console.log(`🎶 Now playing: ${labels[currentTrack]}`);
+    } else {
+      isPlaying = false;
+      console.log("🔇 Music stopped");
+    }
+  });
 
   /* Added to body */
   document.body.appendChild(img);

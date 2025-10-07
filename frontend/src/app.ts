@@ -3,6 +3,7 @@ import { routeTo } from "./router";
 import { HighContrastButton } from "./components/Accessibility/HighContrast_Button";
 import { BiggerTextButton } from "./components/Accessibility/ChangeFontSize_Buttons";
 import { SmallerTextButton } from "./components/Accessibility/ChangeFontSize_Buttons";
+import { LanguageButton } from "./components/Accessibility/Language_Button";
 import { MusicButton } from "./components/Game customization/Music_Button";
 
 export function initApp() {
@@ -17,7 +18,7 @@ export function initApp() {
   HighContrastButton();
   BiggerTextButton();
   SmallerTextButton();
-  // LanguageButton();
+  LanguageButton();
 
   /* Game customization */
   MusicButton();

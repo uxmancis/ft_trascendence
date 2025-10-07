@@ -33,7 +33,7 @@ export function MusicButton()
   let isPlaying = false;
   let audio: HTMLAudioElement | null = null;
 
-  /* When user 'clicks', following action will happen */
+  /* When user 'clicks', the following action will happen: */
   img.addEventListener("click", () => {
 
     /* Micro-animación */

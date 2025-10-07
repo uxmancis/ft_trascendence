@@ -90,16 +90,28 @@ function startCountdown() {
 
 function renderCountdown() {
   if (countdownActive) {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.font = "60px Arial";
-    ctx.fillStyle = "yellow";
     ctx.textAlign = "center";
-    let text = countdownValue > 0 ? countdownValue.toString() : "GO!";
+    ctx.shadowColor = "cyan";
+    ctx.shadowBlur = 25;
+
+    ctx.font = "bold 90px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+
+    ctx.fillStyle = countdownValue > 0 ? "#00ffff" : "#ffff66";
+    const text = countdownValue > 0 ? countdownValue.toString() : "GO!";
+		if (text === "GO!") {
+			ctx.font = "bold 110px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+			ctx.fillStyle = "#ff66ff";
+			ctx.shadowColor = "#ff33ff";
+		}
     ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    ctx.shadowBlur = 0;
   }
 }
+
 
 
 const keys = {
@@ -111,6 +123,7 @@ const aiKeys = { up: false, down: false};
 let lastAiUpdate = 0;
 let paused = true;
 let winnerMessage = "";
+
 
 function updateAI() {
     lastAiUpdate += 1000/60; // asumiendo 60FPS
@@ -165,12 +178,12 @@ document.addEventListener("keyup", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-    if (keys.up) {
+    if (keys.up && !paused) {
         player.y -= player.dy * 2;
         if (player.y < 0) 
           player.y = 0;
     }
-    if (keys.down) {
+    if (keys.down && !paused) {
       player.y += player.dy * 2;
       if (player.y + player.height > canvas.height) {
         player.y = canvas.height - player.height;
@@ -189,7 +202,6 @@ document.addEventListener("keydown", (e) => {
       return;
     }
 
-    // Si no hay ganador ni cuenta atrás, alterna pausa
     if (!countdownActive && winnerMessage === "") {
       paused = !paused;
     }
@@ -229,12 +241,37 @@ function resetBall() {
   ball.dy = 4 * (Math.random() > 0.5 ? 1 : -1);
 }
 
+function renderWinner() {
+  drawRect(0, 0, canvas.width, canvas.height, "black");
+
+  ctx.textAlign = "center";
+  ctx.shadowColor = "cyan";
+  ctx.shadowBlur = 20;
+
+  ctx.font = "bold 42px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+  ctx.fillStyle = "#00ffff";
+  ctx.fillText(`Player: ${player.score} - AI: ${ai.score}`, canvas.width / 2, canvas.height / 2 - 70);
+
+  ctx.font = "bold 55px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+  ctx.fillStyle = "yellow";
+  ctx.fillText(winnerMessage, canvas.width / 2, canvas.height / 2);
+
+  ctx.font = "italic 28px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+  ctx.fillStyle = "#66ccff";
+  ctx.fillText("Press Space or click to start a new game", canvas.width / 2, canvas.height / 2 + 70);
+
+  ctx.shadowBlur = 0; 
+}
+
+
+
 function update() {
 
   ball.x += ball.dx;
   ball.y += ball.dy;
 
   // mover AI (sigue la pelota)
+  //updateAI();
   if (ai.y + ai.height / 2 < ball.y) {
     ai.y += ai.dy;
   } else {
@@ -276,11 +313,9 @@ function update() {
       let third = ai.height / 25;
     
       if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
-        // esquina -> rebote en ambas direcciones
         ball.dx = -ball.dx;
         ball.dy = -ball.dy;
       } else {
-        // centro -> rebote normal (solo cambia dirección horizontal)
         ball.dx = -ball.dx;
       }
     }
@@ -291,7 +326,8 @@ function update() {
     ai.score++;
     if (ai.score === scorepoints) {
       paused = true;
-      winnerMessage = `Sorry, ai has destroyed you 😈`;
+      winnerMessage = `Sorry, you lose 😈`;
+      renderWinner();
       ai.score = 0;
       player.score = 0;
       resetBall();
@@ -305,6 +341,7 @@ function update() {
     if (player.score === scorepoints) {
       paused = true;
       winnerMessage = `🎉 Congratulations! You win! 🏆`;
+			renderWinner();
       ai.score = 0;
       player.score = 0;
       resetBall();
@@ -315,6 +352,10 @@ function update() {
 }
 
 function render() {
+	if (winnerMessage !== "") {
+		renderWinner();
+		return;
+	}
   drawRect(0, 0, canvas.width, canvas.height, "black");
 
   drawRect(player.x, player.y, player.width, player.height, player.color);
@@ -326,7 +367,7 @@ function render() {
   drawText(ai.score.toString(), (3 * canvas.width) / 4, 30);
   if (paused && winnerMessage !== "") {
     ctx.font = "40px Arial";
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = "cian";
     ctx.textAlign = "center";
     ctx.fillText(winnerMessage, canvas.width / 2, canvas.height / 2);
   }

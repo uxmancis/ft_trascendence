@@ -89,30 +89,30 @@ document.addEventListener("keyup", (e) => {
     if (e.key === "s") keysTwoPlayers.down1 = false;
 });
 
-document.addEventListener("keydown", (e) => {
-    if (keysTwoPlayers.up2) {
-        player.y -= player.dy * 2;
-        if (player.y < 0) 
-          player.y = 0;
-    }
-    if (keysTwoPlayers.down2) {
-      player.y += player.dy * 2;
-      if (player.y + player.height > canvas.height) {
-        player.y = canvas.height - player.height;
-      }
-    }
-    if (keysTwoPlayers.up1) {
-        player2.y -= player2.dy * 2;
-        if (player2.y < 0) 
-          player2.y = 0;
-    }
-    if (keysTwoPlayers.down1) {
-      player2.y += player2.dy * 2;
-      if (player2.y + player2.height > canvas.height) {
-        player2.y = canvas.height - player2.height;
-      }
-    }
-});
+// document.addEventListener("keydown", (e) => {
+//     if (keysTwoPlayers.up2) {
+//         player.y -= player.dy * 2;
+//         if (player.y < 0) 
+//           player.y = 0;
+//     }
+//     if (keysTwoPlayers.down2) {
+//       player.y += player.dy * 2;
+//       if (player.y + player.height > canvas.height) {
+//         player.y = canvas.height - player.height;
+//       }
+//     }
+//     if (keysTwoPlayers.up1) {
+//         player2.y -= player2.dy * 2;
+//         if (player2.y < 0) 
+//           player2.y = 0;
+//     }
+//     if (keysTwoPlayers.down1) {
+//       player2.y += player2.dy * 2;
+//       if (player2.y + player2.height > canvas.height) {
+//         player2.y = canvas.height - player2.height;
+//       }
+//     }
+// });
 
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
@@ -148,6 +148,9 @@ function update() {
   if (keysTwoPlayers.up2) player2.y -= player2.dy;
   if (keysTwoPlayers.down2) player2.y += player2.dy;
 
+  player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+  player2.y = Math.max(0, Math.min(canvas.height - player2.height, player2.y));
+  
   ball.x += ball.dx;
   ball.y += ball.dy;
 
@@ -157,7 +160,7 @@ function update() {
 
   if (collision(ball, player)) {
     if (
-      ball.x - ball.radius < player.x + player.width &&
+      ball.x - ball.radius  < player.x + player.width &&
       ball.x + ball.radius > player.x &&
       ball.y + ball.radius > player.y &&
       ball.y - ball.radius < player.y + player.height

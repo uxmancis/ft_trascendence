@@ -10,7 +10,7 @@ export function initApp() {
   console.log("✅ App initialized");
 
   /* Chooses with "page" to show: */
-  routeTo(location.pathname);
+  routeTo(location.pathname); //(*1)
   window.addEventListener("popstate", () => routeTo(location.pathname));
 
   // Persistente en todas las páginas
@@ -27,3 +27,11 @@ export function initApp() {
 
 }
 
+/* 
+
+ (*1) In the browser, window.location object holds information about the current URL.
+        E.g.: https://pong-game.com/pong
+            location.pathname //"pong"
+            location.host //"pong-game.com"
+            location.protocol //"https:"
+* */

@@ -1,3 +1,19 @@
+// import { translations, LanguageCode } from "./translations"; TO DO
+
+export function updateHomeTexts(lang: LanguageCode) {
+  document.title = translations[lang].title;
+
+  const title = document.querySelector("h1");
+  const label = document.querySelector("label[for='alias-input']");
+  const input = document.getElementById("alias-input") as HTMLInputElement;
+  const button = document.getElementById("start-btn");
+
+  if (title) title.textContent = translations[lang].title;
+  if (label) label.textContent = translations[lang].aliasLabel;
+  if (input) input.placeholder = translations[lang].aliasPlaceholder;
+  if (button) button.textContent = translations[lang].startButton;
+}
+
 export function LanguageButton()
 {
     /* Duplicate prevention */
@@ -10,7 +26,7 @@ export function LanguageButton()
     img.src = new URL("/src/assets/euskera.png", import.meta.url).href;
 
     /* CSS style for button*/
-    img.style.bottom = "200px"; //Position in screen, separed 20px from bottom
+    img.style.bottom = "170px"; //Position in screen, separed 20px from bottom
     img.style.right = "20px"; //Position in screen, separed 20px from bottom
     img.style.position = "fixed"; //Mandatory so that width and height actually work
     img.style.width = "40px"; //Size
@@ -24,7 +40,7 @@ export function LanguageButton()
     //Array de 3 strings
     const flags = [
         new URL("/src/assets/euskera.png", import.meta.url).href, //"http://localhost:5173/src/assets/basque.png"
-        new URL("/src/assets/español.png", import.meta.url).href,
+        new URL("/src/assets/castellano.png", import.meta.url).href,
         new URL("/src/assets/english.png", import.meta.url).href,
     ];
 
@@ -51,14 +67,18 @@ export function LanguageButton()
 
 
         /* Update icon depending on mode */
-        if (currentLanguage === 0)
-            img.src = new URL("/src/assets/euskera.png", import.meta.url).href;
-        else if(currentLanguage === 1)
-            img.src = new URL("/src/assets/español.png", import.meta.url).href;
-        else if(currentLanguage === 2)
-            img.src = new URL("/src/assets/english.png", import.meta.url).href;
-        else
-            img.src = new URL("/src/assets/euskera.png", import.meta.url).href;
+        // img.src = flags[currentLanguage] TO DO
+
+        /* Update text from page */
+        // updateHomeTexts() TO DO
+
+
+        // else if(currentLanguage === 1)
+        //     img.src = new URL("/src/assets/español.png", import.meta.url).href;
+        // else if(currentLanguage === 2)
+        //     img.src = new URL("/src/assets/english.png", import.meta.url).href;
+        // else
+        //     img.src = new URL("/src/assets/euskera.png", import.meta.url).href;
     
     });
 

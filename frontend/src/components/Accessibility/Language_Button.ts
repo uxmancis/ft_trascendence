@@ -83,7 +83,7 @@ export function LanguageButton()
         //     img.src = new URL("/src/assets/english.png", import.meta.url).href;
         // else
         //     img.src = new URL("/src/assets/euskera.png", import.meta.url).href;
-    
+
     });
 
     /* Added to body */

@@ -3,6 +3,7 @@ import { setupPong } from "./pages/pong";
 
 export function routeTo(path: string) 
 {
+  /* Finds <div id = "app>" */
   const root = document.getElementById("app")!;
   root.innerHTML = "";
 

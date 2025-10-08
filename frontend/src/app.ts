@@ -9,6 +9,7 @@ import { MusicButton } from "./components/Game customization/Music_Button";
 export function initApp() {
   console.log("✅ App initialized");
 
+  /* Chooses with "page" to show: */
   routeTo(location.pathname);
   window.addEventListener("popstate", () => routeTo(location.pathname));
 

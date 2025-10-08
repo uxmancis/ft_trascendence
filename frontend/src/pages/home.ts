@@ -1,3 +1,5 @@
+import { updateHomeTexts } from "../components/Accessibility/Language_Button";
+
 export function renderHomePage(root: HTMLElement) {
     root.innerHTML = `
       <div class="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-blue-500 to-purple-600 text-white">
@@ -78,5 +80,7 @@ export function renderHomePage(root: HTMLElement) {
           startButton.click();
         }
     });
+
+    updateHomeTexts("eu");
   }
   

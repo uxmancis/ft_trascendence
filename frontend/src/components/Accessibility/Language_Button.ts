@@ -1,4 +1,8 @@
-// import { translations, LanguageCode } from "./translations"; TO DO
+import { translations, LanguageCode } from "../../assets/translations";
+
+const langs = ["eu", "es", "en"];
+
+let currentIndex = 0;
 
 export function updateHomeTexts(lang: LanguageCode) {
   document.title = translations[lang].title;
@@ -44,8 +48,6 @@ export function LanguageButton()
         new URL("/src/assets/english.png", import.meta.url).href,
     ];
 
-    let currentLanguage = 0;
-
     /* When user 'clicks', the following action will happen: */
     img.addEventListener("click", () => {
 
@@ -60,17 +62,19 @@ export function LanguageButton()
         }, 100);
 
         /* Next language - Change mode */
-        // Move to next mode
-        console.log(`current Language: ${currentLanguage}`);
-        currentLanguage = (currentLanguage + 1) % flags.length;
-        console.log(`current Language: ${currentLanguage}`);
+        // Move to next mode, index+=1 in loop
+        console.log(`current Language: ${currentIndex}`);
+        currentIndex = (currentIndex + 1) % flags.length;
+        console.log(`current Language: ${currentIndex}`);
 
 
         /* Update icon depending on mode */
-        // img.src = flags[currentLanguage] TO DO
+        img.src = flags[currentIndex]
 
         /* Update text from page */
-        // updateHomeTexts() TO DO
+        const selectedLang = langs[currentIndex];
+        console.log("Chosen language: ", selectedLang);
+        updateHomeTexts(selectedLang)
 
 
         // else if(currentLanguage === 1)

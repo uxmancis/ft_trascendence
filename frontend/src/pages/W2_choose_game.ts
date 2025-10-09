@@ -59,7 +59,7 @@ function AddLiveGame_Button()
               {
               // SPA navigation (sin recargar)
               // window.history.pushState({}, "", "/pong");
-              window.history.pushState({}, "", "/pong");
+              window.history.pushState({}, "", "/alias_player_livepong");
               window.dispatchEvent(new PopStateEvent("popstate"));
               }, 100); 
     });
@@ -82,7 +82,7 @@ function AddTournamentGame_Button()
     tournament.style.transform = "translate(-50%, -50%)"; //perfect centering
     tournament.style.position = "fixed";
     tournament.style.width = "300px"; //Size
-    tournament.style.height = "300px"; //
+    tournament.style.height = "300px"; //Size
     // tournament.style.background = "transparent";
     tournament.style.backgroundSize = "contain" //So that image fits Button size :)
 
@@ -102,7 +102,7 @@ function AddTournamentGame_Button()
 }
 
 //By including buttons in HTML we make them disappear out from this page (ChooseGamePage() function)
-export function ChooseGamePage(root: HTMLElement){
+export function ChooseGame_Page(root: HTMLElement){
 
     /* DOM */
     root.innerHTML= `

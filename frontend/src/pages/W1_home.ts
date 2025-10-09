@@ -3,7 +3,7 @@ import "./home.css";
 
 //<h1 class="text-4xl font-bold mb-8">🏓 Pong Challenge</h1>
 
-export function renderHomePage(root: HTMLElement) {
+export function renderHome_Page(root: HTMLElement) {
   /* HTML created dynamically from TypeScript*/
   root.innerHTML = `
       <div class="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-blue-500 to-purple-600 text-white">
@@ -84,7 +84,7 @@ export function renderHomePage(root: HTMLElement) {
 
     });
 
-
+    /* Alias */
     aliasInput.addEventListener("keydown", async (e) => {
         if (e.key === "Enter") {
           startButton.click();

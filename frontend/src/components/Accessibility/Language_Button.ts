@@ -35,7 +35,7 @@ export function LanguageButton()
     img.style.position = "fixed"; //Mandatory so that width and height actually work
     img.style.width = "40px"; //Size
     img.style.height = "40px"; //
-    img.style.borderRadius = "50%";
+    img.style.borderRadius = "50%"; //Round
     img.style.backgroundColor = "transparent";
     img.style.cursor = "pointer"; //When passing mouse
 

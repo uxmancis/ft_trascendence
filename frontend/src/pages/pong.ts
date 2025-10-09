@@ -328,8 +328,8 @@ function updateAI() {
     //     aiKeys.up = false;
     //     aiKeys.down = false;
     //  }
-      //const errorMargin = Math.random() * 40 - 20;
-      const aiCenter = ai.y + ai.height / 2;
+      const errorMargin = Math.random() * 40 - 20;
+      const aiCenter = ai.y + ai.height / 2 + errorMargin;
       // Solo se mueve si la bola está fuera de la zona muerta (±5 px)
       if (aiCenter < ball.y - 5) {
            aiKeys.down = true;

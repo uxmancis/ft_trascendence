@@ -1,6 +1,6 @@
 export const translations = {
   eu: {
-    title: "🏓 Pong Erronka",
+    title: "Pong Erronka",
     aliasLabel: "Aukeratu zure goitizena",
     aliasPlaceholder: "Idatzi zure goitizena",
     startButton: "Jolasa hasi",
@@ -10,7 +10,7 @@ export const translations = {
     connectionError: "🚨 Konexio errorea",
   },
   es: {
-    title: "🏓 Desafío Pong",
+    title: "Desafío Pong",
     aliasLabel: "Elige tu alias",
     aliasPlaceholder: "Introduce tu alias",
     startButton: "Empezar juego",
@@ -20,7 +20,7 @@ export const translations = {
     connectionError: "🚨 Error de conexión",
   },
   en: {
-    title: "🏓 Pong Challenge",
+    title: "Pong Challenge",
     aliasLabel: "Choose your alias",
     aliasPlaceholder: "Enter alias",
     startButton: "Start Game",

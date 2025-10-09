@@ -2,8 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =======================================
+   FLOATING PANELS
+   ======================================= */
 
-.nombre{
-    
+/* Accessibility panel (right-bottom) */
+.accessibility-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
 
+/* Game customization panel (left-bottom) */
+.game-custom-panel {
+  position: fixed;
+  bottom: 20px;   /* same height as accessibility panel */
+  left: 20px;     /* distance from left edge */
+  display: flex;
+  flex-direction: column; /* buttons stacked vertically */
+  gap: 10px;             /* space between buttons */
+  z-index: 1000;
+}
+
+/* =======================================
+   BUTTON STYLES
+   ======================================= */
+
+/* Text size buttons (A+/A-) */
+.text-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: #2563eb; /* blue */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.text-btn:hover {
+  background-color: #1d4ed8;
+  transform: scale(1.05);
+}
+
+/* Circular buttons (contrast, language, music, background) */
+.accessibility-btn,
+.game-btn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 4px;
+  transition: transform 0.2s ease, background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accessibility-btn:hover,
+.game-btn:hover {
+  background: rgba(0,0,0,0.1);
+  transform: scale(1.1);
+}
+
+/* =======================================
+   CONTRAST / ACCESSIBILITY MODES
+   ======================================= */
+body { background-color: #ffffff; color: #000000; }
+
+body.theme-dark { background-color: #121212; color: #ffffff; }
+
+body.theme-high-yellow {
+  background-color: #000000;
+  color: #ffff00;
+}
+body.theme-high-yellow button,
+body.theme-high-yellow input,
+body.theme-high-yellow a {
+  background-color: #000000;
+  color: #ffff00;
+  border: 2px solid #ffff00;
+}
+
+body.theme-high-cyan {
+  background-color: #000000;
+  color: #00ffff;
+}
+body.theme-high-cyan button,
+body.theme-high-cyan input,
+body.theme-high-cyan a {
+  background-color: #000000;
+  color: #00ffff;
+  border: 2px solid #00ffff;
+}
+
+/* =======================================
+   HOME PAGE LAYOUT
+   ======================================= */
+
+/* Main page background */
+body {
+  background: linear-gradient(to right, #3b82f6, #9333ea);
+  color: white;
+  font-family: "Arial", sans-serif;
+}
+
+/* Outer container */
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+/* White card in the center */
+.home-card {
+  background-color: white;
+  color: #333;
+  padding: 24px;
+  border-radius: 16px;
+  width: 320px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+/* Card title */
+.home-title {
+  font-size: 2.25rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: black;
+}
+
+/* Home card headers */
+.home-card h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+/* Labels inside the card */
+.home-card label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+/* Input fields inside the card */
+.home-card input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+/* Buttons inside the card */
+.home-card button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+}
+
+/* Hover effect for card buttons */
+.home-card button:hover {
+  background-color: #2563eb;
+}
+
+/* Message text inside the card */
+.home-card p {
+  margin-top: 0.8rem;
+  font-size: 0.9rem;
+  color: #555;
 }

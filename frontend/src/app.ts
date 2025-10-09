@@ -1,37 +1,19 @@
 import { routeTo } from "./router";
-// import { BackgroundSwitcher } from "./components/BackgroundSwitcher";
-import { HighContrastButton } from "./components/Accessibility/HighContrast_Button";
-import { BiggerTextButton } from "./components/Accessibility/ChangeFontSize_Buttons";
-import { SmallerTextButton } from "./components/Accessibility/ChangeFontSize_Buttons";
-import { LanguageButton } from "./components/Accessibility/Language_Button";
-import { MusicButton } from "./components/Game customization/Music_Button";
+import { AccessibilityPanel } from "./components/Accessibility/AccessibilityPanel";
+import { GameCustomizationPanel } from "./components/GameCustomization/GameCustomizationPanel";
+import { Navbar } from "./components/Navbar";
 
-export function initApp() {
+
+export function initApp() 
+{
   console.log("✅ App initialized");
+  Navbar();
 
-  /* Chooses with "page" to show: */
-  routeTo(location.pathname); //(*1)
+  // --- Load initial page ---
+  routeTo(location.pathname);
   window.addEventListener("popstate", () => routeTo(location.pathname));
 
-  // Persistente en todas las páginas
-
-  /* Accessibility module */
-  HighContrastButton();
-  BiggerTextButton();
-  SmallerTextButton();
-  LanguageButton();
-
-  /* Game customization */
-  MusicButton();
-
-
+  // --- Persistent floating panels ---
+  AccessibilityPanel();
+  GameCustomizationPanel();
 }
-
-/* 
-
- (*1) In the browser, window.location object holds information about the current URL.
-        E.g.: https://pong-game.com/pong
-            location.pathname //"pong"
-            location.host //"pong-game.com"
-            location.protocol //"https:"
-* */

@@ -1,96 +1,107 @@
-import { updateHomeTexts } from "../components/Accessibility/Language_Button";
-import "./home.css";
+import { updateHomeTexts } from "../components/Accessibility/LanguageButton";
+import { Navbar } from "../components/Navbar";
 
-//<h1 class="text-4xl font-bold mb-8">🏓 Pong Challenge</h1>
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3000/api"
+    : "http://backend:3000/api";
 
 export function renderHomePage(root: HTMLElement) {
-  /* HTML created dynamically from TypeScript*/
-  root.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-        <h1 class="home-title">🏓 Pong Challenge</h1>
-        
-        <div class="bg-white text-gray-800 p-6 rounded-2xl shadow-lg w-80 flex flex-col items-center">
-          <label for="alias-input" class="mb-2 text-lg font-semibold">Choose your alias</label>
-          <input 
-            id="alias-input" 
-            type="text" 
-            class="border border-gray-300 rounded px-3 py-2 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Enter alias"
-          />
-          <button 
-            id="start-btn"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded w-full transition"
-          >
-            Start Game
-          </button>
-          <p id="message" class="mt-4 text-sm text-center"></p>
-        </div>
-      </div>
-    `;
-  
-    const aliasInput = document.getElementById("alias-input") as HTMLInputElement;
-    const startButton = document.getElementById("start-btn") as HTMLButtonElement;
-    const message = document.getElementById("message") as HTMLParagraphElement;
-  
-    const API_BASE =
-      window.location.hostname === "localhost"
-        ? "http://localhost:3000/api"
-        : "http://backend:3000/api"; // en Docker Compose
-  
-    /* START Button */
-    startButton.addEventListener("click", async () => 
-    {
-      const alias = aliasInput.value.trim();
-      if (!alias) {
-        message.textContent = "⚠️ Alias cannot be empty";
-        message.className = "text-yellow-200 mt-4";
-        return;
-      }
-  
-      try {
-          const res = await fetch(`${API_BASE}/users`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ alias }),
-          });
-    
-          if (!res.ok) throw new Error("Server error");
-          const data = await res.json();
-    
-          if (data.success) 
-          {
-            message.textContent = `✅ Welcome, ${alias}! Starting...`;
-            message.className = "text-green-300 mt-4";
-    
-            setTimeout(() => 
-              {
-              // SPA navigation (sin recargar)
-              // window.history.pushState({}, "", "/pong");
-              window.history.pushState({}, "", "/choose_game");
-              window.dispatchEvent(new PopStateEvent("popstate"));
-              }, 1000); 
-          } 
-          else 
-          {
-            message.textContent = "❌ Could not save alias.";
-            message.className = "text-red-300 mt-4";
-          }
-      } 
-      catch (err) {
-          console.error(err);
-          message.textContent = "🚨 Connection error";
-          message.className = "text-red-400 mt-4";
-      }
-
-    });
-
-
-    aliasInput.addEventListener("keydown", async (e) => {
-        if (e.key === "Enter") {
-          startButton.click();
-        }
-    });
-
-    updateHomeTexts("eu");
+  // Redirect if logged in
+  const storedAlias = localStorage.getItem("alias");
+  if (storedAlias) {
+    window.history.replaceState({}, "", "/choose_game");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    return;
   }
-  
+
+  // Outer container
+  const container = document.createElement("div");
+  container.className = "home-container";
+
+  // White card
+  const card = document.createElement("div");
+  card.className = "home-card";
+
+  // Title
+  const title = document.createElement("h1");
+  title.className = "home-title";
+  title.textContent =  "🏓" + "Pong Challenge";
+
+  // Label
+  const label = document.createElement("label");
+  label.htmlFor = "alias-input";
+  label.textContent = "Choose your alias";
+
+  // Input
+  const input = document.createElement("input");
+  input.id = "alias-input";
+  input.type = "text";
+  input.placeholder = "Enter alias";
+
+  // Button
+  const button = document.createElement("button");
+  button.id = "start-btn";
+  button.textContent = "Start Game";
+  button.className = "bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded w-full transition";
+
+  // Message paragraph
+  const message = document.createElement("p");
+  message.id = "message";
+
+  // Append children to card
+  [title, label, input, button, message].forEach(el => card.appendChild(el));
+
+  // Append card to container
+  container.appendChild(card);
+
+  // Append container to root
+  root.innerHTML = ""; // clean previous content
+  root.appendChild(container);
+
+  // i18n
+  updateHomeTexts("eu");
+
+  // Event listener
+  button.addEventListener("click", () => handleLogin(input, message));
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(input, message); });
+}
+
+// Login function
+async function handleLogin(input: HTMLInputElement, message: HTMLParagraphElement) {
+  const alias = input.value.trim();
+  if (!alias) {
+    message.textContent = "⚠️ Alias cannot be empty";
+    message.className = "text-yellow-200 mt-4";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ alias }),
+    });
+
+    if (!res.ok) throw new Error("Server error");
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("alias", alias);
+      Navbar();
+      message.textContent = `✅ Welcome, ${alias}! Starting...`;
+      message.className = "text-green-300 mt-4";
+      setTimeout(() => {
+        window.history.pushState({}, "", "/choose_game");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }, 500);
+    } else {
+      message.textContent = "❌ Could not save alias.";
+      message.className = "text-red-300 mt-4";
+    }
+  } catch (err) {
+    console.error(err);
+    message.textContent = "🚨 Connection error";
+    message.className = "text-red-400 mt-4";
+  }
+}

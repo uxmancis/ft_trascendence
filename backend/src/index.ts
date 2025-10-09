@@ -16,7 +16,7 @@ const fastify = Fastify({ logger: true });
 // ------------------- CORS ------------------- //
 await fastify.register(cors, 
   {
-    origin: "*", // or ["http://localhost:8080"]
+    origin: "*", // or ["http://localhost:73"]
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   });
 

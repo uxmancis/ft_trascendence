@@ -59,7 +59,7 @@ export function renderHomePage(root: HTMLElement) {
           setTimeout(() => 
             {
             // SPA navigation (sin recargar)
-            window.history.pushState({}, "", "/pong");
+            window.history.pushState({}, "", "/tournamentpong");
             window.dispatchEvent(new PopStateEvent("popstate"));
             }, 1000); 
         } 

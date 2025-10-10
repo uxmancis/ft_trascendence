@@ -1,9 +1,22 @@
-export function drawRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, backgroundGame?: HTMLImageElement) {
-    if (backgroundGame){
-      ctx.drawImage(backgroundGame, x, y, w, h);
+import {gameState} from "./toolsVariables"
+
+export function startCountdown() {
+  gameState.countdownActive = true;
+  gameState.countdownValue = 3;
+  gameState. winnerMessage = "";
+  gameState.paused = true;
+
+  if (gameState.countdownTimer) clearInterval(gameState.countdownTimer);
+
+  gameState.countdownTimer = window.setInterval(() => {
+    gameState.countdownValue--;
+    if (gameState.countdownValue <= 0) {
+      clearInterval(gameState.countdownTimer!);
+      gameState.countdownValue = 0;
+      setTimeout(() => {
+        gameState.countdownActive = false;
+        gameState.paused = false;
+      }, 500);
     }
-    else {
-       ctx.fillStyle = color;
-       ctx.fillRect(x, y, w, h);
-    }
-  }
+  }, 1000);
+}

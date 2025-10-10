@@ -1,24 +1,37 @@
-# Use lightweight Node
+# ======================================
+# Backend Fastify (Node.js + SQLite)
+# ======================================
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package.json and install deps
+# Copiar dependencias
 COPY package*.json ./
-RUN npm install
 
-# Copy TS source and tsconfig
+# Instalar dependencias sin dev (compatible sin package-lock)
+RUN npm install --omit=dev
+
+# Copiar código fuente
 COPY ./src ./src
-COPY tsconfig.json ./
 
-# Compile TypeScript
-RUN npm run build
+# Crear carpeta persistente para la base
+RUN mkdir -p /data && chown -R node:node /data
 
-# Mount SQLite volume
+# Cambiar a usuario no-root
+USER node
+
+# Variables por defecto
+ENV PORT=3000
+ENV DB_PATH=/data/sqlite.db
+
+# Volumen compartido con microservicio DB
 VOLUME ["/data"]
 
-# Expose port
+# Exponer puerto Fastify
 EXPOSE 3000
 
-# Run compiled JS
-CMD ["node", "dist/index.js"]
+# Healthcheck simple
+HEALTHCHECK CMD wget -qO- http://localhost:3000/users || exit 1
+
+# Comando de inicio
+CMD ["node", "src/app.js"]

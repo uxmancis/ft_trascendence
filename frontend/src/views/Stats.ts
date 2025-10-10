@@ -1,0 +1,245 @@
+// src/views/Stats.ts
+import { getStatsByUserId, getMatches, getUsers, UserStats, Match, User } from '../api';
+import { getCurrentUser } from '../session';
+
+type RatioOptions = {
+  size?: number;      // px del svg
+  stroke?: number;    // grosor del anillo
+  color?: string;     // color principal
+  bg?: string;        // color de fondo del anillo
+  label?: string;     // texto centrado
+  sublabel?: string;  // texto pequeño debajo
+};
+
+function clamp01(n: number){ return Math.max(0, Math.min(1, n)); }
+function fmtPct(n: number){ return `${Math.round(n*100)}%`; }
+
+function donut(ratio: number, opts: RatioOptions = {}): string {
+  const size   = opts.size ?? 140;
+  const stroke = opts.stroke ?? 12;
+  const color  = opts.color ?? '#22c55e'; // green-500
+  const bg     = opts.bg ?? 'rgba(255,255,255,0.2)';
+  const r = (size/2) - stroke/2;
+  const c = 2*Math.PI*r;
+  const dash = c * clamp01(ratio);
+  const gap  = c - dash;
+
+  // tipografía centrada
+  const label = opts.label ?? fmtPct(ratio);
+  const sub   = opts.sublabel ? `<text x="50%" y="62%" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.75)">${opts.sublabel}</text>` : '';
+
+  return `
+  <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${bg}" stroke-width="${stroke}" />
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none"
+            stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+            stroke-dasharray="${dash} ${gap}" transform="rotate(-90 ${size/2} ${size/2})" />
+    <text x="50%" y="52%" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">${label}</text>
+    ${sub}
+  </svg>`;
+}
+
+function badgeWinLoss(meId: number, m: Match){
+  const iWon = m.winner_id === meId;
+  return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs ${iWon ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+    ${iWon ? 'Victoria' : 'Derrota'}
+  </span>`;
+}
+
+function whoIsOpponent(meId: number, m: Match){ return (m.player1_id === meId) ? m.player2_id : m.player1_id; }
+
+export async function renderStats(root: HTMLElement){
+  const me = getCurrentUser();
+  if (!me) {
+    root.innerHTML = `<section class="p-6"><p>Inicia sesión para ver tus estadísticas.</p></section>`;
+    return;
+  }
+
+  // layout base (tu grid)
+  root.innerHTML = `
+    <section class="mx-auto max-w-6xl p-6 grow">
+      <h1 class="text-2xl md:text-3xl font-bold mb-4">Mis estadísticas</h1>
+
+      <div class="grid grid-cols-5 grid-rows-5 gap-4">
+        <!-- 1: Perfil -->
+        <div id="card-profile" class="col-span-2 row-span-2 rounded-2xl bg-white/10 p-4"></div>
+
+        <!-- 2: Resumen + WinRate -->
+        <div id="card-summary" class="col-span-2 row-span-2 col-start-3 rounded-2xl bg-white/10 p-4"></div>
+
+        <!-- 3: Últimos 5 partidos -->
+        <div id="card-history" class="row-span-5 col-start-5 rounded-2xl bg-white/10 p-4 overflow-hidden flex flex-col"></div>
+
+        <!-- 4: Accuracy -->
+        <div id="card-accuracy" class="col-span-2 row-span-3 row-start-3 rounded-2xl bg-white/10 p-4"></div>
+
+        <!-- 5: Rachas -->
+        <div id="card-streaks" class="col-span-2 row-span-3 col-start-3 row-start-3 rounded-2xl bg-white/10 p-4"></div>
+      </div>
+    </section>
+  `;
+
+  const elProfile  = root.querySelector('#card-profile') as HTMLElement;
+  const elSummary  = root.querySelector('#card-summary') as HTMLElement;
+  const elHistory  = root.querySelector('#card-history') as HTMLElement;
+  const elAccuracy = root.querySelector('#card-accuracy') as HTMLElement;
+  const elStreaks  = root.querySelector('#card-streaks') as HTMLElement;
+
+  // datos en paralelo
+  const [stats, matches, users] = await Promise.all([
+    getStatsByUserId(me.id),
+    getMatches(),
+    getUsers(),
+  ]);
+
+  // --- Perfil (1)
+  elProfile.innerHTML = `
+    <div class="flex items-center gap-4">
+      <img src="${me.avatar}" alt="${me.nick}" class="w-16 h-16 rounded-xl ring-1 ring-white/20" />
+      <div>
+        <div class="text-lg font-semibold">${me.nick}</div>
+        <div class="text-sm opacity-80">ID #${me.id}</div>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+      <div class="rounded-lg bg-black/20 p-3">
+        <div class="text-xl font-bold">${stats.games_played}</div>
+        <div class="text-xs opacity-80">Partidos</div>
+      </div>
+      <div class="rounded-lg bg-black/20 p-3">
+        <div class="text-xl font-bold text-emerald-300">${stats.wins}</div>
+        <div class="text-xs opacity-80">Victorias</div>
+      </div>
+      <div class="rounded-lg bg-black/20 p-3">
+        <div class="text-xl font-bold text-rose-300">${stats.losses}</div>
+        <div class="text-xs opacity-80">Derrotas</div>
+      </div>
+    </div>
+  `;
+
+  // --- Resumen + WinRate (2)
+  const total = Math.max(0, stats.wins + stats.losses);
+  const winrate = total ? stats.wins / total : 0;
+  elSummary.innerHTML = `
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-semibold">Resumen</h2>
+      <span class="text-xs opacity-80">${new Date().toLocaleDateString()}</span>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4 items-center">
+      <div class="grid gap-2">
+        <div class="rounded-lg bg-black/20 p-3">
+          <div class="text-sm opacity-80">Partidos jugados</div>
+          <div class="text-2xl font-bold">${stats.games_played}</div>
+        </div>
+        <div class="rounded-lg bg-black/20 p-3">
+          <div class="text-sm opacity-80">Goles (a favor / en contra)</div>
+          <div class="text-2xl font-bold">${stats.goals_scored} <span class="opacity-60">/</span> ${stats.goals_received}</div>
+        </div>
+      </div>
+      <div class="grid place-items-center">
+        <div class="text-sm mb-2 opacity-80">Win Rate</div>
+        <div class="select-none" title="${fmtPct(winrate)}">
+          ${donut(winrate, { size: 150, stroke: 12, color: '#22c55e', bg: 'rgba(255,255,255,.15)' })}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // --- Historial últimos 5 (3)
+  // filtro por partidas donde juega 'me'
+  const myMatches = matches
+    .filter(m => m.player1_id === me.id || m.player2_id === me.id)
+    .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5);
+
+  const userById = new Map<number, User>();
+  users.forEach(u => userById.set(u.id, u));
+
+  elHistory.innerHTML = `
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Historial</h2>
+      <span class="text-xs opacity-80">${myMatches.length ? 'Últimos 5' : 'Sin partidas'}</span>
+    </div>
+    <div class="flex-1 overflow-auto -m-2 p-2">
+      <ul class="space-y-2">
+        ${myMatches.map(m => {
+          const oppId = whoIsOpponent(me.id, m);
+          const opp   = userById.get(oppId);
+          const iWon  = m.winner_id === me.id;
+          const myScore = (m.player1_id === me.id) ? m.score_p1 : m.score_p2;
+          const oppScore= (m.player1_id === me.id) ? m.score_p2 : m.score_p1;
+          const dateStr = new Date(m.created_at).toLocaleString();
+          return `
+            <li class="rounded-lg bg-black/20 p-3 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div>${badgeWinLoss(me.id, m)}</div>
+                <div class="text-sm">
+                  <div class="font-medium">${myScore} - ${oppScore}
+                    <span class="opacity-70">vs</span>
+                    <span class="opacity-90">${opp?.nick ?? ('#' + oppId)}</span>
+                  </div>
+                  <div class="text-xs opacity-70">${dateStr}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 opacity-80 text-xs">
+                <span>ID ${m.id}</span>
+                ${opp?.avatar ? `<img src="${opp.avatar}" class="w-6 h-6 rounded-full">` : ''}
+              </div>
+            </li>
+          `;
+        }).join('')}
+      </ul>
+    </div>
+  `;
+
+  // --- Accuracy (4)
+  // Goal Accuracy: goles / (intentos). Sin motor real, tomamos intentos = goals_scored + shots_on_target (placeholder razonable).
+  const shotAttempts = Math.max(0, stats.goals_scored + stats.shots_on_target);
+  const goalAcc = shotAttempts ? stats.goals_scored / shotAttempts : 0;
+
+  // Save Accuracy: paradas / (paradas + goles recibidos)
+  const facedShots = Math.max(0, stats.saves + stats.goals_received);
+  const saveAcc = facedShots ? stats.saves / facedShots : 0;
+
+  elAccuracy.innerHTML = `
+    <h2 class="font-semibold mb-4">Precisión</h2>
+    <div class="grid grid-cols-2 gap-4 items-center">
+      <div class="text-center">
+        <div class="text-sm mb-2 opacity-80">Goal Accuracy</div>
+        <div class="select-none" title="${fmtPct(goalAcc)}">
+          ${donut(goalAcc, { size: 140, color: '#60a5fa', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.goals_scored}/${shotAttempts}` })}
+        </div>
+      </div>
+      <div class="text-center">
+        <div class="text-sm mb-2 opacity-80">Save Accuracy</div>
+        <div class="select-none" title="${fmtPct(saveAcc)}">
+          ${donut(saveAcc, { size: 140, color: '#f59e0b', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.saves}/${facedShots}` })}
+        </div>
+      </div>
+    </div>
+    <p class="mt-3 text-xs opacity-70">
+      * Fórmulas: GoalAcc = goles / (goles + tiros a puerta). SaveAcc = paradas / (paradas + goles recibidos).
+    </p>
+  `;
+
+  // --- Rachas (5)
+  elStreaks.innerHTML = `
+    <h2 class="font-semibold mb-4">Rachas</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="rounded-xl bg-black/20 p-4">
+        <div class="text-sm opacity-80 mb-1">Racha actual</div>
+        <div class="text-3xl font-bold">${stats.win_streak}</div>
+      </div>
+      <div class="rounded-xl bg-black/20 p-4">
+        <div class="text-sm opacity-80 mb-1">Mejor racha</div>
+        <div class="text-3xl font-bold">${stats.best_streak}</div>
+      </div>
+    </div>
+    <div class="mt-4 rounded-xl bg-black/10 p-4 text-sm opacity-85">
+      <p>
+        Mantén tu racha ganando partidos seguidos. Cada victoria suma +1;
+        una derrota la reinicia. La mejor racha registra tu récord histórico.
+      </p>
+    </div>
+  `;
+}

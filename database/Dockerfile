@@ -1,27 +1,36 @@
-# Use lightweight Alpine image
+# ======================================
+# Pong Game + Chat - SQLite Microservice
+# Autor: Okene
+# ======================================
+
+# Imagen base ligera
 FROM alpine:3.20
 
-# Install sqlite
+# Instalar SQLite
 RUN apk add --no-cache sqlite
 
-# Create a non-root user
+# Crear usuario no-root
 RUN addgroup -g 1000 appgroup && adduser -D -u 1000 -G appgroup appuser
 
+# Directorio de trabajo
 WORKDIR /data
 
-# Copy init.sql to container
-COPY init.sql /data/init.sql
+# Copiar los archivos necesarios
+COPY init.sql /docker-entrypoint-initdb.d/init.sql
+COPY entrypoint.sh /entrypoint.sh
 
-# Initialize sqlite database if it doesn't exist
-RUN sqlite3 /data/sqlite.db < /data/init.sql
+# Permisos correctos
+RUN chmod +x /entrypoint.sh && \
+    chown -R appuser:appgroup /data /docker-entrypoint-initdb.d
 
-# Make sure appuser owns the database and data directory
-RUN chown -R 1000:1000 /data
-
-# Expose volume for backend to use
+# Volumen para persistencia
 VOLUME ["/data"]
 
+# Cambiar a usuario no-root
 USER appuser
 
-# Keep container alive
-CMD ["sleep", "infinity"]
+# Healthcheck opcional
+HEALTHCHECK CMD sqlite3 /data/sqlite.db "SELECT 1;" || exit 1
+
+# Ejecutar entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

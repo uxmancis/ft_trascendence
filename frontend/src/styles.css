@@ -53,11 +53,11 @@
   html[data-theme="earth"] body {
     background: linear-gradient(160deg, #14532d 0%, #0b2816 60%, #08130b 100%);
   }
-  /* html[data-theme="space"] body {
+  html[data-theme="space"] body {
     background: radial-gradient(1000px 700px at 70% -10%, #0ea5e922, transparent 70%),
                 radial-gradient(800px 600px at 20% 120%, #312e8155, transparent 60%),
                 #0a0f19;
-  } */
+  }
   html[data-theme="matrix"] body {
     background: linear-gradient(180deg, #052e16, #0a0f19 70%);
   }

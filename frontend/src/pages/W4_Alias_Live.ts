@@ -1,26 +1,3 @@
-    // root.innerHTML = `
-    //     <h1> AliasLivePong_Page </h1>
-    //     <div class="grid grid-cols-5 grid-rows-20 gap-4">
-    //     <div>1</div>
-    //     <div class="col-span-5 row-start-20">2</div>
-    //     </div>
-    // `
-
-//     root.innerHTML = `
-//     <div class="flex flex-col min-h-screen">
-//       <!-- Title -->
-//       <h1 class="text-center text-3xl font-bold my-8">AliasLivePong_Page</h1>
-
-//       <!-- Main content (takes remaining space) -->
-//       <div class="flex-grow"></div>
-
-//       <!-- Footer -->
-//       <footer class="bg-blue-600 text-white text-center py-4">
-//         <p>© 2025 Live Pong — Todos los derechos reservados</p>
-//       </footer>
-//     </div>
-//   `;
-
 
 export function AliasLivePong_Page(root: HTMLElement){
     /* Classic CSS Style, no Tailwind */
@@ -114,29 +91,40 @@ export function AliasLivePong_Page(root: HTMLElement){
 
     /* Introduce Alias INPUT Box */
     const aliasInput = document.getElementById("alias-input2") as HTMLInputElement;
+    const button = document.getElementById("next-btn") as HTMLButtonElement;
     
     const message = document.getElementById("message2") as HTMLParagraphElement;
 
     //async, await, fetch --> modern JavaScript
-    aliasInput.addEventListener("keydown", async (e) => {
-        if (e.key === "Enter") {
-          aliasInput.click();
-        }
+    button.addEventListener("click", async (e) => {
+
+        /* Micro-animación */
+        button.style.transition = "transform 0.15s ease";
+        button.style.transform = "scale(0.96)"; // presiona hacia dentro
+        setTimeout(() => {
+        button.style.transform = "scale(1.04)"; // rebota hacia fuera
+        setTimeout(() => {
+        button.style.transform = "scale(1)"; // vuelve al tamaño original
+          }, 100);
+        }, 100);
+
         if (!aliasInput) {
-        message.textContent = "⚠️ Alias cannot be empty";
-        message.className = "text-yellow-200 mt-4";
-        return;
+          message.textContent = "⚠️ Alias cannot be empty";
+          message.className = "text-yellow-200 mt-4";
+          console.log("")
+          return;
         }
+
         const alias = aliasInput.value.trim(); //removes any spaces at the beginning or end
 
-      /* Send alias to backend:
-      *
-      *   fetch --> sends an HTTP request
-      *   method: "POST" --> means "I'm sending data to the server"
-      *   headers: {...} --> Tells the server "I'm sending you JSON (not plain text or a form"
-      *   body: JSON. stringify({alias}) --> This is the actual content we send
-      *  */
-      const res = await fetch("http://localhost:3000/api/users", 
+        /* Send alias to backend:
+        *
+        *   fetch --> sends an HTTP request
+        *   method: "POST" --> means "I'm sending data to the server"
+        *   headers: {...} --> Tells the server "I'm sending you JSON (not plain text or a form"
+        *   body: JSON. stringify({alias}) --> This is the actual content we send
+        *  */
+        const res = await fetch("http://localhost:3000/api/users", 
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -145,6 +133,16 @@ export function AliasLivePong_Page(root: HTMLElement){
 
       const data = await res.json(); // Await: pause this function here until the request finishes, but keep rest of the app running.
       console.log(data);
+
+
+      /* Navigaates to next page*/
+      setTimeout(() => 
+        {
+        // SPA navigation (sin recargar)
+        // window.history.pushState({}, "", "/pong");
+        window.history.pushState({}, "", "/pong");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        }, 100);
     });
 
 

@@ -41,6 +41,8 @@ export function renderHome_Page(root: HTMLElement) {
     startButton.addEventListener("click", async () => 
     {
       const alias = aliasInput.value.trim();
+      
+      /* Message 1*/
       if (!alias) {
         message.textContent = "⚠️ Alias cannot be empty";
         message.className = "text-yellow-200 mt-4";

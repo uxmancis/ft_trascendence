@@ -19,7 +19,7 @@ export function routeTo(path: string)
       root.innerHTML = `
       <div class="flex flex-col items-center justify-center h-screen bg-black">
         <div id="player-names" class="text-white text-2xl font-bold mb-4">
-          1 VS AI
+          ¡Ready to play! 1 VS AI
         </div>
         <canvas id="pong_AI" width="800" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
       </div>
@@ -30,7 +30,7 @@ export function routeTo(path: string)
       root.innerHTML = `
       <div class="flex flex-col items-center justify-center h-screen bg-black">
         <div id="player-names" class="text-white text-2xl font-bold mb-4">
-          1 VS 1
+          ¡Ready to play! 1 VS 1
         </div>
         <canvas id="live_pong" width="800" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
       </div>
@@ -38,16 +38,16 @@ export function routeTo(path: string)
       setupLivePong();
       break;
     case "/tournamentpong":
-        root.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-screen bg-black">
-          <div id="player-names" class="text-white text-2xl font-bold mb-4">
-            4 VS 4
-          </div>
-          <canvas id="tournament_pong" width="500" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
+      root.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-screen bg-black">
+        <div id="player-names" class="text-white text-2xl font-bold mb-4">
+          ¡Ready to play! 4 VS 4
         </div>
-        `;
-        setupTournamentPong();
-        break;
+        <canvas id="tournament_pong" width="500" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
+      </div>
+      `;
+      setupTournamentPong();
+      break;
     default:
       root.innerHTML = `<h1 class="text-center text-red-500 mt-20">404 Not Found CACHO MIERDA ESTA</h1>`;
   }

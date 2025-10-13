@@ -64,7 +64,7 @@ export function setupTournamentPong()
     x: canvas.width / 2,
     y: canvas.height / 2,
     radius: ballRadius,
-    speed: 4,
+    speed: 3,
     dx: 4,
     dy: 4,
     color: "black",
@@ -106,7 +106,7 @@ export function setupTournamentPong()
         }
     }
 
-    function drawText(text: string, x: number, y: number, scale: number = 1) {
+    function drawText(text: string, x: number, y: number, scale: number) {
         ctx.save();
     
         ctx.translate(x, y);
@@ -118,12 +118,11 @@ export function setupTournamentPong()
         ctx.shadowOffsetX = 3;
         ctx.shadowOffsetY = 3;
     
-        // Estilo del texto
-        ctx.fillStyle = '#00FF99'; // Verde neón
-        ctx.font = 'bold 48px "Orbitron", sans-serif'; // Fuente futurista (puedes usar otra)
+        // Estilo del texto 
+        ctx.fillStyle = '#white'; // Verde neón
+        ctx.font = 'bold 30px "Press Start 2P", sans-serif'; // Fuente futurista (puedes usar otra)
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-    
         // Dibuja el texto principal
         ctx.fillText(text, x, y);
     
@@ -135,23 +134,25 @@ export function setupTournamentPong()
         ctx.restore(); // Restaura el contexto original
     }
 
+
+    
     function renderCountdown() {
         if (gameState.countdownActive) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     
         ctx.textAlign = "center";
-        ctx.shadowColor = "cyan";
+        ctx.shadowColor = "white";
         ctx.shadowBlur = 25;
     
-        ctx.font = "bold 90px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+        ctx.font = "bold 70px 'Press Start 2P', 'Audiowide', 'Verdana', sans-serif";
     
         ctx.fillStyle = gameState.countdownValue > 0 ? "#00ffff" : "#ffff66";
         const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
             if (text === "GO!") {
-                ctx.font = "bold 110px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
-                ctx.fillStyle = "#ff66ff";
-                ctx.shadowColor = "#ff33ff";
+                ctx.font = "bold 90px 'Press Start 2P', 'Audiowide', 'Verdana', sans-serif";
+                ctx.fillStyle = "#00ffff";
+                ctx.shadowColor = "#ffffff";
             }
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
     
@@ -291,38 +292,57 @@ export function setupTournamentPong()
         }
     }
     
-
     function resetBall() {
         ball.dx = 0;
         ball.dy = 0;
         ball.x = canvas.width / 2;
         ball.y = canvas.height / 2;
-        const speed = 2.5;
-        const angle = Math.random() * 2 * Math.PI;
-        setTimeout(() => ball.dx = speed * Math.cos(angle), 1000);
-        setTimeout(() => ball.dy = speed * Math.sin(angle), 1000);
+        let minAngle = 30 * Math.PI/180;
+        let maxAngle = 150 * Math.PI/180; 
+        let angle = Math.random() * (maxAngle - minAngle) + minAngle;
+        if (Math.random() < 0.5) angle = Math.PI - angle;
+        setTimeout(() => ball.dx = ball.speed * Math.cos(angle), 1000);
+        setTimeout(() => ball.dy = ball.speed * Math.sin(angle), 1000);
+        scoreAnimation.ai.scale = 1;
+        scoreAnimation.player.scale = 1;
+        scoreAnimation.player2.scale = 1;
+        scoreAnimation.player3.scale = 1;
+        scoreAnimation.player4.scale = 1;
     }
 
     function renderWinner() {
         drawRect(0, 0, canvas.width, canvas.height, "black");
-    
+      
         ctx.textAlign = "center";
         ctx.shadowColor = "cyan";
         ctx.shadowBlur = 20;
-    
-        ctx.font = "bold 42px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+      
+        const base = canvas.width;
+        const smallFont = Math.round(base * 0.035); // 3.5% del ancho
+        const mediumFont = Math.round(base * 0.05); // 5%
+        const bigFont = Math.round(base * 0.07); // 7%
+      
+        ctx.font = `bold ${smallFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
         ctx.fillStyle = "#00ffff";
-        ctx.fillText(`Player: ${player.score} - Player2: ${player2.score}`, canvas.width / 2, canvas.height / 2 - 70);
-    
-        ctx.font = "bold 55px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+        ctx.fillText(
+          `Player: ${player.score} - Player2: ${player2.score} - Player3: ${player3.score} - Player4: ${player4.score}`,
+          canvas.width / 2,
+          canvas.height / 2 - mediumFont * 2
+        );
+      
+        ctx.font = `bold ${bigFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
         ctx.fillStyle = "yellow";
-        ctx.fillText(gameState. winnerMessage, canvas.width / 2, canvas.height / 2);
-    
-        ctx.font = "italic 28px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
+        ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
+      
+        ctx.font = `italic ${smallFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
         ctx.fillStyle = "#66ccff";
-        ctx.fillText("Press Space or click to start a new game", canvas.width / 2, canvas.height / 2 + 70);
-    
-        ctx.shadowBlur = 0; 
+        ctx.fillText(
+          "Press Space or click to start a new game",
+          canvas.width / 2,
+          canvas.height / 2 + mediumFont * 2
+        );
+      
+        ctx.shadowBlur = 0;
     }
 
     function update() {
@@ -464,10 +484,14 @@ export function setupTournamentPong()
     function render() {
         if (!gameState.gameStarted && !gameState.countdownActive) {
             drawRect(0, 0, canvas.width, canvas.height, "black");
+            const text = "[ PRESS TO START PONG 🎮 ]";
             ctx.fillStyle = "white";
-            ctx.font = "30px Arial";
+            ctx.font =  "30px 'Press Start 2P', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("PRESS TO START", canvas.width / 2, canvas.height / 2);
+            const maxWidth = canvas.width * 0.9;
+            const textWidth = ctx.measureText(text).width;
+            const scale = textWidth > maxWidth ? maxWidth / textWidth : 1;
+            drawText(text, canvas.width / 2, canvas.height / 2, scale);
             return;
         }
         if (gameState. winnerMessage !== "") {
@@ -509,10 +533,10 @@ export function setupTournamentPong()
             scoreAnimation.player4.scale = 1 + (MAX_SCALE - 1) * (1 - progress);
         }
 
-        drawText(player.score.toString(), canvas.width / 2, 30, scoreAnimation.player.scale);
-        drawText(player2.score.toString(), canvas.width - 30, canvas.height / 2, scoreAnimation.ai.scale);
-        drawText(player3.score.toString(), 30, canvas.height / 2, scoreAnimation.ai.scale);
-        drawText(player4.score.toString(), canvas.width / 2, canvas.height - 30, scoreAnimation.ai.scale);
+        drawText(player.score.toString(), 50, canvas.height / 2, scoreAnimation.player.scale);
+        drawText(player2.score.toString(), canvas.width - 50, canvas.height / 2, scoreAnimation.player2.scale);
+        drawText(player3.score.toString(), canvas.width / 2, 50, scoreAnimation.player3.scale);
+        drawText(player4.score.toString(), canvas.width / 2, canvas.height - 50, scoreAnimation.player4.scale);
         
         if (gameState.paused && gameState.winnerMessage !== "") {
             ctx.font = "40px Arial";

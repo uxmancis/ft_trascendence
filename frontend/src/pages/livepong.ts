@@ -238,27 +238,44 @@ export function setupLivePong()
         setTimeout(() => ball.dy = verticalDir * speed * Math.sin(angle), 1000);
     }
 
+
     function renderWinner() {
-        drawRect(0, 0, canvas.width, canvas.height, "black");
-      
-        ctx.textAlign = "center";
-        ctx.shadowColor = "cyan";
-        ctx.shadowBlur = 20;
-      
-        ctx.font = "bold 42px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
-        ctx.fillStyle = "#00ffff";
-        ctx.fillText(`Player: ${player.score} - Player2: ${player2.score}`, canvas.width / 2, canvas.height / 2 - 70);
-      
-        ctx.font = "bold 55px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
-        ctx.fillStyle = "yellow";
-        ctx.fillText(gameState. winnerMessage, canvas.width / 2, canvas.height / 2);
-      
-        ctx.font = "italic 28px 'Orbitron', 'Audiowide', 'Verdana', sans-serif";
-        ctx.fillStyle = "#66ccff";
-        ctx.fillText("Press Space or click to start a new game", canvas.width / 2, canvas.height / 2 + 70);
-      
-        ctx.shadowBlur = 0; 
-    }
+      drawRect(0, 0, canvas.width, canvas.height, "black");
+    
+      ctx.textAlign = "center";
+      ctx.shadowColor = "cyan";
+      ctx.shadowBlur = 20;
+    
+      const base = canvas.width;
+      const smallFont = Math.round(base * 0.035); // 3.5% del ancho
+      const mediumFont = Math.round(base * 0.05); // 5%
+      const bigFont = Math.round(base * 0.07); // 7%
+    
+      // 🔹 Marcadores
+      ctx.font = `bold ${smallFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
+      ctx.fillStyle = "#00ffff";
+      ctx.fillText(
+        `Player: ${player.score} - Player2: ${player2.score}`,
+        canvas.width / 2,
+        canvas.height / 2 - mediumFont * 2
+      );
+    
+      // 🔹 Mensaje de ganador
+      ctx.font = `bold ${bigFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
+      ctx.fillStyle = "yellow";
+      ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
+    
+      // 🔹 Instrucción de reinicio
+      ctx.font = `italic ${smallFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
+      ctx.fillStyle = "#66ccff";
+      ctx.fillText(
+        "Press Space or click to start a new game",
+        canvas.width / 2,
+        canvas.height / 2 + mediumFont * 2
+      );
+    
+      ctx.shadowBlur = 0;
+  }
 
     function update() {
 
@@ -346,9 +363,9 @@ export function setupLivePong()
         if (!gameState.gameStarted && !gameState.countdownActive) {
             drawRect(0, 0, canvas.width, canvas.height, "black");
             ctx.fillStyle = "white";
-            ctx.font = "30px Arial";
+            ctx.font =  "30px 'Press Start 2P', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("PRESS TO START", canvas.width / 2, canvas.height / 2);
+            ctx.fillText("[ PRESS TO START PONG 🎮 ]", canvas.width / 2, canvas.height / 2);
             return;
         }
         if (gameState. winnerMessage !== "") {

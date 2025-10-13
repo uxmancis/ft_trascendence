@@ -93,6 +93,7 @@ export function AliasLivePong_Page(root: HTMLElement){
         onblur="this.style.borderColor='#ccc'; this.style.boxShadow='none';"
       />
       <button id="next-btn"> </button>
+      <p id="message2" class="mt-4 text-sm text-center"></p>
 
       <!-- FOOTER -->
       <footer style="
@@ -113,11 +114,43 @@ export function AliasLivePong_Page(root: HTMLElement){
 
     /* Introduce Alias INPUT Box */
     const aliasInput = document.getElementById("alias-input2") as HTMLInputElement;
+    
+    const message = document.getElementById("message2") as HTMLParagraphElement;
+
+    //async, await, fetch --> modern JavaScript
     aliasInput.addEventListener("keydown", async (e) => {
         if (e.key === "Enter") {
           aliasInput.click();
         }
+        if (!aliasInput) {
+        message.textContent = "⚠️ Alias cannot be empty";
+        message.className = "text-yellow-200 mt-4";
+        return;
+        }
+        const alias = aliasInput.value.trim(); //removes any spaces at the beginning or end
+
+      /* Send alias to backend:
+      *
+      *   fetch --> sends an HTTP request
+      *   method: "POST" --> means "I'm sending data to the server"
+      *   headers: {...} --> Tells the server "I'm sending you JSON (not plain text or a form"
+      *   body: JSON. stringify({alias}) --> This is the actual content we send
+      *  */
+      const res = await fetch("http://localhost:3000/api/users", 
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alias }),
+        });
+
+      const data = await res.json(); // Await: pause this function here until the request finishes, but keep rest of the app running.
+      console.log(data);
     });
+
+
+//   
+//   console.log(data);
+// });
 
     /* Next Button */
     const next = document.getElementById("next-btn") as HTMLInputElement;

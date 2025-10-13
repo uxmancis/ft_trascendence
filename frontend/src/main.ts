@@ -5,7 +5,10 @@ import { renderHome } from './views/Home';
 import { renderStats } from './views/Stats';
 import { renderPlayAI } from './views/PlayAI';
 import { renderPlay1v1 } from './views/Play1v1';
+import { setupLivePong } from './views/Live1v1';
+import { setupPong } from './views/LiveAI';
 import { renderTournament } from './views/Tournament';
+import { setupTournamentPong } from './views/LiveTournament';
 import { getCurrentUser } from './session';
 import { renderLogin } from './views/Login';
 
@@ -56,7 +59,10 @@ function bootRoutes() {
   register('#/stats',           wrap(renderStats));
   register('#/play/ai',         wrap(renderPlayAI));
   register('#/play/1v1',        wrap(renderPlay1v1));
+  register('#/live/1v1',        wrap(setupLivePong));
+  register('#/live/ai',         wrap(setupPong));
   register('#/play/tournament', wrap(renderTournament));
+  register('#/game/live', wrap(setupTournamentPong));
   register('#/404', async () => {
     page.innerHTML = `<div class="p-6">
       <h1 class="text-2xl font-bold" data-i18n="common.notfound"></h1>

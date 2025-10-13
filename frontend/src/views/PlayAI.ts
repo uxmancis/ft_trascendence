@@ -97,6 +97,14 @@ export async function renderPlayAI(root: HTMLElement) {
       ts: Date.now(),
     };
     sessionStorage.setItem('ai:settings', JSON.stringify(settings));
+    root.innerHTML = `
+    <div class="flex flex-col items-center justify-center h-screen bg-black">
+      <div id="player-names" class="text-white text-2xl font-bold mb-4">
+        ¡Ready to play! 1 VS AI
+      </div>
+      <canvas id="pong_AI" width="800" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
+    </div>
+    `;
     navigate(LIVE_ROUTE);
   };
 }

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+
 -- ======================================
 -- Tabla: user_stats
 -- ======================================
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS user_stats (
 -- ======================================
 -- Trigger: crear stats automáticamente al crear usuario
 -- ======================================
+
 DROP TRIGGER IF EXISTS trg_user_stats_after_insert;
 
 CREATE TRIGGER trg_user_stats_after_insert

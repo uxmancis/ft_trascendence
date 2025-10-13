@@ -100,6 +100,14 @@ export async function renderPlay1v1(root: HTMLElement) {
     if (!me || !p2Now) return;
 
     sessionStorage.setItem('pvp:players', JSON.stringify([me, p2Now]));
+    root.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-screen bg-black">
+        <div id="player-names" class="text-white text-2xl font-bold mb-4">
+          ¡Ready to play! 1 VS 1
+        </div>
+        <canvas id="live_pong" width="800" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
+      </div>
+      `;
     navigate(LIVE_ROUTE);
   };
 }

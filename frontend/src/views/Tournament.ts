@@ -6,6 +6,7 @@ import {
   clearTournamentPlayers
 } from '../session';
 import { t, bindI18n } from '../i18n/i18n';
+import { navigate } from '../router';
 
 const LIVE_ROUTE = '#/game/live';
 
@@ -133,6 +134,15 @@ export async function renderTournament(root: HTMLElement){
     const players = [me, ...localsNow2]; // [J1, J2, J3, J4]
     sessionStorage.setItem('tournament:players', JSON.stringify(players));
     location.hash = LIVE_ROUTE;
+    root.innerHTML = `
+    <div class="flex flex-col items-center justify-center h-screen bg-black">
+      <div id="player-names" class="text-white text-2xl font-bold mb-4">
+        ¡Ready to play! 4 VS 4
+      </div>
+      <canvas id="tournament_pong" width="500" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
+    </div>
+    `;
+    navigate(LIVE_ROUTE);
   };
 }
 

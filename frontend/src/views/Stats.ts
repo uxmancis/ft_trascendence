@@ -25,7 +25,6 @@ function donut(ratio: number, opts: RatioOptions = {}): string {
   const dash = c * clamp01(ratio);
   const gap  = c - dash;
 
-  // tipografía centrada
   const label = opts.label ?? fmtPct(ratio);
   const sub   = opts.sublabel ? `<text x="50%" y="62%" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.75)">${opts.sublabel}</text>` : '';
 
@@ -46,7 +45,6 @@ function badgeWinLoss(meId: number, m: Match){
     ${iWon ? t('stats.victory') : t('stats.defeat')}
   </span>`;
 }
-
 function whoIsOpponent(meId: number, m: Match){ return (m.player1_id === meId) ? m.player2_id : m.player1_id; }
 
 export async function renderStats(root: HTMLElement){
@@ -56,26 +54,40 @@ export async function renderStats(root: HTMLElement){
     return;
   }
 
-  // layout base (tu grid)
+  // tamaños "responsivos" para donuts: algo menores en móviles
+  const isNarrow = root.clientWidth < 768; // ~md breakpoint
+  const donutMain = isNarrow ? 130 : 160;
+  const donutMinor = isNarrow ? 120 : 140;
+
+  // layout nuevo: grid fluida
   root.innerHTML = `
     <section class="mx-auto max-w-6xl p-6 grow">
-  <h1 class="text-2xl md:text-3xl font-bold mb-4" data-i18n="stats.my">${t('stats.my')}</h1>
+      <h1 class="text-2xl md:text-3xl font-bold mb-4" data-i18n="stats.my">${t('stats.my')}</h1>
 
-      <div class="grid grid-cols-5 grid-rows-5 gap-4">
-        <!-- 1: Perfil -->
-        <div id="card-profile" class="col-span-2 row-span-2 rounded-2xl bg-white/10 p-4"></div>
+      <!-- Grid responsiva:
+           - móvil: 1 col
+           - md: 2 cols
+           - lg: 3 cols con la última (historial) más ancha -->
+      <div class="grid gap-4
+                  md:grid-cols-2
+                  lg:grid-cols-[1.1fr_1.1fr_1.6fr]">
+        <!-- PERFIL -->
+        <article id="card-profile" class="rounded-2xl bg-white/10 p-4 min-h-[140px]"></article>
 
-        <!-- 2: Resumen + WinRate -->
-        <div id="card-summary" class="col-span-2 row-span-2 col-start-3 rounded-2xl bg-white/10 p-4"></div>
+        <!-- RESUMEN + WINRATE -->
+        <article id="card-summary" class="rounded-2xl bg-white/10 p-4 min-h-[140px]"></article>
 
-        <!-- 3: Últimos 5 partidos -->
-        <div id="card-history" class="row-span-5 col-start-5 rounded-2xl bg-white/10 p-4 overflow-hidden flex flex-col"></div>
+        <!-- HISTORIAL: en lg ocupa la 3ª col y varias filas -->
+        <article id="card-history"
+                 class="rounded-2xl bg-white/10 p-4 overflow-hidden flex flex-col
+                        md:col-span-2 lg:col-span-1
+                        lg:row-span-3 min-h-[260px]"></article>
 
-        <!-- 4: Accuracy -->
-        <div id="card-accuracy" class="col-span-2 row-span-3 row-start-3 rounded-2xl bg-white/10 p-4"></div>
+        <!-- ACCURACY -->
+        <article id="card-accuracy" class="rounded-2xl bg-white/10 p-4 min-h-[180px]"></article>
 
-        <!-- 5: Rachas -->
-        <div id="card-streaks" class="col-span-2 row-span-3 col-start-3 row-start-3 rounded-2xl bg-white/10 p-4"></div>
+        <!-- RACHAS -->
+        <article id="card-streaks" class="rounded-2xl bg-white/10 p-4 min-h-[180px]"></article>
       </div>
     </section>
   `;
@@ -93,10 +105,10 @@ export async function renderStats(root: HTMLElement){
     getUsers(),
   ]);
 
-  // --- Perfil (1)
+  // --- Perfil
   elProfile.innerHTML = `
     <div class="flex items-center gap-4">
-      <img src="${me.avatar}" alt="${me.nick}" class="w-16 h-16 rounded-xl ring-1 ring-white/20" />
+      <img src="${me.avatar}" alt="${me.nick}" class="w-16 h-16 rounded-xl ring-1 ring-white/20 object-cover" />
       <div>
         <div class="text-lg font-semibold">${me.nick}</div>
         <div class="text-sm opacity-80">ID #${me.id}</div>
@@ -118,7 +130,7 @@ export async function renderStats(root: HTMLElement){
     </div>
   `;
 
-  // --- Resumen + WinRate (2)
+  // --- Resumen + WinRate
   const total = Math.max(0, stats.wins + stats.losses);
   const winrate = total ? stats.wins / total : 0;
   elSummary.innerHTML = `
@@ -126,7 +138,7 @@ export async function renderStats(root: HTMLElement){
       <h2 class="font-semibold" data-i18n="stats.summary">${t('stats.summary')}</h2>
       <span class="text-xs opacity-80" data-i18n="stats.date">${t('stats.date')}</span>
     </div>
-    <div class="grid md:grid-cols-2 gap-4 items-center">
+    <div class="grid sm:grid-cols-2 gap-4 items-center">
       <div class="grid gap-2">
         <div class="rounded-lg bg-black/20 p-3">
           <div class="text-sm opacity-80" data-i18n="stats.played">${t('stats.played')}</div>
@@ -140,14 +152,13 @@ export async function renderStats(root: HTMLElement){
       <div class="grid place-items-center">
         <div class="text-sm mb-2 opacity-80" data-i18n="stats.winRate">${t('stats.winRate')}</div>
         <div class="select-none" title="${fmtPct(winrate)}">
-          ${donut(winrate, { size: 150, stroke: 12, color: '#22c55e', bg: 'rgba(255,255,255,.15)' })}
+          ${donut(winrate, { size: donutMain, stroke: 12, color: '#22c55e', bg: 'rgba(255,255,255,.15)' })}
         </div>
       </div>
     </div>
   `;
 
-  // --- Historial últimos 5 (3)
-  // filtro por partidas donde juega 'me'
+  // --- Historial últimos 5
   const myMatches = matches
     .filter(m => m.player1_id === me.id || m.player2_id === me.id)
     .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -161,21 +172,21 @@ export async function renderStats(root: HTMLElement){
       <h2 class="font-semibold" data-i18n="stats.history.title">${t('stats.history.title')}</h2>
       <span class="text-xs opacity-80">${myMatches.length ? t('stats.history.last5') : t('stats.history.empty')}</span>
     </div>
-    <div class="flex-1 overflow-auto -m-2 p-2">
+    <!-- max-height con scroll para evitar solapamientos -->
+    <div class="flex-1 overflow-auto -m-2 p-2 max-h-[50vh] lg:max-h-[60vh]">
       <ul class="space-y-2">
         ${myMatches.map(m => {
           const oppId = whoIsOpponent(me.id, m);
           const opp   = userById.get(oppId);
-          const iWon  = m.winner_id === me.id;
           const myScore = (m.player1_id === me.id) ? m.score_p1 : m.score_p2;
           const oppScore= (m.player1_id === me.id) ? m.score_p2 : m.score_p1;
           const dateStr = new Date(m.created_at).toLocaleString();
           return `
             <li class="rounded-lg bg-black/20 p-3 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div>${badgeWinLoss(me.id, m)}</div>
-                <div class="text-sm">
-                  <div class="font-medium">${myScore} - ${oppScore}
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="shrink-0">${badgeWinLoss(me.id, m)}</div>
+                <div class="text-sm truncate">
+                  <div class="font-medium truncate">${myScore} - ${oppScore}
                     <span class="opacity-70" data-i18n="common.vs">${t('common.vs')}</span>
                     <span class="opacity-90">${opp?.nick ?? ('#' + oppId)}</span>
                   </div>
@@ -183,8 +194,8 @@ export async function renderStats(root: HTMLElement){
                 </div>
               </div>
               <div class="flex items-center gap-2 opacity-80 text-xs">
-                <span>${t('common.id')} ${m.id}</span>
-                ${opp?.avatar ? `<img src="${opp.avatar}" class="w-6 h-6 rounded-full">` : ''}
+                <span class="whitespace-nowrap">${t('common.id')} ${m.id}</span>
+                ${opp?.avatar ? `<img src="${opp.avatar}" class="w-6 h-6 rounded-full object-cover">` : ''}
               </div>
             </li>
           `;
@@ -193,12 +204,9 @@ export async function renderStats(root: HTMLElement){
     </div>
   `;
 
-  // --- Accuracy (4)
-  // Goal Accuracy: goles / (intentos). Sin motor real, tomamos intentos = goals_scored + shots_on_target (placeholder razonable).
+  // --- Accuracy
   const shotAttempts = Math.max(0, stats.goals_scored + stats.shots_on_target);
   const goalAcc = shotAttempts ? stats.goals_scored / shotAttempts : 0;
-
-  // Save Accuracy: paradas / (paradas + goles recibidos)
   const facedShots = Math.max(0, stats.saves + stats.goals_received);
   const saveAcc = facedShots ? stats.saves / facedShots : 0;
 
@@ -208,23 +216,23 @@ export async function renderStats(root: HTMLElement){
       <div class="text-center">
         <div class="text-sm mb-2 opacity-80" data-i18n="stats.goalAcc">${t('stats.goalAcc')}</div>
         <div class="select-none" title="${fmtPct(goalAcc)}">
-          ${donut(goalAcc, { size: 140, color: '#60a5fa', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.goals_scored}/${shotAttempts}` })}
+          ${donut(goalAcc, { size: donutMinor, color: '#60a5fa', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.goals_scored}/${shotAttempts}` })}
         </div>
       </div>
       <div class="text-center">
         <div class="text-sm mb-2 opacity-80" data-i18n="stats.saveAcc">${t('stats.saveAcc')}</div>
         <div class="select-none" title="${fmtPct(saveAcc)}">
-          ${donut(saveAcc, { size: 140, color: '#f59e0b', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.saves}/${facedShots}` })}
+          ${donut(saveAcc, { size: donutMinor, color: '#f59e0b', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.saves}/${facedShots}` })}
         </div>
       </div>
     </div>
     <p class="mt-3 text-xs opacity-70" data-i18n="stats.formulas">${t('stats.formulas')}</p>
   `;
 
-  // --- Rachas (5)
+  // --- Rachas
   elStreaks.innerHTML = `
     <h2 class="font-semibold mb-4" data-i18n="stats.streaks">${t('stats.streaks')}</h2>
-    <div class="grid md:grid-cols-2 gap-4">
+    <div class="grid sm:grid-cols-2 gap-4">
       <div class="rounded-xl bg-black/20 p-4">
         <div class="text-sm opacity-80 mb-1" data-i18n="stats.currentStreak">${t('stats.currentStreak')}</div>
         <div class="text-3xl font-bold">${stats.win_streak}</div>

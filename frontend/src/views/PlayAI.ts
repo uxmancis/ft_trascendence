@@ -1,4 +1,5 @@
-import { t, bindI18n } from '../i18n/i18n';
+// src/views/PlayAI.ts
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { navigate } from '../router';
 
 const LIVE_ROUTE = '#/live/ai'; // cambia si usas otra ruta (p.ej. '#/game/live')
@@ -36,7 +37,14 @@ export async function renderPlayAI(root: HTMLElement) {
     </section>
   `;
 
+  // Traducción inicial
   bindI18n(root);
+
+  // 🔁 Re-traducir en caliente al cambiar idioma
+  const off = onLangChange(() => {
+    bindI18n(root);
+  });
+  (root as any)._cleanup = () => off();
 
   // Lógica de selección
   const cards = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-diff]'));
@@ -85,7 +93,6 @@ export async function renderPlayAI(root: HTMLElement) {
     if (!selected) return;
     const settings = {
       difficulty: selected,
-      // opcional: semilla pseudoaleatoria para reproducibilidad
       seed: Math.floor(Math.random() * 1e9),
       ts: Date.now(),
     };
@@ -96,7 +103,6 @@ export async function renderPlayAI(root: HTMLElement) {
 
 /* ---------- UI helpers ---------- */
 function cardHTML(id: Diff, label: string) {
-  // usa solo claves existentes: ai.easy/ai.normal/ai.hard
   return `
     <button
       type="button"
@@ -107,17 +113,14 @@ function cardHTML(id: Diff, label: string) {
     >
       <div class="absolute top-2 right-3 text-2xl mark" aria-hidden="true"></div>
       <div class="space-y-1">
-        <div class="text-lg font-semibold">${label}</div>
-        <div class="text-xs opacity-75">
-          ${hintFor(id)}
-        </div>
+        <div class="text-lg font-semibold" data-i18n="ai.${id}">${t(`ai.${id}`)}</div>
+        <div class="text-xs opacity-75">${hintFor(id)}</div>
       </div>
     </button>
   `;
 }
 
 function hintFor(id: Diff) {
-  // textos breves en claro (no dependen de nuevas claves i18n)
   if (id === 'easy') return 'Bot lento, ideal para empezar.';
   if (id === 'hard') return 'Reacción rápida y precisión alta.';
   return 'Equilibrado para una partida estándar.';

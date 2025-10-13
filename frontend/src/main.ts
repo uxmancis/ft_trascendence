@@ -1,5 +1,5 @@
 import './styles.css';
-import { renderNavbar } from './components/Navbar';
+import { renderNavbar } from './components/navbar';
 import { register, startRouter } from './router';
 import { renderHome } from './views/Home';
 import { renderStats } from './views/Stats';

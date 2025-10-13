@@ -29,7 +29,11 @@ function donut(ratio: number, opts: RatioOptions = {}): string {
   const sub   = opts.sublabel ? `<text x="50%" y="62%" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.75)">${opts.sublabel}</text>` : '';
 
   return `
-  <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <svg
+    width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"
+    preserveAspectRatio="xMidYMid meet"
+    style="max-width:100%;height:auto;display:block"
+  >
     <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${bg}" stroke-width="${stroke}" />
     <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none"
             stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
@@ -151,7 +155,8 @@ export async function renderStats(root: HTMLElement){
       </div>
       <div class="grid place-items-center">
         <div class="text-sm mb-2 opacity-80" data-i18n="stats.winRate">${t('stats.winRate')}</div>
-        <div class="select-none" title="${fmtPct(winrate)}">
+        <!-- 🛡️ Contenedor cuadrado con límite de ancho para que el SVG nunca desborde -->
+        <div class="select-none w-full max-w-[260px] md:max-w-[240px] lg:max-w-[260px] aspect-square overflow-hidden" title="${fmtPct(winrate)}">
           ${donut(winrate, { size: donutMain, stroke: 12, color: '#22c55e', bg: 'rgba(255,255,255,.15)' })}
         </div>
       </div>
@@ -215,13 +220,13 @@ export async function renderStats(root: HTMLElement){
     <div class="grid grid-cols-2 gap-4 items-center">
       <div class="text-center">
         <div class="text-sm mb-2 opacity-80" data-i18n="stats.goalAcc">${t('stats.goalAcc')}</div>
-        <div class="select-none" title="${fmtPct(goalAcc)}">
+        <div class="select-none w-full max-w-[220px] aspect-square overflow-hidden" title="${fmtPct(goalAcc)}">
           ${donut(goalAcc, { size: donutMinor, color: '#60a5fa', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.goals_scored}/${shotAttempts}` })}
         </div>
       </div>
       <div class="text-center">
         <div class="text-sm mb-2 opacity-80" data-i18n="stats.saveAcc">${t('stats.saveAcc')}</div>
-        <div class="select-none" title="${fmtPct(saveAcc)}">
+        <div class="select-none w-full max-w-[220px] aspect-square overflow-hidden" title="${fmtPct(saveAcc)}">
           ${donut(saveAcc, { size: donutMinor, color: '#f59e0b', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.saves}/${facedShots}` })}
         </div>
       </div>

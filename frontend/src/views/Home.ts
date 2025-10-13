@@ -1,31 +1,32 @@
 import { navigate } from '../router';
+import { t } from '../i18n/i18n';
 
 export async function renderHome(root: HTMLElement){
   root.innerHTML = `
     <section class="mx-auto max-w-6xl p-6 grow">
-      <h1 class="text-3xl font-bold mb-2">¡A jugar!</h1>
-      <p class="opacity-80 mb-6">Elige un modo para empezar.</p>
+      <h1 class="text-3xl font-bold mb-2" data-i18n="home.title">${t('home.title')}</h1>
+      <p class="opacity-80 mb-6" data-i18n="home.subtitle">${t('home.subtitle')}</p>
 
       <div class="grid gap-4 md:grid-cols-3">
         <!-- AI -->
         <button id="btn-ai"
           class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2">🤖 PARTIDO vs AI</div>
-          <p class="opacity-80 text-sm">Juega contra un bot con dificultad ajustable.</p>
+          <div class="text-2xl mb-2" data-i18n="home.ai">${t('home.ai')}</div>
+          <p class="opacity-80 text-sm" data-i18n="home.ai.desc">${t('home.ai.desc')}</p>
         </button>
 
         <!-- 1v1 -->
         <button id="btn-1v1"
           class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2">🆚 PARTIDO 1 vs 1</div>
-          <p class="opacity-80 text-sm">Dos jugadores, reglas clásicas de Pong.</p>
+          <div class="text-2xl mb-2" data-i18n="home.1v1">${t('home.1v1')}</div>
+          <p class="opacity-80 text-sm" data-i18n="home.1v1.desc">${t('home.1v1.desc')}</p>
         </button>
 
         <!-- Torneo -->
         <button id="btn-tournament"
           class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2">🏆 TORNEO 1 vs 1 vs 1 vs 1</div>
-          <p class="opacity-80 text-sm">Eliminatoria rápida entre cuatro jugadores.</p>
+          <div class="text-2xl mb-2" data-i18n="home.tournament">${t('home.tournament')}</div>
+          <p class="opacity-80 text-sm" data-i18n="home.tournament.desc">${t('home.tournament.desc')}</p>
         </button>
       </div>
     </section>

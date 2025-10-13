@@ -1,6 +1,7 @@
 import { createUser, NewUser } from '../api';
 import { getCurrentUser, getLocalP2, setLocalP2 } from '../session';
 import { navigate } from '../router';
+import { t } from '../i18n/i18n';
 
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -28,25 +29,25 @@ export async function renderPlay1v1(root: HTMLElement){
 
   root.innerHTML = `
     <section class="mx-auto max-w-6xl p-6 grow space-y-6">
-      <h1 class="text-2xl font-bold">🆚 Partido 1 vs 1 (Local)</h1>
+      <h1 class="text-2xl font-bold" data-i18n="pvp.title">${t('pvp.title')}</h1>
       <div class="grid md:grid-cols-2 gap-4">
         <div class="rounded-2xl bg-white/10 p-4">
-          <h2 class="font-semibold mb-2">Jugador 1</h2>
+          <h2 class="font-semibold mb-2" data-i18n="pvp.player1">${t('pvp.player1')}</h2>
           ${
             me
               ? `<div class="flex items-center gap-3">
                    <img src="${me.avatar}" class="w-10 h-10 rounded-full"/>
                    <div>
                      <div class="font-medium">${me.nick}</div>
-                     <div class="text-xs opacity-80">ID ${me.id}</div>
+                     <div class="text-xs opacity-80">${t('common.id')} ${me.id}</div>
                    </div>
                  </div>`
-              : `<p class="opacity-80 text-sm">No hay usuario logueado.</p>`
+              : `<p class="opacity-80 text-sm" data-i18n="common.noUser">${t('common.noUser')}</p>`
           }
         </div>
 
         <div class="rounded-2xl bg-white/10 p-4">
-          <h2 class="font-semibold mb-2">Jugador 2 (local)</h2>
+          <h2 class="font-semibold mb-2" data-i18n="pvp.player2">${t('pvp.player2')}</h2>
 
           <div id="p2-view">
             ${
@@ -56,18 +57,18 @@ export async function renderPlay1v1(root: HTMLElement){
                        <img src="${p2.avatar}" class="w-10 h-10 rounded-full"/>
                        <div>
                          <div class="font-medium">${p2.nick}</div>
-                         <div class="text-xs opacity-80">ID ${p2.id}</div>
+                         <div class="text-xs opacity-80">${t('common.id')} ${p2.id}</div>
                        </div>
                      </div>
-                     <button id="changeP2" class="text-xs px-2 py-1 rounded bg-black/30 hover:bg-black/50">
-                       Cambiar jugador
+                     <button id="changeP2" class="text-xs px-2 py-1 rounded bg-black/30 hover:bg-black/50" data-i18n="pvp.changePlayer">
+                       ${t('pvp.changePlayer')}
                      </button>
                    </div>`
                 : `<form id="p2-form" class="grid gap-3">
-                     <input id="p2-nick" class="px-3 py-2 rounded text-black" placeholder="nick jugador 2"
+                     <input id="p2-nick" class="px-3 py-2 rounded text-black" placeholder="${t('pvp.nickP2.placeholder')}" data-i18n-attr="placeholder:pvp.nickP2.placeholder"
                             required minlength="2" maxlength="20" />
-                     <button class="px-4 py-2 rounded bg-black/40 hover:bg-black/60 text-white">
-                       Crear y continuar
+                     <button class="px-4 py-2 rounded bg-black/40 hover:bg-black/60 text-white" data-i18n="pvp.createAndContinue">
+                       ${t('pvp.createAndContinue')}
                      </button>
                      <div id="err" class="text-red-300 text-sm hidden"></div>
                    </form>`
@@ -79,15 +80,15 @@ export async function renderPlay1v1(root: HTMLElement){
       <div id="start-area" class="rounded-2xl bg-white/10 p-4 ${p2 ? '' : 'opacity-50 pointer-events-none'}">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="font-semibold">Listo para jugar</h3>
-            <p class="opacity-80 text-sm">Cuando estén los dos jugadores, comienza el partido.</p>
+            <h3 class="font-semibold" data-i18n="common.readyToPlay">${t('common.readyToPlay')}</h3>
+            <p class="opacity-80 text-sm" data-i18n="common.whenBothReady">${t('common.whenBothReady')}</p>
           </div>
-          <button id="startBtn" class="px-4 py-2 rounded bg-emerald-500/80 hover:bg-emerald-600 text-white">
-            Empezar partido
+          <button id="startBtn" class="px-4 py-2 rounded bg-emerald-500/80 hover:bg-emerald-600 text-white" data-i18n="common.startMatch">
+            ${t('common.startMatch')}
           </button>
         </div>
         <div id="canvas" class="mt-4 rounded-2xl bg-black/60 aspect-video grid place-items-center text-sm opacity-80">
-          [Canvas del juego aquí]
+          <span data-i18n="common.canvasHere">${t('common.canvasHere')}</span>
         </div>
       </div>
     </section>
@@ -120,7 +121,7 @@ export async function renderPlay1v1(root: HTMLElement){
         setLocalP2({ id: created.id, nick: created.nick, avatar: created.avatar });
         renderPlay1v1(root); // recargar vista con P2 ya listo
       } catch (err: any) {
-        errBox.textContent = err?.message || 'No se pudo crear el Jugador 2';
+        errBox.textContent = err?.message || t('pvp.err.createP2');
         errBox.classList.remove('hidden');
       }
     };
@@ -133,7 +134,7 @@ export async function renderPlay1v1(root: HTMLElement){
     if (!p2Now) return;
     // aquí iniciarías el engine; por ahora, te muevo a la vista de canvas (misma página)
     const canvas = root.querySelector<HTMLDivElement>('#canvas')!;
-    canvas.innerHTML = `<div>Iniciando partida: <b>${me?.nick}</b> vs <b>${p2Now.nick}</b>...</div>`;
+    canvas.innerHTML = `<div>Iniciando partida: <b>${me?.nick}</b> <span data-i18n="common.vs">${t('common.vs')}</span> <b>${p2Now.nick}</b>...</div>`;
     // si quieres ir a otra ruta de "live":
     // navigate('#/live/1v1'); // y allí pintas tu canvas
   };

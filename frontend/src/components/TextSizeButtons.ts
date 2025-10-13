@@ -1,5 +1,6 @@
 // src/components/TextSizeButtons.ts
 import { getTextScale, setTextScale } from '../a11y/prefs';
+import { t, onLangChange } from '../i18n/i18n';
 
 export function TextSizeButtons(compact = false): HTMLElement {
   const wrap = document.createElement('div');
@@ -16,9 +17,9 @@ export function TextSizeButtons(compact = false): HTMLElement {
     return b;
   };
 
-  const dec = mkBtn('A-', 'Disminuir tamaño de texto');
-  const reset = mkBtn('A', 'Tamaño por defecto');
-  const inc = mkBtn('A+', 'Aumentar tamaño de texto');
+  const dec = mkBtn('A-', t('a11y.textSmaller'));
+  const reset = mkBtn('A', t('a11y.textReset'));
+  const inc = mkBtn('A+', t('a11y.textLarger'));
 
   // aria-live para anunciar cambios (screen readers)
   const live = document.createElement('span');
@@ -26,7 +27,7 @@ export function TextSizeButtons(compact = false): HTMLElement {
   live.setAttribute('aria-live', 'polite');
 
   const announce = (scale: number) => {
-    live.textContent = `Tamaño de texto ${Math.round(scale * 100)}%`;
+    live.textContent = t('a11y.textSizeAnnounce', { pct: Math.round(scale * 100) });
   };
 
   let scale = getTextScale();
@@ -50,6 +51,14 @@ export function TextSizeButtons(compact = false): HTMLElement {
     if (e.key === '0') { e.preventDefault(); reset.click(); }
   });
 
+  const off = onLangChange(() => {
+    dec.setAttribute('aria-label', t('a11y.textSmaller'));
+    reset.setAttribute('aria-label', t('a11y.textReset'));
+    inc.setAttribute('aria-label', t('a11y.textLarger'));
+    announce(scale);
+  });
+
   wrap.append(dec, reset, inc, live);
+  (wrap as any)._cleanup = () => off();
   return wrap;
 }

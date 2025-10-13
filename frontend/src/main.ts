@@ -37,11 +37,11 @@ page.className = 'flex-1';
 app.appendChild(header);
 app.appendChild(page);
 
-// Monta el panel unificado (evita duplicados internamente) y tradúcelo
-UnifiedControlPanel();
-{
-  const panel = document.getElementById('unified-control-panel');
-  if (panel) bindI18n(panel);
+// Helper para (re)montar el navbar y traducirlo
+function renderNavbarAndBind() {
+  header.innerHTML = '';
+  renderNavbar(header);
+  bindI18n(header);
 }
 
 // Helper: crea un handler 0-args que pinta y luego traduce `page`
@@ -51,7 +51,7 @@ const wrap = (renderFn: (c: HTMLElement) => void | Promise<void>) =>
     bindI18n(page);
   };
 
-function bootRoutes(){
+function bootRoutes() {
   register('#/',                wrap(renderHome));
   register('#/stats',           wrap(renderStats));
   register('#/play/ai',         wrap(renderPlayAI));
@@ -65,10 +65,17 @@ function bootRoutes(){
   });
 }
 
-// Re-traducir la UI cuando cambie el idioma
+// Re-traducir/re-renderizar cuando cambie el idioma
 onLangChange(() => {
-  bindI18n(header);
+  // retraducir el contenido actual de la página
   bindI18n(page);
+
+  // si hay sesión, re-render del navbar (textos dinámicos/sin data-i18n)
+  if (getCurrentUser()) {
+    renderNavbarAndBind();
+  }
+
+  // si existe el panel suelto (en login), retradúcelo
   const panel = document.getElementById('unified-control-panel');
   if (panel) bindI18n(panel);
 });
@@ -78,23 +85,28 @@ const user = getCurrentUser();
 if (!user) {
   // ⛔️ sin navbar en login
   header.innerHTML = '';
-
+  // Panel inferior disponible en login
+  UnifiedControlPanel();
+  {
+    const panel = document.getElementById('unified-control-panel');
+    if (panel) bindI18n(panel);
+  }
   // Render de login + traducción inicial
   renderLogin(page, () => {
     // tras login
     header.innerHTML = '';
     page.innerHTML = '';
-    renderNavbar(header);
-    bindI18n(header); // traducir navbar
+    // elimina panel inferior si existe
+    document.getElementById('unified-control-panel')?.remove();
+    renderNavbarAndBind();         // <— reusamos helper
     bootRoutes();
-    location.hash = '#/'; // a Inicio
+    location.hash = '#/';          // a Inicio
     startRouter();
   });
   bindI18n(page);
 } else {
   // ✅ con navbar persistente
-  renderNavbar(header);
-  bindI18n(header); // traducir navbar
+  renderNavbarAndBind();           // <— reusamos helper
   bootRoutes();
   startRouter();
 }

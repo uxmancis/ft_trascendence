@@ -1,6 +1,7 @@
 // src/views/Login.ts
 import { createUser, NewUser } from '../api';
 import { setCurrentUser } from '../session';
+import { t } from '../i18n/i18n';
 
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -37,14 +38,14 @@ export async function renderLogin(root: HTMLElement, onSuccess: () => void){
   root.innerHTML = `
     <section class="mx-auto max-w-md p-6 w-full">
       <div class="rounded-2xl bg-white/10 p-6 shadow-lg">
-        <h1 class="text-2xl font-bold mb-4">Bienvenido 👋</h1>
-        <p class="opacity-80 mb-4 text-sm">
-          Elige un nick para jugar y ver tus estadísticas.
+        <h1 class="text-2xl font-bold mb-4" data-i18n="login.welcome">${t('login.welcome')}</h1>
+        <p class="opacity-80 mb-4 text-sm" data-i18n="login.subtitle">
+          ${t('login.subtitle')}
         </p>
         <form id="login-form" class="grid gap-3">
-          <input id="nick" class="px-3 py-2 rounded text-black" placeholder="tu nick"
+          <input id="nick" class="px-3 py-2 rounded text-black" placeholder="${t('login.nick.placeholder')}" data-i18n-attr="placeholder:login.nick.placeholder"
                  required minlength="2" maxlength="20" />
-          <button class="px-4 py-2 rounded bg-black/40 hover:bg-black/60 text-white">Entrar</button>
+          <button class="px-4 py-2 rounded bg-black/40 hover:bg-black/60 text-white" data-i18n="login.submit">${t('login.submit')}</button>
           <div id="error" class="text-red-300 text-sm hidden"></div>
         </form>
       </div>
@@ -73,7 +74,7 @@ export async function renderLogin(root: HTMLElement, onSuccess: () => void){
       setCurrentUser({ id: created.id, nick: created.nick, avatar: created.avatar });
       onSuccess();
     } catch (err: any) {
-      errBox.textContent = err?.message || 'No se pudo crear el usuario';
+      errBox.textContent = err?.message || t('login.error');
       errBox.classList.remove('hidden');
     }
   };

@@ -1,6 +1,7 @@
 // src/views/Stats.ts
 import { getStatsByUserId, getMatches, getUsers, UserStats, Match, User } from '../api';
 import { getCurrentUser } from '../session';
+import { t } from '../i18n/i18n';
 
 type RatioOptions = {
   size?: number;      // px del svg
@@ -42,7 +43,7 @@ function donut(ratio: number, opts: RatioOptions = {}): string {
 function badgeWinLoss(meId: number, m: Match){
   const iWon = m.winner_id === meId;
   return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs ${iWon ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
-    ${iWon ? 'Victoria' : 'Derrota'}
+    ${iWon ? t('stats.victory') : t('stats.defeat')}
   </span>`;
 }
 
@@ -51,14 +52,14 @@ function whoIsOpponent(meId: number, m: Match){ return (m.player1_id === meId) ?
 export async function renderStats(root: HTMLElement){
   const me = getCurrentUser();
   if (!me) {
-    root.innerHTML = `<section class="p-6"><p>Inicia sesión para ver tus estadísticas.</p></section>`;
+    root.innerHTML = `<section class="p-6"><p data-i18n="login.title">${t('login.title')}</p></section>`;
     return;
   }
 
   // layout base (tu grid)
   root.innerHTML = `
     <section class="mx-auto max-w-6xl p-6 grow">
-      <h1 class="text-2xl md:text-3xl font-bold mb-4">Mis estadísticas</h1>
+  <h1 class="text-2xl md:text-3xl font-bold mb-4" data-i18n="stats.my">${t('stats.my')}</h1>
 
       <div class="grid grid-cols-5 grid-rows-5 gap-4">
         <!-- 1: Perfil -->
@@ -104,15 +105,15 @@ export async function renderStats(root: HTMLElement){
     <div class="mt-4 grid grid-cols-3 gap-3 text-center">
       <div class="rounded-lg bg-black/20 p-3">
         <div class="text-xl font-bold">${stats.games_played}</div>
-        <div class="text-xs opacity-80">Partidos</div>
+        <div class="text-xs opacity-80" data-i18n="stats.matches">${t('stats.matches')}</div>
       </div>
       <div class="rounded-lg bg-black/20 p-3">
         <div class="text-xl font-bold text-emerald-300">${stats.wins}</div>
-        <div class="text-xs opacity-80">Victorias</div>
+        <div class="text-xs opacity-80" data-i18n="stats.wins">${t('stats.wins')}</div>
       </div>
       <div class="rounded-lg bg-black/20 p-3">
         <div class="text-xl font-bold text-rose-300">${stats.losses}</div>
-        <div class="text-xs opacity-80">Derrotas</div>
+        <div class="text-xs opacity-80" data-i18n="stats.losses">${t('stats.losses')}</div>
       </div>
     </div>
   `;
@@ -122,22 +123,22 @@ export async function renderStats(root: HTMLElement){
   const winrate = total ? stats.wins / total : 0;
   elSummary.innerHTML = `
     <div class="flex items-center justify-between mb-4">
-      <h2 class="font-semibold">Resumen</h2>
-      <span class="text-xs opacity-80">${new Date().toLocaleDateString()}</span>
+      <h2 class="font-semibold" data-i18n="stats.summary">${t('stats.summary')}</h2>
+      <span class="text-xs opacity-80" data-i18n="stats.date">${t('stats.date')}</span>
     </div>
     <div class="grid md:grid-cols-2 gap-4 items-center">
       <div class="grid gap-2">
         <div class="rounded-lg bg-black/20 p-3">
-          <div class="text-sm opacity-80">Partidos jugados</div>
+          <div class="text-sm opacity-80" data-i18n="stats.played">${t('stats.played')}</div>
           <div class="text-2xl font-bold">${stats.games_played}</div>
         </div>
         <div class="rounded-lg bg-black/20 p-3">
-          <div class="text-sm opacity-80">Goles (a favor / en contra)</div>
+          <div class="text-sm opacity-80" data-i18n="stats.goalsSplit">${t('stats.goalsSplit')}</div>
           <div class="text-2xl font-bold">${stats.goals_scored} <span class="opacity-60">/</span> ${stats.goals_received}</div>
         </div>
       </div>
       <div class="grid place-items-center">
-        <div class="text-sm mb-2 opacity-80">Win Rate</div>
+        <div class="text-sm mb-2 opacity-80" data-i18n="stats.winRate">${t('stats.winRate')}</div>
         <div class="select-none" title="${fmtPct(winrate)}">
           ${donut(winrate, { size: 150, stroke: 12, color: '#22c55e', bg: 'rgba(255,255,255,.15)' })}
         </div>
@@ -157,8 +158,8 @@ export async function renderStats(root: HTMLElement){
 
   elHistory.innerHTML = `
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold">Historial</h2>
-      <span class="text-xs opacity-80">${myMatches.length ? 'Últimos 5' : 'Sin partidas'}</span>
+      <h2 class="font-semibold" data-i18n="stats.history.title">${t('stats.history.title')}</h2>
+      <span class="text-xs opacity-80">${myMatches.length ? t('stats.history.last5') : t('stats.history.empty')}</span>
     </div>
     <div class="flex-1 overflow-auto -m-2 p-2">
       <ul class="space-y-2">
@@ -175,14 +176,14 @@ export async function renderStats(root: HTMLElement){
                 <div>${badgeWinLoss(me.id, m)}</div>
                 <div class="text-sm">
                   <div class="font-medium">${myScore} - ${oppScore}
-                    <span class="opacity-70">vs</span>
+                    <span class="opacity-70" data-i18n="common.vs">${t('common.vs')}</span>
                     <span class="opacity-90">${opp?.nick ?? ('#' + oppId)}</span>
                   </div>
                   <div class="text-xs opacity-70">${dateStr}</div>
                 </div>
               </div>
               <div class="flex items-center gap-2 opacity-80 text-xs">
-                <span>ID ${m.id}</span>
+                <span>${t('common.id')} ${m.id}</span>
                 ${opp?.avatar ? `<img src="${opp.avatar}" class="w-6 h-6 rounded-full">` : ''}
               </div>
             </li>
@@ -202,44 +203,37 @@ export async function renderStats(root: HTMLElement){
   const saveAcc = facedShots ? stats.saves / facedShots : 0;
 
   elAccuracy.innerHTML = `
-    <h2 class="font-semibold mb-4">Precisión</h2>
+    <h2 class="font-semibold mb-4" data-i18n="stats.precision">${t('stats.precision')}</h2>
     <div class="grid grid-cols-2 gap-4 items-center">
       <div class="text-center">
-        <div class="text-sm mb-2 opacity-80">Goal Accuracy</div>
+        <div class="text-sm mb-2 opacity-80" data-i18n="stats.goalAcc">${t('stats.goalAcc')}</div>
         <div class="select-none" title="${fmtPct(goalAcc)}">
           ${donut(goalAcc, { size: 140, color: '#60a5fa', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.goals_scored}/${shotAttempts}` })}
         </div>
       </div>
       <div class="text-center">
-        <div class="text-sm mb-2 opacity-80">Save Accuracy</div>
+        <div class="text-sm mb-2 opacity-80" data-i18n="stats.saveAcc">${t('stats.saveAcc')}</div>
         <div class="select-none" title="${fmtPct(saveAcc)}">
           ${donut(saveAcc, { size: 140, color: '#f59e0b', bg: 'rgba(255,255,255,.15)', sublabel: `${stats.saves}/${facedShots}` })}
         </div>
       </div>
     </div>
-    <p class="mt-3 text-xs opacity-70">
-      * Fórmulas: GoalAcc = goles / (goles + tiros a puerta). SaveAcc = paradas / (paradas + goles recibidos).
-    </p>
+    <p class="mt-3 text-xs opacity-70" data-i18n="stats.formulas">${t('stats.formulas')}</p>
   `;
 
   // --- Rachas (5)
   elStreaks.innerHTML = `
-    <h2 class="font-semibold mb-4">Rachas</h2>
+    <h2 class="font-semibold mb-4" data-i18n="stats.streaks">${t('stats.streaks')}</h2>
     <div class="grid md:grid-cols-2 gap-4">
       <div class="rounded-xl bg-black/20 p-4">
-        <div class="text-sm opacity-80 mb-1">Racha actual</div>
+        <div class="text-sm opacity-80 mb-1" data-i18n="stats.currentStreak">${t('stats.currentStreak')}</div>
         <div class="text-3xl font-bold">${stats.win_streak}</div>
       </div>
       <div class="rounded-xl bg-black/20 p-4">
-        <div class="text-sm opacity-80 mb-1">Mejor racha</div>
+        <div class="text-sm opacity-80 mb-1" data-i18n="stats.bestStreak2">${t('stats.bestStreak2')}</div>
         <div class="text-3xl font-bold">${stats.best_streak}</div>
       </div>
     </div>
-    <div class="mt-4 rounded-xl bg-black/10 p-4 text-sm opacity-85">
-      <p>
-        Mantén tu racha ganando partidos seguidos. Cada victoria suma +1;
-        una derrota la reinicia. La mejor racha registra tu récord histórico.
-      </p>
-    </div>
+    <div class="mt-4 rounded-xl bg-black/10 p-4 text-sm opacity-85" data-i18n="stats.streaks.tip">${t('stats.streaks.tip')}</div>
   `;
 }

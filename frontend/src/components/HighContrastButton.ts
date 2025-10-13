@@ -1,5 +1,6 @@
 // src/components/HighContrastButton.ts
 import { isHighContrast, setHighContrast } from '../a11y/prefs';
+import { t, onLangChange } from '../i18n/i18n';
 
 export function HighContrastButton(compact = false): HTMLElement {
   const btn = document.createElement('button');
@@ -10,7 +11,7 @@ export function HighContrastButton(compact = false): HTMLElement {
 
   const updateVisual = (on: boolean) => {
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    btn.textContent = on ? 'Contraste: ALTO' : 'Contraste: normal';
+    btn.textContent = on ? t('a11y.contrast.high') : t('a11y.contrast.normal');
   };
 
   let on = isHighContrast();
@@ -30,7 +31,12 @@ export function HighContrastButton(compact = false): HTMLElement {
     }
   });
 
-  btn.setAttribute('aria-label', 'Alternar alto contraste');
+  btn.setAttribute('aria-label', t('a11y.toggleHighContrast'));
   btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  const off = onLangChange(() => {
+    updateVisual(on);
+    btn.setAttribute('aria-label', t('a11y.toggleHighContrast'));
+  });
+  (btn as any)._cleanup = () => off();
   return btn;
 }

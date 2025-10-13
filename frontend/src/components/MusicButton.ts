@@ -2,8 +2,9 @@
 import {
   getTrackIndex, setTrackIndex,
   getVolume, setVolume,
-  isMuted, setMuted
+  isMuted as isPausedPref, setMuted as setPausedPref
 } from '../custom/prefs';
+import { t, onLangChange } from '../i18n/i18n';
 
 export function MusicButton(compact = true): HTMLElement {
   const wrap = document.createElement('div');
@@ -13,7 +14,7 @@ export function MusicButton(compact = true): HTMLElement {
   btn.type = 'button';
   btn.id = 'music-btn';
   btn.className = 'px-2 py-1 rounded bg-black/30 hover:bg-black/50 text-xs font-medium';
-  btn.setAttribute('aria-label', 'Cambiar música de fondo');
+  btn.setAttribute('aria-label', t('panel.music'));
 
   const vol = document.createElement('input');
   vol.type = 'range';
@@ -22,38 +23,39 @@ export function MusicButton(compact = true): HTMLElement {
   vol.step = '0.01';
   vol.className = 'w-24 accent-sky-400';
 
-  const mute = document.createElement('button');
-  mute.type = 'button';
-  mute.className = 'px-2 py-1 rounded bg-black/30 hover:bg-black/50 text-xs font-medium';
-  mute.setAttribute('aria-label', 'Silenciar o activar sonido');
+  // ▶️ / ⏸ control (antes “mute”)
+  const playback = document.createElement('button');
+  playback.type = 'button';
+  playback.className = 'px-2 py-1 rounded bg-black/30 hover:bg-black/50 text-xs font-medium';
+  playback.setAttribute('aria-label', t('music.playback'));
 
   // aviso discreto si el autoplay falla
   const hint = document.createElement('span');
   hint.className = 'text-[11px] opacity-80 px-2 py-1 rounded bg-black/30';
   hint.style.display = 'none';
-  hint.textContent = 'Pulsa para activar sonido';
+  hint.textContent = t('music.hint');
 
-  wrap.append(btn, vol, mute, hint);
+  wrap.append(btn, vol, playback, hint);
 
   const tracks = [
     new URL('/src/assets/music/music1.mp3', import.meta.url).href,
     new URL('/src/assets/music/music2.mp3', import.meta.url).href,
     new URL('/src/assets/music/music3.mp3', import.meta.url).href,
   ];
-  const labels = ['🎵 Pista 1', '🎵 Pista 2', '🎵 Pista 3', '🔇 Silencio'];
 
   let audio: HTMLAudioElement | null = null;
 
-  // Defaults: pista 0, volumen 0.3, SIN mute (salvo preferencia previa explícita)
+  // Defaults
   let idx = (() => {
     const saved = getTrackIndex();
-    return Number.isFinite(saved) ? saved : 0;
+    return Number.isFinite(saved) ? (saved as number) : 0;
   })();
   let volume = (() => {
     const saved = getVolume();
-    return Number.isFinite(saved) ? saved : 0.3;
+    return Number.isFinite(saved) ? (saved as number) : 0.3;
   })();
-  let muted = isMuted(); // si el user guardó mute, respetamos
+  // Reutilizamos la preferencia “muted” como “paused”
+  let paused = !!isPausedPref();
 
   const ensureAudio = () => {
     if (!audio) {
@@ -61,14 +63,22 @@ export function MusicButton(compact = true): HTMLElement {
       audio.loop = true;
       audio.preload = 'auto';
     }
-    audio.volume = muted ? 0 : volume;
+    if (audio) audio.volume = volume;
+  };
+
+  const labelForIndex = (i: number) => {
+    if (i >= 0 && i < tracks.length) {
+      return [t('music.track1'), t('music.track2'), t('music.track3')][i];
+    }
+    return t('music.silence');
   };
 
   const setUiText = () => {
     const labelIdx = (idx >= 0 && idx < tracks.length) ? idx : tracks.length;
-    btn.textContent = labels[labelIdx];
-    mute.textContent = muted ? '🔇 Mute' : '🔊 Sonido';
-    mute.setAttribute('aria-pressed', muted ? 'true' : 'false');
+    btn.textContent = labelForIndex(labelIdx);
+    // Botón muestra la ACCIÓN: si está reproduciendo → “Pausar”; si está en pausa → “Reproducir”
+    playback.textContent = paused ? `▶️ ${t('music.play')}` : `⏸ ${t('music.pause')}`;
+    playback.setAttribute('aria-pressed', paused ? 'true' : 'false');
   };
 
   const tryPlay = async () => {
@@ -76,9 +86,13 @@ export function MusicButton(compact = true): HTMLElement {
     if (!audio) return false;
     if (idx >= 0 && idx < tracks.length) {
       if (!audio.src) audio.src = tracks[idx];
-      audio.volume = muted ? 0 : volume;
-      try { await audio.play(); return true; }
-      catch { return false; } // bloqueado por autoplay
+      audio.volume = volume;
+      try {
+        if (!paused) await audio.play();
+        return true;
+      } catch {
+        return false; // bloqueo de autoplay
+      }
     }
     return false;
   };
@@ -106,9 +120,9 @@ export function MusicButton(compact = true): HTMLElement {
 
     if (idx >= 0 && idx < tracks.length) {
       audio!.src = tracks[idx];
-      audio!.volume = muted ? 0 : volume;
+      audio!.volume = volume;
       try {
-        await audio!.play();
+        if (!paused) await audio!.play();
         hideHint();
       } catch {
         showHint(); armFirstInteract();
@@ -120,17 +134,24 @@ export function MusicButton(compact = true): HTMLElement {
     setUiText();
   };
 
-  const applyMute = (m: boolean) => {
-    muted = m;
-    setMuted(muted);
-    if (audio) audio.volume = muted ? 0 : volume;
+  const applyPause = async (p: boolean) => {
+    paused = p;
+    setPausedPref(paused); // guardamos como si fuera “muted”, así no tocamos prefs.ts
+    if (!audio) return setUiText();
+
+    if (paused) {
+      audio.pause();
+    } else {
+      try { await audio.play(); hideHint(); }
+      catch { showHint(); armFirstInteract(); }
+    }
     setUiText();
   };
 
   const applyVolume = (v: number) => {
     volume = Math.max(0, Math.min(1, v));
     setVolume(volume);
-    if (audio && !muted) audio.volume = volume;
+    if (audio && !paused) audio.volume = volume;
   };
 
   // Init UI
@@ -138,27 +159,37 @@ export function MusicButton(compact = true): HTMLElement {
   vol.value = String(volume);
   setUiText();
 
-  // 👉 Autoplay inmediato por defecto
+  // Autoplay si hay pista y NO está en pausa
   (async () => {
     if (idx >= 0 && idx < tracks.length) {
       const ok = await tryPlay();
-      if (!ok) { showHint(); armFirstInteract(); }
+      if (!ok && !paused) { showHint(); armFirstInteract(); }
     }
   })();
 
   // Handlers
   btn.addEventListener('click', () => applyTrack(idx + 1));
   vol.addEventListener('input', () => applyVolume(Number(vol.value)));
-  mute.addEventListener('click', () => applyMute(!muted));
+  playback.addEventListener('click', () => applyPause(!paused));
 
-  // Atajos: Alt+Shift+M cambia pista; Alt+Shift+↑/↓ volumen
+  // Atajos: Alt+Shift+M cambia pista; Alt+Shift+K pausa/continúa; Alt+Shift+↑/↓ volumen
   window.addEventListener('keydown', (e) => {
     if (!(e.altKey && e.shiftKey)) return;
     const k = e.key.toLowerCase();
     if (k === 'm') { e.preventDefault(); btn.click(); }
+    if (k === 'k') { e.preventDefault(); playback.click(); } // como YouTube
     if (k === 'arrowup')   { e.preventDefault(); vol.value = String(Math.min(1, Number(vol.value) + 0.05)); vol.dispatchEvent(new Event('input')); }
     if (k === 'arrowdown') { e.preventDefault(); vol.value = String(Math.max(0, Number(vol.value) - 0.05)); vol.dispatchEvent(new Event('input')); }
   });
+
+  // Update UI texts on language change
+  const off = onLangChange(() => {
+    btn.setAttribute('aria-label', t('panel.music'));
+    playback.setAttribute('aria-label', t('music.playback'));
+    hint.textContent = t('music.hint');
+    setUiText();
+  });
+  (wrap as any)._cleanup = () => off();
 
   return wrap;
 }

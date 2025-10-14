@@ -5,7 +5,7 @@ export const getAllMatches = async (req, reply) => {
     const rows = await db.allAsync("SELECT * FROM matches");
     return reply.send(rows);
   } catch (err) {
-    return reply.status(500).send({ error: err.message });
+    return reply.status().send({ error: err.message });
   }
 };
 

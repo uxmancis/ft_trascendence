@@ -97,15 +97,35 @@ export async function renderPlayAI(root: HTMLElement) {
       ts: Date.now(),
     };
     sessionStorage.setItem('ai:settings', JSON.stringify(settings));
-    root.innerHTML = `
-    <div class="flex flex-col items-center justify-center h-screen bg-black">
-      <div id="player-names" class="text-white text-2xl font-bold mb-4">
-        ¡Ready to play! 1 VS AI
-      </div>
-      <canvas id="pong_AI" width="800" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
+    const mainSection = document.querySelector("section"); // mantenemos la barra y estilos
+    if (!mainSection) {
+      console.error("No se encontró la sección principal");
+      return;
+    }
+    mainSection.innerHTML = `
+    <h1 class="text-2xl font-bold mb-6 text-white" data-i18n="ai.title">
+      Pong Tournament
+    </h1>
+
+    <!-- Barra superior -->
+    <div class="flex justify-between items-center mb-6 text-white bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+      <span>Modo: ${selected.toUpperCase()}</span>
+      <span>🎮 Pong 1 vs AI</span>
+      <button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
     </div>
-    `;
-    navigate(LIVE_ROUTE);
+
+    <!-- Contenedor del juego (sin fondo negro) -->
+    <div class="flex flex-col items-center justify-center p-4">
+      <canvas id="pong_AI" width="800" height="500"
+        class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
+    </div>
+  `;
+  // Acción del botón de salir
+  document.getElementById("backBtn")?.addEventListener("click", () => {
+    navigate("#"); // vuelve a la pantalla anterior
+  });
+
+  navigate(LIVE_ROUTE);
   };
 }
 

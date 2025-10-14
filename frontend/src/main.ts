@@ -62,7 +62,7 @@ function bootRoutes() {
   register('#/live/1v1',        wrap(setupLivePong));
   register('#/live/ai',         wrap(setupPong));
   register('#/play/tournament', wrap(renderTournament));
-  register('#/game/live', wrap(setupTournamentPong));
+  register('#/game/live',       wrap(setupTournamentPong));
   register('#/404', async () => {
     page.innerHTML = `<div class="p-6">
       <h1 class="text-2xl font-bold" data-i18n="common.notfound"></h1>

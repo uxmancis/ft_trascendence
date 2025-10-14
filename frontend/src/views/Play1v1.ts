@@ -98,16 +98,33 @@ export async function renderPlay1v1(root: HTMLElement) {
   startBtn.onclick = () => {
     const p2Now = getLocalP2();
     if (!me || !p2Now) return;
-
     sessionStorage.setItem('pvp:players', JSON.stringify([me, p2Now]));
     root.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-screen bg-black">
-        <div id="player-names" class="text-white text-2xl font-bold mb-4">
-          ¡Ready to play! 1 VS 1
+      <!-- Contenedor principal -->
+      <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
+
+        <!-- Barra superior translúcida -->
+        <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+          <span class="font-semibold">Modo: PVP</span>
+          <span class="text-lg font-bold">🎮 Pong 1 VS 1</span>
+          <button id="backBtn"
+            class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
         </div>
-        <canvas id="live_pong" width="800" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
-      </div>
-      `;
+
+        <!-- Contenedor del juego -->
+        <div class="flex flex-col items-center justify-center p-4">
+          <canvas id="live_pong" width="800" height="500"
+            class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
+        </div>
+
+      </section>
+    `;
+
+    // Botón de volver
+    document.getElementById("backBtn")?.addEventListener("click", () => {
+      navigate("#");
+    });
+
     navigate(LIVE_ROUTE);
   };
 }

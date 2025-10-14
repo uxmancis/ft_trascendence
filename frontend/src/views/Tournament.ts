@@ -131,17 +131,37 @@ export async function renderTournament(root: HTMLElement){
   startBtn.onclick = () => {
     const localsNow2 = getTournamentPlayers();
     if (!me || localsNow2.filter(Boolean).length !== 3) return;
+
     const players = [me, ...localsNow2]; // [J1, J2, J3, J4]
     sessionStorage.setItem('tournament:players', JSON.stringify(players));
     location.hash = LIVE_ROUTE;
+
     root.innerHTML = `
-    <div class="flex flex-col items-center justify-center h-screen bg-black">
-      <div id="player-names" class="text-white text-2xl font-bold mb-4">
-        ¡Ready to play! 4 VS 4
-      </div>
-      <canvas id="tournament_pong" width="500" height="500" class="shadow-lg border-4 border-white rounded-lg"></canvas>
-    </div>
+      <!-- Contenedor principal -->
+      <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
+
+        <!-- Barra superior translúcida -->
+        <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+          <span class="font-semibold">Modo: Torneo</span>
+          <span class="text-lg font-bold">🏆 Pong 4 Jugadores</span>
+          <button id="backBtn"
+            class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
+        </div>
+
+        <!-- Contenedor del juego -->
+        <div class="flex flex-col items-center justify-center p-4">
+          <canvas id="tournament_pong" width="550" height="550"
+            class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
+        </div>
+
+      </section>
     `;
+
+    // Botón de volver
+    document.getElementById("backBtn")?.addEventListener("click", () => {
+      navigate("#");
+    });
+
     navigate(LIVE_ROUTE);
   };
 }

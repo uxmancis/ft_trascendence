@@ -1,4 +1,4 @@
-import {paddleHeight, paddleWidth, ballRadius, scorepoints, ballImg, backgroundGame, SCORE_ANIM_DURATION, MAX_SCALE, scoreAnimation, gameState} from "./toolsVariables"
+import {paddleHeight, paddleWidth, ballRadius, scorepoints, ballImg, backgroundGame, gameState} from "./toolsVariables"
 
 import { startCountdown } from "./toolsFunctions";
 
@@ -19,8 +19,8 @@ export function setupTournamentPong()
     x: 10,
     y: canvas.height / 2 - paddleHeight / 2,
     width: paddleWidth,
-    height: paddleHeight,
-    color: "red",
+    height: paddleHeight +10,
+    color: "white",
     dy: 3,
     score: 0,
     };
@@ -29,8 +29,8 @@ export function setupTournamentPong()
     x: canvas.width - paddleWidth - 10,
     y: canvas.height / 2 - paddleHeight / 2,
     width: paddleWidth,
-    height: paddleHeight,
-    color: "red",
+    height: paddleHeight +10,
+    color: "white",
     dy: 3,
     score: 0,
     };
@@ -38,9 +38,9 @@ export function setupTournamentPong()
     const player3 = {
         x: canvas.width / 2 - paddleHeight / 2,
         y: 10,
-        width: paddleHeight,
+        width: paddleHeight +10,
         height: paddleWidth,
-        color: "red",
+        color: "white",
         dx: 3,
         dy: 0,
         score: 0,
@@ -50,9 +50,9 @@ export function setupTournamentPong()
     const player4 = {
         x: canvas.width / 2 - paddleHeight / 2,
         y: canvas.height - paddleWidth - 10,
-        width: paddleHeight,
+        width: paddleHeight  +10,
         height: paddleWidth,
-        color: "red",
+        color: "white",
         dx: 3,
         dy: 0,
         score: 0,
@@ -70,19 +70,21 @@ export function setupTournamentPong()
     color: "black",
     };
 
+    let gameStarted = false;
+
     ballImg.onload = () => {
         console.log("La imagen de la bola ya está lista para dibujar");
         gameState.ballReady = true;};
     // ballImg.onerror = () => {
     //   console.error("No se pudo cargar la imagen", ballImg.src);};
-    ballImg.src = new URL("/src/assets/customization/soccer.png", import.meta.url).href;
-    
+    ballImg.src = new URL("/src/assets/customization/metalball.png", import.meta.url).href;
+
     backgroundGame.onload = () => {
         console.log("La imagen del mapa ya está lista para dibujar");
         gameState.backgroundReady = true;};
     // backgroundGame.onerror = () => {
     //   console.error("No se pudo cargar la imagen", backgroundGame.src);};
-    backgroundGame.src = new URL("/src/assets/customization/uxmancis.jpg", import.meta.url).href;
+    backgroundGame.src = new URL("/src/assets/customization/arcade5.jpg", import.meta.url).href;
     
     function drawRect(x: number, y: number, w: number, h: number, color: string, backgroundGame?: HTMLImageElement) {
         if (backgroundGame)
@@ -106,61 +108,55 @@ export function setupTournamentPong()
         }
     }
 
-    function drawText(text: string, x: number, y: number, scale: number) {
+    function drawText(text: string, x: number, y: number) {
         ctx.save();
-    
+      
         ctx.translate(x, y);
-        ctx.scale(scale, scale);
         ctx.translate(-x, -y);
-        // Efecto de sombra para darle profundidad
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
-    
-        // Estilo del texto 
-        ctx.fillStyle = '#white'; // Verde neón
-        ctx.font = 'bold 30px "Arial", sans-serif'; // Fuente futurista (puedes usar otra)
+        // // Efecto de sombra para darle profundidad
+        // ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        // ctx.shadowBlur = 10;
+        // ctx.shadowOffsetX = 3;
+        // ctx.shadowOffsetY = 3;
+      
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 38px "Orbitron", Entirely';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        // Dibuja el texto principal
+
         ctx.fillText(text, x, y);
-    
-        // Efecto de trazo para que resalte
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 2;
-        ctx.strokeText(text, x, y);
-    
-        ctx.restore(); // Restaura el contexto original
+      
+        ctx.restore();
     }
 
-
-    
     function renderCountdown() {
         if (gameState.countdownActive) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-        ctx.textAlign = "center";
-        ctx.shadowColor = "white";
-        ctx.shadowBlur = 25;
-    
-        ctx.font = "bold 70px 'Arial', 'Audiowide', 'Verdana', sans-serif";
-    
-        ctx.fillStyle = gameState.countdownValue > 0 ? "#00ffff" : "#ffff66";
-        const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
-            if (text === "GO!") {
-                ctx.font = "bold 90px 'Arial', 'Audiowide', 'Verdana', sans-serif";
-                ctx.fillStyle = "#00ffff";
-                ctx.shadowColor = "#ffffff";
-            }
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-    
-        ctx.shadowBlur = 0;
+          ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "rgba(33, 34, 35, 0.6)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+          ctx.textAlign = "center";
+          //ctx.shadowColor = "white";
+          ctx.shadowBlur = 25;
+      
+          ctx.font = "bold 90px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
+      
+          ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#000000";
+          const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
+              if (text === "GO!") {
+                  ctx.font = "bold 110px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
+                  //ctx.shadowColor = "white";
+              }
+          ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      
+          ctx.shadowBlur = 0;
         }
     }
 
     document.addEventListener("keydown", (e) => {
+        if (["ArrowUp", "ArrowDown"].includes(e.key)) {
+            e.preventDefault();
+        }
         if (e.key === "ArrowUp") gameState.playerTwoKeysUp = true;
         if (e.key === "ArrowDown") gameState.playerTwoKeysDown = true;
         if (e.key === "w") gameState.playerKeysUp = true;
@@ -247,9 +243,10 @@ export function setupTournamentPong()
     });
 
     canvas.addEventListener("click", () => {
-        if (!gameState.gameStarted && !gameState.countdownActive) {
-        gameState.gameStarted = true;
+        if (!gameStarted && !gameState.countdownActive) {
+        gameStarted = true;
         gameState. winnerMessage = "";
+        resetBall(true);
         startCountdown();
         player.score = 0;
         player2.score = 0;
@@ -269,7 +266,7 @@ export function setupTournamentPong()
         return;
         }
     
-        if (gameState.gameStarted && !gameState.countdownActive && gameState. winnerMessage === "") {
+        if (gameStarted && !gameState.countdownActive && gameState. winnerMessage === "") {
         gameState.paused = !gameState.paused;
         }
     });
@@ -291,59 +288,52 @@ export function setupTournamentPong()
             );
         }
     }
-    
-    function resetBall() {
+
+    function resetBall(initial = false) {
+        ball.speed = 3
         ball.dx = 0;
         ball.dy = 0;
         ball.x = canvas.width / 2;
         ball.y = canvas.height / 2;
-        let minAngle = 30 * Math.PI/180;
-        let maxAngle = 150 * Math.PI/180; 
-        let angle = Math.random() * (maxAngle - minAngle) + minAngle;
-        if (Math.random() < 0.5) angle = Math.PI - angle;
-        setTimeout(() => ball.dx = ball.speed * Math.cos(angle), 1000);
-        setTimeout(() => ball.dy = ball.speed * Math.sin(angle), 1000);
-        scoreAnimation.ai.scale = 1;
-        scoreAnimation.player.scale = 1;
-        scoreAnimation.player2.scale = 1;
-        scoreAnimation.player3.scale = 1;
-        scoreAnimation.player4.scale = 1;
+    
+        const ranges = [
+            [25, 65],
+            [115, 165],
+            [195, 245],
+            [295, 345]
+        ].map(([min, max]) => [min * Math.PI/180, max * Math.PI/180]);
+    
+        const selectedRange = ranges[Math.floor(Math.random() * ranges.length)];
+        const angle = Math.random() * (selectedRange[1] - selectedRange[0]) + selectedRange[0];
+    
+        const startDelay = initial ? 0 : 1000;
+        setTimeout(() => ball.dx = ball.speed * Math.cos(angle), startDelay);
+        setTimeout(() => ball.dy = ball.speed * Math.sin(angle), startDelay);
     }
+    
 
     function renderWinner() {
         drawRect(0, 0, canvas.width, canvas.height, "black");
       
         ctx.textAlign = "center";
-        ctx.shadowColor = "cyan";
+        //ctx.shadowColor = "white";
         ctx.shadowBlur = 20;
       
-        const base = canvas.width;
-        const smallFont = Math.round(base * 0.035); // 3.5% del ancho
-        const mediumFont = Math.round(base * 0.05); // 5%
-        const bigFont = Math.round(base * 0.07); // 7%
-      
-        ctx.font = `bold ${smallFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
-        ctx.fillStyle = "#00ffff";
-        ctx.fillText(
-          `Player: ${player.score} - Player2: ${player2.score} - Player3: ${player3.score} - Player4: ${player4.score}`,
-          canvas.width / 2,
-          canvas.height / 2 - mediumFont * 2
-        );
-      
-		ctx.font = `bold ${smallFont}px 'Orbitron', 'Audiowide', 'Press Start 2P', sans-serif`;
+        ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
+        ctx.fillStyle = "white";
+        ctx.fillText(`Player1: ${player.score} 🥸`, canvas.width / 2, canvas.height / 10);
+        ctx.fillText(`Player2: ${player2.score} 🤠`, canvas.width / 2, canvas.height / 10 + 25);
+        ctx.fillText(`Player3: ${player3.score} 😎`, canvas.width / 2, canvas.height / 10 + 25 * 2);
+        ctx.fillText(`Player4: ${player4.score} 🤓`, canvas.width / 2, canvas.height / 10 + 25 * 3);
+		ctx.font = `bold 28px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
-		const blinkSpeed = 500; // tiempo en milisegundos
-		const showText = Math.floor(Date.now() / blinkSpeed) % 2 === 0;
-		if (showText) {
-		  ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
-		}
-
-        ctx.font = `italic ${smallFont}px 'Orbitron', 'Audiowide', 'Verdana', sans-serif`;
-        ctx.fillStyle = "#66ccff";
+		ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
+        ctx.font = `bold 12px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
+        ctx.fillStyle = "white";
         ctx.fillText(
           "Press Space or click to start a new game",
           canvas.width / 2,
-          canvas.height / 2 + mediumFont * 2
+          canvas.height / 2 + canvas.height / 4
         );
       
         ctx.shadowBlur = 0;
@@ -363,6 +353,7 @@ export function setupTournamentPong()
         ball.y += ball.dy;
 
         if (collision(ball, player, "vertical")) {
+            ball.speed = Math.min(ball.speed + 0.05, 10);
             lastPlayerHit = "player1";
             if (
             ball.x - ball.radius  < player.x + player.width &&
@@ -384,6 +375,7 @@ export function setupTournamentPong()
         }
 
         if (collision(ball, player2, "vertical")) {
+            ball.speed = Math.min(ball.speed + 0.05, 10);
             lastPlayerHit = "player2";
             if (
             ball.x - ball.radius < player2.x + player2.width &&
@@ -405,6 +397,7 @@ export function setupTournamentPong()
         }
 
         if (collision(ball, player3, "horizontal")) {
+            ball.speed = Math.min(ball.speed + 0.05, 10);
             lastPlayerHit = "player3";
             if (
                 ball.y - ball.radius < player3.y + player3.height &&
@@ -426,6 +419,7 @@ export function setupTournamentPong()
         }
 
         if (collision(ball, player4, "horizontal")) {
+            ball.speed = Math.min(ball.speed + 0.05, 10);
             lastPlayerHit = "player4";
             if (
                 ball.y - ball.radius < player4.y + player4.height &&
@@ -451,24 +445,16 @@ export function setupTournamentPong()
             if (lastPlayerHit) {
                 switch (lastPlayerHit) {
                     case "player1": 
-                        player.score++; 
-                        scoreAnimation.player.scale = MAX_SCALE;
-		                scoreAnimation.player.startTime = performance.now();
+                        player.score++;
                         break;
                     case "player2": 
-                        player2.score++;
-                        scoreAnimation.player2.scale = MAX_SCALE;
-		                scoreAnimation.player2.startTime = performance.now(); 
+                        player2.score++; 
                         break;
                     case "player3": 
-                        player3.score++;
-                        scoreAnimation.player3.scale = MAX_SCALE;
-		                scoreAnimation.player3.startTime = performance.now();  
+                        player3.score++;  
                         break;
                     case "player4": 
-                        player4.score++;
-                        scoreAnimation.player4.scale = MAX_SCALE;
-		                scoreAnimation.player4.startTime = performance.now();  
+                        player4.score++;  
                         break;
                 }
             }
@@ -476,7 +462,7 @@ export function setupTournamentPong()
             const players = [player, player2, player3, player4];
             const winner = players.find(p => p.score === scorepoints);
             if (winner) {
-                gameState.winnerMessage = `🎉 Player ${winner === player ? "1" : winner === player2 ? "2" : winner === player3 ? "3" : "4"} wins! 🏆`;
+                gameState.winnerMessage = `Player ${winner === player ? "1" : winner === player2 ? "2" : winner === player3 ? "3" : "4"} wins!🥳`;
                 gameState.paused = true;
                 renderWinner();
             }
@@ -486,43 +472,24 @@ export function setupTournamentPong()
     }
 
     function render() {
-        if (!gameState.gameStarted && !gameState.countdownActive) {
+        if (!gameStarted && !gameState.countdownActive) {
           
             drawRect(0, 0, canvas.width, canvas.height, "black");
   
-            // Texto a mostrar
             const text = "[ PRESS TO START PONG 🎮 ]";
           
-            // Estilo del texto
             ctx.fillStyle = "white";
-            ctx.font = "30px 'Press Start 2P', sans-serif";
+            ctx.font = "20px 'Press Start 2P', sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
           
-            // Definir el ancho máximo como 90% del canvas
-            const maxWidth = canvas.width * 0.9;
-          
-            // Medir ancho real del texto
-            const textWidth = ctx.measureText(text).width;
-          
-            // Escalar si es necesario
-            const scale = textWidth > maxWidth ? maxWidth / textWidth : 1;
-          
-            // Calcular el parpadeo (alternar entre mostrar y ocultar el texto)
             const blinkSpeed = 500; // Tiempo en milisegundos para el parpadeo
             const showText = Math.floor(Date.now() / blinkSpeed) % 2 === 0; // True para mostrar, false para ocultar
           
             if (showText) {
-              // Guardar el estado del contexto
               ctx.save();
-          
-              // Mover al centro y aplicar la escala
               ctx.translate(canvas.width / 2, canvas.height / 2);
-              ctx.scale(scale, scale);
-          
-              // Dibujar el texto centrado y escalado
               ctx.fillText(text, 0, 0);
-          
               ctx.restore();
             }
             return;
@@ -540,36 +507,11 @@ export function setupTournamentPong()
 
         drawCircle(ball.x, ball.y, ball.radius, ball.color, gameState.ballReady ? ballImg : undefined);
 
-        const now = performance.now();
 
-        if (scoreAnimation.player.scale > 1) {
-            const elapsed = now - scoreAnimation.player.startTime;
-            const progress = Math.min(elapsed / SCORE_ANIM_DURATION, 1);
-            scoreAnimation.player.scale = 1 + (MAX_SCALE - 1) * (1 - progress); // disminuye a 1
-        }
-        
-        if (scoreAnimation.player2.scale > 1) {
-            const elapsed = now - scoreAnimation.player2.startTime;
-            const progress = Math.min(elapsed / SCORE_ANIM_DURATION, 1);
-            scoreAnimation.player2.scale = 1 + (MAX_SCALE - 1) * (1 - progress);
-        }
-
-        if (scoreAnimation.player3.scale > 1) {
-            const elapsed = now - scoreAnimation.player3.startTime;
-            const progress = Math.min(elapsed / SCORE_ANIM_DURATION, 1);
-            scoreAnimation.player3.scale = 1 + (MAX_SCALE - 1) * (1 - progress); // disminuye a 1
-            }
-            
-        if (scoreAnimation.player4.scale > 1) {
-            const elapsed = now - scoreAnimation.player4.startTime;
-            const progress = Math.min(elapsed / SCORE_ANIM_DURATION, 1);
-            scoreAnimation.player4.scale = 1 + (MAX_SCALE - 1) * (1 - progress);
-        }
-
-        drawText(player.score.toString(), 50, canvas.height / 2, scoreAnimation.player.scale);
-        drawText(player2.score.toString(), canvas.width - 50, canvas.height / 2, scoreAnimation.player2.scale);
-        drawText(player3.score.toString(), canvas.width / 2, 50, scoreAnimation.player3.scale);
-        drawText(player4.score.toString(), canvas.width / 2, canvas.height - 50, scoreAnimation.player4.scale);
+        drawText(player.score.toString(), 50, canvas.height / 2);
+        drawText(player2.score.toString(), canvas.width - 50, canvas.height / 2);
+        drawText(player3.score.toString(), canvas.width / 2, 50);
+        drawText(player4.score.toString(), canvas.width / 2, canvas.height - 50);
         
         if (gameState.paused && gameState.winnerMessage !== "") {
             ctx.font = "40px Arial";
@@ -580,7 +522,7 @@ export function setupTournamentPong()
     }
 
     function game() {
-        if (gameState.paused && !gameState.gameStarted && !gameState.countdownActive)
+        if (gameState.paused && !gameStarted && !gameState.countdownActive)
         render();
         if (!gameState.paused) {
         update();

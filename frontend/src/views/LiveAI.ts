@@ -1,5 +1,5 @@
 import {paddleHeight, paddleWidth, ballRadius, scorepoints, ballImg, backgroundGame, gameState} from "./toolsVariables"
-
+import type { Diff } from './PlayAI';
 import { startCountdown } from "./toolsFunctions";
 
 import {
@@ -40,13 +40,22 @@ export function setupPong()
 		score: 0,
 	};
 	
+	let ballSpeed = 4; // valor por defecto
+	const settings = JSON.parse(sessionStorage.getItem('ai:settings') || '{}');
+	console.log("Dificultad seleccionada por el usuario:", settings.difficulty);
+	const difficulty: Diff = settings.difficulty || 'normal';
+
+	if (difficulty === 'easy') ballSpeed = 3;
+	else if (difficulty === 'normal') ballSpeed = 4;
+	else if (difficulty === 'hard') ballSpeed = 6;
+
 	const ball = {
 		x: canvas.width / 2,
 		y: canvas.height / 2,
 		radius: ballRadius,
-		speed: 4,
-		dx: 4,
-		dy: 4,
+		speed: ballSpeed,
+		dx: Math.random() < 0.5 ? ballSpeed : -ballSpeed,
+		dy: Math.random() < 0.5 ? ballSpeed : -ballSpeed,
 		color: "white",
 	};
 
@@ -255,47 +264,42 @@ export function setupPong()
 	}
 
 	function updateAI() {
-		if (performance.now() - gameState.lastAiUpdate > 1000) // refresh its view of the game once per second, requiring it to anticipate bounces and other actions.
-		{
-			gameState.lastAiUpdate = performance.now();
-			//  if ((ball.dx > 0 || (ball.dx < 0 && ball.x < ai.x - 50))) {
-			//     const aiCenter = ai.y + ai.height / 2;
-			//     // Solo se mueve si la bola está fuera de la zona muerta (±5 px)
-			//     if (aiCenter < ball.y - 5) {
-			//          gameState.aiKeysDown = true;
-			//          gameState.aiKeysUp = false;
-			//     } else if (aiCenter > ball.y + 5) {
-			//          gameState.aiKeysUp = true;
-			//          gameState.aiKeysDown = false;
-			//     } else {
-			//          gameState.aiKeysUp = false;
-			//          gameState.aiKeysDown = false;
-			//     }
-			//  } else {
-			//     gameState.aiKeysUp = false;
-			//     gameState.aiKeysDown = false;
-			//  }
-			//const errorMargin = Math.random() * 40 - 20;
+		const now = performance.now();
+
+		let reactionErrorRange: number;
+		switch(difficulty) {
+			case 'easy': reactionErrorRange = 15; break;
+			case 'normal': reactionErrorRange = 5; break;
+			case 'hard': reactionErrorRange = 0; break;
+			default: reactionErrorRange = 5;
+		}
+	    console.log("Reaction Error calculado:", reactionErrorRange);
+		const reactionError = Math.random() * reactionErrorRange * 2 - reactionErrorRange;
+
+		if (now - gameState.lastAiUpdate > 1000) {
+			gameState.lastAiUpdate = now;
+	
 			const aiCenter = ai.y + ai.height / 2;
-			// Solo se mueve si la bola está fuera de la zona muerta (±5 px)
-			if (aiCenter < ball.y - 5) {
+	
+			const targetY = ball.y + reactionError;
+	
+			if (aiCenter < targetY - 5) { 
 				gameState.aiKeysDown = true;
 				gameState.aiKeysUp = false;
-			} else if (aiCenter > ball.y + 5) {
+			} else if (aiCenter > targetY + 5) {
 				gameState.aiKeysUp = true;
 				gameState.aiKeysDown = false;
-			}
-			else {
+			} else {
 				gameState.aiKeysUp = false;
 				gameState.aiKeysDown = false;
 			}
 		}
-		if (gameState.aiKeysUp && Math.random() > 0.1) {
+		if (gameState.aiKeysUp) {
 			ai.y -= ai.dy;
 			if (ai.y < 0) ai.y = 0;
 		}
-		if (gameState.aiKeysDown && Math.random() > 0.1) {
-			ai.y += ai.dy;
+		if (gameState.aiKeysDown) {
+			ai.y += ai.dy; 
 			if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
 		}
 	}
@@ -360,7 +364,7 @@ export function setupPong()
 
 		if (ball.x - ball.radius < 0) {
 			ai.score++;
-			ball.speed = 4;
+			ball.speed = ballSpeed;
 			if (ai.score === scorepoints) {
 			gameState.paused = true;
 			gameState. winnerMessage = `💀Sorry, you lose ${user.nick}☠️`;
@@ -373,7 +377,7 @@ export function setupPong()
 
 		if (ball.x + ball.radius > canvas.width) {
 			player.score++;
-			ball.speed = 4;
+			ball.speed = ballSpeed;
 			if (player.score === scorepoints) {
 			gameState.paused = true;
 			gameState. winnerMessage = `Congratulations ${user.nick},🫵you win!💫`;

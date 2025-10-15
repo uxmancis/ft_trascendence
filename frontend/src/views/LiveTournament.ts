@@ -141,7 +141,7 @@ export function setupTournamentPong()
       
           ctx.font = "bold 90px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
       
-          ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#000000";
+          ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#FFFFFF";
           const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
               if (text === "GO!") {
                   ctx.font = "bold 110px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
@@ -524,6 +524,25 @@ export function setupTournamentPong()
     function game() {
         if (gameState.paused && !gameStarted && !gameState.countdownActive)
         render();
+		if (gameState.paused && gameStarted && gameState.winnerMessage == "") {
+			ctx.save();
+			ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
+			ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+			ctx.font = "bold 60px 'Press Start 2P', 'Audiowide', sans-serif";
+			ctx.fillStyle = "orange";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.shadowColor = "rgba(33, 34, 35, 0.6)";
+			ctx.fillText("⏸️ PAUSE", canvas.width / 2, canvas.height / 2 - 40);
+			ctx.font = "15px 'Press Start 2P', 'Audiowide', sans-serif";
+			ctx.fillStyle = "white";
+			ctx.shadowBlur = 0;
+			ctx.fillText("▶ CLICK THE SCREEN", canvas.width / 2, canvas.height / 2 + 70);
+			ctx.fillText("OR PRESS [SPACE] TO CONTINUE ◀", canvas.width / 2, canvas.height / 2 + 100);
+			ctx.restore();
+		}
         if (!gameState.paused) {
         update();
         render();

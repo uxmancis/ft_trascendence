@@ -5,7 +5,7 @@ import { startCountdown } from "./toolsFunctions";
 import {
 	getCurrentUser,
 	clearAppStorage, // limpia pong:user, pong:local:p2, pong:local:tournament, etc.
-  } from '../session';
+} from '../session';
 
 export function setupPong() 
 {
@@ -89,54 +89,54 @@ export function setupPong()
 	}
 
 	function drawText(text: string, x: number, y: number) {
-        ctx.save();
-      
-        ctx.translate(x, y);
-        ctx.translate(-x, -y);
-        // // Efecto de sombra para darle profundidad
-        // ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        // ctx.shadowBlur = 10;
-        // ctx.shadowOffsetX = 3;
-        // ctx.shadowOffsetY = 3;
-      
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 48px "Orbitron", Entirely';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
+		ctx.save();
+	
+		ctx.translate(x, y);
+		ctx.translate(-x, -y);
+		// // Efecto de sombra para darle profundidad
+		// ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+		// ctx.shadowBlur = 10;
+		// ctx.shadowOffsetX = 3;
+		// ctx.shadowOffsetY = 3;
+	
+		ctx.fillStyle = 'white';
+		ctx.font = 'bold 48px "Orbitron", Entirely';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'top';
 
-        ctx.fillText(text, x, y);
-      
-        ctx.restore();
-    }
+		ctx.fillText(text, x, y);
+	
+		ctx.restore();
+	}
 
-    function renderCountdown() {
-        if (gameState.countdownActive) {
-          ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "rgba(33, 34, 35, 0.6)";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-          ctx.textAlign = "center";
-          //ctx.shadowColor = "white";
-          ctx.shadowBlur = 25;
-      
-          ctx.font = "bold 90px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
-      
-          ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#000000";
-          const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
-              if (text === "GO!") {
-                  ctx.font = "bold 110px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
-                  //ctx.shadowColor = "white";
-              }
-          ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      
-          ctx.shadowBlur = 0;
-        }
-    }
+	function renderCountdown() {
+		if (gameState.countdownActive) {
+		ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
+		ctx.fillStyle = "rgba(33, 34, 35, 0.6)";
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+		ctx.textAlign = "center";
+		//ctx.shadowColor = "white";
+		ctx.shadowBlur = 25;
+	
+		ctx.font = "bold 90px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
+	
+		ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#FFFFFF";
+		const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
+			if (text === "GO!") {
+				ctx.font = "bold 110px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
+				//ctx.shadowColor = "white";
+			}
+		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+	
+		ctx.shadowBlur = 0;
+		}
+	}
 
 	document.addEventListener("keydown", (e) => {
 		if (["ArrowUp", "ArrowDown"].includes(e.key)) {
-            e.preventDefault();
-        }
+			e.preventDefault();
+		}
 		if (e.key === "ArrowUp") gameState.playerKeysUp = true;
 		if (e.key === "ArrowDown") gameState.playerKeysDown = true;
 	});
@@ -229,75 +229,75 @@ export function setupPong()
 
 	function renderWinner() {
 		drawRect(0, 0, canvas.width, canvas.height, "black");
-	  
+	
 		ctx.textAlign = "center";
 		//ctx.shadowColor = "white";
 		ctx.shadowBlur = 20;
-	  
+	
 		// 🔹 Marcadores
 		ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
 		ctx.fillText(
-		  `Player: ${player.score} - AI: ${ai.score}`,
-		  canvas.width / 2,
-		  canvas.height / 2 - canvas.height / 4,
+		`Player: ${player.score} - AI: ${ai.score}`,
+		canvas.width / 2,
+		canvas.height / 2 - canvas.height / 4,
 		);
-	  
+	
 		ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
 		ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
-	  
+	
 		ctx.font = `bold 16px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`; 
 		ctx.fillStyle = "white"; 
 		ctx.fillText( "Press Space or click to start a new game", canvas.width / 2, canvas.height / 2 + canvas.height / 4 );
-	  
+	
 		ctx.shadowBlur = 0;
 	}
 
 	function updateAI() {
-	if (performance.now() - gameState.lastAiUpdate > 1000) // refresh its view of the game once per second, requiring it to anticipate bounces and other actions.
-	{
-		gameState.lastAiUpdate = performance.now();
-		//  if ((ball.dx > 0 || (ball.dx < 0 && ball.x < ai.x - 50))) {
-		//     const aiCenter = ai.y + ai.height / 2;
-		//     // Solo se mueve si la bola está fuera de la zona muerta (±5 px)
-		//     if (aiCenter < ball.y - 5) {
-		//          gameState.aiKeysDown = true;
-		//          gameState.aiKeysUp = false;
-		//     } else if (aiCenter > ball.y + 5) {
-		//          gameState.aiKeysUp = true;
-		//          gameState.aiKeysDown = false;
-		//     } else {
-		//          gameState.aiKeysUp = false;
-		//          gameState.aiKeysDown = false;
-		//     }
-		//  } else {
-		//     gameState.aiKeysUp = false;
-		//     gameState.aiKeysDown = false;
-		//  }
-		//const errorMargin = Math.random() * 40 - 20;
-		const aiCenter = ai.y + ai.height / 2;
-		// Solo se mueve si la bola está fuera de la zona muerta (±5 px)
-		if (aiCenter < ball.y - 5) {
-			gameState.aiKeysDown = true;
-			gameState.aiKeysUp = false;
-		} else if (aiCenter > ball.y + 5) {
-			gameState.aiKeysUp = true;
-			gameState.aiKeysDown = false;
+		if (performance.now() - gameState.lastAiUpdate > 1000) // refresh its view of the game once per second, requiring it to anticipate bounces and other actions.
+		{
+			gameState.lastAiUpdate = performance.now();
+			//  if ((ball.dx > 0 || (ball.dx < 0 && ball.x < ai.x - 50))) {
+			//     const aiCenter = ai.y + ai.height / 2;
+			//     // Solo se mueve si la bola está fuera de la zona muerta (±5 px)
+			//     if (aiCenter < ball.y - 5) {
+			//          gameState.aiKeysDown = true;
+			//          gameState.aiKeysUp = false;
+			//     } else if (aiCenter > ball.y + 5) {
+			//          gameState.aiKeysUp = true;
+			//          gameState.aiKeysDown = false;
+			//     } else {
+			//          gameState.aiKeysUp = false;
+			//          gameState.aiKeysDown = false;
+			//     }
+			//  } else {
+			//     gameState.aiKeysUp = false;
+			//     gameState.aiKeysDown = false;
+			//  }
+			//const errorMargin = Math.random() * 40 - 20;
+			const aiCenter = ai.y + ai.height / 2;
+			// Solo se mueve si la bola está fuera de la zona muerta (±5 px)
+			if (aiCenter < ball.y - 5) {
+				gameState.aiKeysDown = true;
+				gameState.aiKeysUp = false;
+			} else if (aiCenter > ball.y + 5) {
+				gameState.aiKeysUp = true;
+				gameState.aiKeysDown = false;
+			}
+			else {
+				gameState.aiKeysUp = false;
+				gameState.aiKeysDown = false;
+			}
 		}
-		else {
-		gameState.aiKeysUp = false;
-		gameState.aiKeysDown = false;
+		if (gameState.aiKeysUp && Math.random() > 0.1) {
+			ai.y -= ai.dy;
+			if (ai.y < 0) ai.y = 0;
 		}
-	}
-	if (gameState.aiKeysUp && Math.random() > 0.1) {
-		ai.y -= ai.dy;
-		if (ai.y < 0) ai.y = 0;
-	}
-	if (gameState.aiKeysDown && Math.random() > 0.1) {
-		ai.y += ai.dy;
-		if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
-	}
+		if (gameState.aiKeysDown && Math.random() > 0.1) {
+			ai.y += ai.dy;
+			if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
+		}
 	}
 
 	function update() {
@@ -387,24 +387,24 @@ export function setupPong()
 
 	function render() {
 		if (!gameStarted && !gameState.countdownActive) {
-          
+		
 			drawRect(0, 0, canvas.width, canvas.height, "black");
-  
+
 			const text = "[ PRESS TO START PONG 🎮 ]";
-		  
+		
 			ctx.fillStyle = "white";
 			ctx.font = "30px 'Press Start 2P', sans-serif";
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
-		  
+		
 			const blinkSpeed = 500; // Tiempo en milisegundos para el parpadeo
 			const showText = Math.floor(Date.now() / blinkSpeed) % 2 === 0; // True para mostrar, false para ocultar
-		  
+		
 			if (showText) {
-			  ctx.save();
-			  ctx.translate(canvas.width / 2, canvas.height / 2);
-			  ctx.fillText(text, 0, 0);
-			  ctx.restore();
+			ctx.save();
+			ctx.translate(canvas.width / 2, canvas.height / 2);
+			ctx.fillText(text, 0, 0);
+			ctx.restore();
 			}
 			return;
 		}
@@ -412,24 +412,37 @@ export function setupPong()
 			renderWinner();
 			return;
 		}
-
+        drawRect(0, 0, canvas.width, canvas.height, "black", gameState.backgroundReady ? backgroundGame : undefined);
 		drawRect(player.x, player.y, player.width, player.height, player.color);
 		drawRect(ai.x, ai.y, ai.width, ai.height, ai.color);
 		drawCircle(ball.x, ball.y, ball.radius, ball.color, gameState.ballReady ? ballImg : undefined);
 
 		drawText(player.score.toString(), canvas.width / 4, 30);
 		drawText(ai.score.toString(), (3 * canvas.width) / 4, 30);
-		// if (gameState.paused && gameState. winnerMessage !== "") {
-		// 	ctx.font = "40px Arial";
-		// 	ctx.fillStyle = "cian";
-		// 	ctx.textAlign = "center";
-		// 	ctx.fillText(gameState. winnerMessage, canvas.width / 2, canvas.height / 2);
-		// }
 	}
 
 	function game() {
 		if (gameState.paused && !gameStarted && !gameState.countdownActive)
 			render();
+		if (gameState.paused && gameStarted && gameState.winnerMessage == "") {
+			ctx.save();
+			ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
+			ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+			ctx.font = "bold 80px 'Press Start 2P', 'Audiowide', sans-serif";
+			ctx.fillStyle = "orange";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.shadowColor = "rgba(33, 34, 35, 0.6)";
+			ctx.fillText("⏸️ PAUSE", canvas.width / 2, canvas.height / 2 - 40);
+			ctx.font = "20px 'Press Start 2P', 'Audiowide', sans-serif";
+			ctx.fillStyle = "white";
+			ctx.shadowBlur = 0;
+			ctx.fillText("▶ CLICK THE SCREEN", canvas.width / 2, canvas.height / 2 + 70);
+			ctx.fillText("OR PRESS [SPACE] TO CONTINUE ◀", canvas.width / 2, canvas.height / 2 + 100);
+			ctx.restore();
+		}
 		if (!gameState.paused) {
 			update();
 			render();

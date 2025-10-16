@@ -109,7 +109,7 @@ export async function renderPlayAI(root: HTMLElement) {
 
 	<!-- Barra superior -->
 	<div class="flex justify-between items-center mb-6 text-white bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
-		<span>Modo: ${selected.toUpperCase()}</span>
+		<span>${t("ai.difficulty")}: ${selected.toUpperCase()}</span>
 		<span> Pong 1 vs AI 🤖</span>
 		<button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
 	</div>

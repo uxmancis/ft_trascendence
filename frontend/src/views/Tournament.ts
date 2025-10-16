@@ -142,8 +142,8 @@ export async function renderTournament(root: HTMLElement){
 
         <!-- Barra superior translúcida -->
         <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
-          <span class="font-semibold">Modo: Torneo</span>
-          <span class="text-lg font-bold">🏆 Pong 4 Jugadores</span>
+          <span class="font-semibold" data-i18n="tour.ready"></span>
+          <span class="text-lg font-bold">🏆 Pong 4</span>
           <button id="backBtn"
             class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
         </div>

@@ -45,9 +45,29 @@ export function setupPong()
 	console.log("Dificultad seleccionada por el usuario:", settings.difficulty);
 	const difficulty: Diff = settings.difficulty || 'normal';
 
-	if (difficulty === 'easy') ballSpeed = 3;
-	else if (difficulty === 'normal') ballSpeed = 4;
-	else if (difficulty === 'hard') ballSpeed = 6;
+	ballImg.onload = () => {
+		console.log("La imagen de la bola ya está lista para dibujar");
+		gameState.ballReady = true;};
+	
+	backgroundGame.onload = () => {
+		console.log("La imagen del mapa ya está lista para dibujar");
+		gameState.backgroundReady = true;};
+
+	if (difficulty === 'easy') {
+		ballSpeed = 3;
+		ballImg.src = new URL("/src/assets/customization/emunoz.jpg", import.meta.url).href;
+		backgroundGame.src = new URL("/src/assets/customization/arcade1.jpg", import.meta.url).href;
+	}
+	else if (difficulty === 'normal'){
+		ballSpeed = 4;
+		ballImg.src = new URL("/src/assets/customization/uxmancis.jpg", import.meta.url).href;
+		backgroundGame.src = new URL("/src/assets/customization/arcade3.jpg", import.meta.url).href;
+	}
+	else if (difficulty === 'hard'){
+		ballSpeed = 6;
+		ballImg.src = new URL("/src/assets/customization/metalball.png", import.meta.url).href;
+		backgroundGame.src = new URL("/src/assets/customization/arcade4.jpg", import.meta.url).href;
+	}
 
 	const ball = {
 		x: canvas.width / 2,
@@ -60,20 +80,6 @@ export function setupPong()
 	};
 
 	let gameStarted = false;
-
-	ballImg.onload = () => {
-	console.log("La imagen de la bola ya está lista para dibujar");
-	gameState.ballReady = true;};
-	// ballImg.onerror = () => {
-	//   console.error("No se pudo cargar la imagen", ballImg.src);};
-	ballImg.src = new URL("/src/assets/customization/metalball.png", import.meta.url).href;
-
-	backgroundGame.onload = () => {
-	console.log("La imagen del mapa ya está lista para dibujar");
-	gameState.backgroundReady = true;};
-	// backgroundGame.onerror = () => {
-	//   console.error("No se pudo cargar la imagen", backgroundGame.src);};
-	backgroundGame.src = new URL("/src/assets/customization/arcade4.jpg", import.meta.url).href;
 
 	function drawRect(x: number, y: number, w: number, h: number, color: string, backgroundGame?: HTMLImageElement) {
 		if (backgroundGame)
@@ -270,7 +276,7 @@ export function setupPong()
 		switch(difficulty) {
 			case 'easy': reactionErrorRange = 15; break;
 			case 'normal': reactionErrorRange = 5; break;
-			case 'hard': reactionErrorRange = 0; break;
+			case 'hard': reactionErrorRange = 0; ai.height = 90; break;
 			default: reactionErrorRange = 5;
 		}
 	    console.log("Reaction Error calculado:", reactionErrorRange);
@@ -281,8 +287,22 @@ export function setupPong()
 	
 			const aiCenter = ai.y + ai.height / 2;
 	
-			const targetY = ball.y + reactionError;
-	
+			// Predicción de la posición futura de la bola
+			const framesToReachAI = (canvas.width - ball.x) / ball.dx; // tiempo estimado para llegar
+			const predictedY = ball.y + ball.dy * framesToReachAI; // posición futura de la bola
+
+			// Rebotes contra el borde
+			let targetY = predictedY;
+			while (targetY < 0 || targetY > canvas.height) {
+			if (targetY < 0) targetY = -targetY; // rebote arriba
+			if (targetY > canvas.height) targetY = 2 * canvas.height - targetY; // rebote abajo
+			}
+
+			// Añadimos error humano (según dificultad)
+			targetY += reactionError;
+			if (difficulty === 'easy') {
+				targetY *= 0.9 + Math.random() * 0.2; // predicción más imprecisa
+			}
 			if (aiCenter < targetY - 5) { 
 				gameState.aiKeysDown = true;
 				gameState.aiKeysUp = false;
@@ -294,11 +314,16 @@ export function setupPong()
 				gameState.aiKeysDown = false;
 			}
 		}
-		if (gameState.aiKeysUp) {
+		if (difficulty === 'hard') {
+			if (ai.y + ai.height / 2 < ball.y) 
+				{ ai.y += ai.dy; } 
+			else { ai.y -= ai.dy; }
+		}
+		else if (gameState.aiKeysUp) {
 			ai.y -= ai.dy;
 			if (ai.y < 0) ai.y = 0;
 		}
-		if (gameState.aiKeysDown) {
+		else if (gameState.aiKeysDown) {
 			ai.y += ai.dy; 
 			if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
 		}
@@ -454,6 +479,5 @@ export function setupPong()
 		renderCountdown();
 	}
 
-	document.body.style.background = "linear-gradient(to right, blue, yellow)";
 	setInterval(game, 1000 / 60); // 60 el tiempo de ejecución será en milisegundos: un segundo tiene 1000 milisegundos y queremos qeu se actualice 60 veces por segundo
 }

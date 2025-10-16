@@ -549,8 +549,6 @@ export function setupTournamentPong()
         }
         renderCountdown();
     }
-    
 
-    document.body.style.background = "linear-gradient(to right, blue, yellow)";
     setInterval(game, 1000 / 60); // 60 el tiempo de ejecución será en milisegundos: un segundo tiene 1000 milisegundos y queremos qeu se actualice 60 veces por segundo
 }

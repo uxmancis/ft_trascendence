@@ -103,22 +103,23 @@ export async function renderPlayAI(root: HTMLElement) {
 		return;
 	}
 	root.innerHTML = `
-	<h1 class="text-2xl font-bold mb-6 text-white" data-i18n="ai.title">
-		Pong 1 vs AI
-	</h1>
+    <!-- Contenedor principal -->
+    <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
 
-	<!-- Barra superior -->
-	<div class="flex justify-between items-center mb-6 text-white bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
-		<span>${t("ai.difficulty")}: ${selected.toUpperCase()}</span>
-		<span> Pong 1 vs AI 🤖</span>
-		<button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
-	</div>
+      <!-- Barra superior translúcida -->
+      <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+        <span>${t("ai.difficulty")}: ${selected.toUpperCase()}</span>
+        <span> Pong 1 vs AI 🤖</span>
+        <button id="backBtn"
+          class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
+      </div>
 
-	<!-- Contenedor del juego (sin fondo negro) -->
-	<div class="flex flex-col items-center justify-center p-4">
-		<canvas id="pong_AI" width="800" height="500"
-		class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
-	</div>
+      <!-- Contenedor del juego (sin fondo negro) -->
+      <div class="flex flex-col items-center justify-center p-4">
+        <canvas id="pong_AI" width="800" height="500"
+        class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
+      </div>
+    </section>
 	`;
 	// Acción del botón de salir
 	document.getElementById("backBtn")?.addEventListener("click", () => {

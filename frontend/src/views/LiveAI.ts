@@ -1,6 +1,5 @@
-import {paddleHeight, paddleWidth, ballRadius, scorepoints, ballImg, backgroundGame, gameState} from "./toolsVariables"
 import type { Diff } from './PlayAI';
-import { startCountdown } from "./toolsFunctions";
+import { Match } from '../api';
 
 import {
 	getCurrentUser,
@@ -12,13 +11,35 @@ export function setupPong()
 	const canvas = document.getElementById("pong_AI") as HTMLCanvasElement;
 	const ctx = canvas.getContext("2d")!;
 
-	// function resizeCanvas() {
-	//   canvas.width = window.innerWidth * 0.8;  // 80% del ancho de la ventana
-	//   canvas.height = window.innerHeight * 0.6; // 60% del alto
-	// }
+	const paddleHeight = 80;
+	const paddleWidth = 10;
+	const ballRadius = 15;
+	const scorepoints = 3;
+	
+	const ballImg = new Image();
 
-	// window.addEventListener("resize", resizeCanvas);
-	// resizeCanvas();
+	const backgroundGame = new Image();
+
+	const gameState = {
+		countdownActive: false,
+		countdownValue: 3,
+		countdownTimer: null as number | null,
+		paused: true,
+		winnerMessage: "",
+		playerKeysUp: false,
+		playerKeysDown: false,
+		aiKeysUp: false,
+		aiKeysDown: false,
+		ballReady: false,
+		backgroundReady: false,
+		lastAiUpdate: 0,
+		playerTwoKeysUp: false,
+		playerTwoKeysDown: false,
+		playerThreeLeft: false,
+		playerThreeRight: false,
+		playerFourLeft: false,
+		playerFourRight: false,
+	};
 	
 	const player = {
 		x: 10,
@@ -65,7 +86,7 @@ export function setupPong()
 	}
 	else if (difficulty === 'hard'){
 		ballSpeed = 6;
-		ballImg.src = new URL("/src/assets/customization/metalball.png", import.meta.url).href;
+		ballImg.src = new URL("/src/assets/customization/ngastana.jpeg", import.meta.url).href;
 		backgroundGame.src = new URL("/src/assets/customization/arcade4.jpg", import.meta.url).href;
 	}
 
@@ -91,8 +112,17 @@ export function setupPong()
 	}
 
 	function drawCircle(x: number, y: number, r: number, color: string, ballImg?: HTMLImageElement) {
-		if (ballImg)
+		if (ballImg) {
+			ctx.save();
+			// Creamos un círculo para recortar
+			ctx.beginPath();
+			ctx.arc(x, y, r, 0, Math.PI * 2);
+			ctx.closePath();
+			ctx.clip(); // todo lo que dibujemos ahora quedará dentro del círculo
 			ctx.drawImage(ballImg, x - r, y - r, r * 2, r * 2);
+	
+			ctx.restore();
+		}
 		else {
 			ctx.fillStyle = color;
 			ctx.beginPath();
@@ -146,6 +176,27 @@ export function setupPong()
 	
 		ctx.shadowBlur = 0;
 		}
+	}
+
+	function startCountdown() {
+	  gameState.countdownActive = true;
+	  gameState.countdownValue = 3;
+	  gameState. winnerMessage = "";
+	  gameState.paused = true;
+	
+	  if (gameState.countdownTimer) clearInterval(gameState.countdownTimer);
+	
+	  gameState.countdownTimer = window.setInterval(() => {
+		gameState.countdownValue--;
+		if (gameState.countdownValue <= 0) {
+		  clearInterval(gameState.countdownTimer!);
+		  gameState.countdownValue = 0;
+		  setTimeout(() => {
+			gameState.countdownActive = false;
+			gameState.paused = false;
+		  }, 500);
+		}
+	  }, 1000);
 	}
 
 	document.addEventListener("keydown", (e) => {
@@ -276,7 +327,7 @@ export function setupPong()
 		switch(difficulty) {
 			case 'easy': reactionErrorRange = 15; break;
 			case 'normal': reactionErrorRange = 5; break;
-			case 'hard': reactionErrorRange = 0; ai.height = 90; break;
+			case 'hard': reactionErrorRange = 0; ai.height = 100; break;
 			default: reactionErrorRange = 5;
 		}
 	    console.log("Reaction Error calculado:", reactionErrorRange);
@@ -451,14 +502,12 @@ export function setupPong()
 	}
 
 	function game() {
-		if (gameState.paused && !gameStarted && !gameState.countdownActive)
-			render();
 		if (gameState.paused && gameStarted && gameState.winnerMessage == "") {
 			ctx.save();
 			ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
 			ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
-	
+			
 			ctx.font = "bold 80px 'Press Start 2P', 'Audiowide', sans-serif";
 			ctx.fillStyle = "orange";
 			ctx.textAlign = "center";
@@ -472,6 +521,8 @@ export function setupPong()
 			ctx.fillText("OR PRESS [SPACE] TO CONTINUE ◀", canvas.width / 2, canvas.height / 2 + 100);
 			ctx.restore();
 		}
+		if (gameState.paused && !gameStarted && !gameState.countdownActive)
+			render();
 		if (!gameState.paused) {
 			update();
 			render();

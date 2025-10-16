@@ -1,24 +1,44 @@
-import {paddleHeight, paddleWidth, ballRadius, scorepoints, ballImg, backgroundGame, gameState} from "./toolsVariables"
-
-import { startCountdown } from "./toolsFunctions";
-
 import {
 	getCurrentUser,
 	clearAppStorage, // limpia pong:user, pong:local:p2, pong:local:tournament, etc.
 } from '../session';
+
+import { UserStats } from '../api';
 
 export function setupLivePong() 
 {
 	const canvas = document.getElementById("live_pong") as HTMLCanvasElement;
 	const ctx = canvas.getContext("2d")!;
 
-	// function resizeCanvas() {
-	//   canvas.width = window.innerWidth * 0.8;  // 80% del ancho de la ventana
-	//   canvas.height = window.innerHeight * 0.6; // 60% del alto
-	// }
+	const paddleHeight = 80;
+	const paddleWidth = 10;
+	const ballRadius = 15;
+	const scorepoints = 3;
+	
+	const ballImg = new Image();
 
-	// window.addEventListener("resize", resizeCanvas);
-	// resizeCanvas();
+	const backgroundGame = new Image();
+
+	const gameState = {
+		countdownActive: false,
+		countdownValue: 3,
+		countdownTimer: null as number | null,
+		paused: true,
+		winnerMessage: "",
+		playerKeysUp: false,
+		playerKeysDown: false,
+		aiKeysUp: false,
+		aiKeysDown: false,
+		ballReady: false,
+		backgroundReady: false,
+		lastAiUpdate: 0,
+		playerTwoKeysUp: false,
+		playerTwoKeysDown: false,
+		playerThreeLeft: false,
+		playerThreeRight: false,
+		playerFourLeft: false,
+		playerFourRight: false,
+	};
 
 	const player = {
 	x: 10,
@@ -68,16 +88,25 @@ export function setupLivePong()
 	
 	function drawRect(x: number, y: number, w: number, h: number, color: string, backgroundGame?: HTMLImageElement) {
 		if (backgroundGame)
-		ctx.drawImage(backgroundGame, x, y, w, h);
+			ctx.drawImage(backgroundGame, x, y, w, h);
 		else {
-		ctx.fillStyle = color;
-		ctx.fillRect(x, y, w, h);
+			ctx.fillStyle = color;
+			ctx.fillRect(x, y, w, h);
 		}
 	}
 
 	function drawCircle(x: number, y: number, r: number, color: string, ballImg?: HTMLImageElement) {
-		if (ballImg)
+		if (ballImg) {
+			ctx.save();
+			// Creamos un círculo para recortar
+			ctx.beginPath();
+			ctx.arc(x, y, r, 0, Math.PI * 2);
+			ctx.closePath();
+			ctx.clip(); // todo lo que dibujemos ahora quedará dentro del círculo
 			ctx.drawImage(ballImg, x - r, y - r, r * 2, r * 2);
+	
+			ctx.restore();
+		}
 		else {
 			ctx.fillStyle = color;
 			ctx.beginPath();
@@ -131,6 +160,27 @@ export function setupLivePong()
 	
 		ctx.shadowBlur = 0;
 		}
+	}
+
+	function startCountdown() {
+	  gameState.countdownActive = true;
+	  gameState.countdownValue = 3;
+	  gameState. winnerMessage = "";
+	  gameState.paused = true;
+	
+	  if (gameState.countdownTimer) clearInterval(gameState.countdownTimer);
+	
+	  gameState.countdownTimer = window.setInterval(() => {
+		gameState.countdownValue--;
+		if (gameState.countdownValue <= 0) {
+		  clearInterval(gameState.countdownTimer!);
+		  gameState.countdownValue = 0;
+		  setTimeout(() => {
+			gameState.countdownActive = false;
+			gameState.paused = false;
+		  }, 500);
+		}
+	  }, 1000);
 	}
 
 	document.addEventListener("keydown", (e) => {
@@ -219,12 +269,12 @@ export function setupLivePong()
 	});
 
 	function collision(_ball: typeof ball, paddle: typeof player) {
-	return (
-		_ball.x - _ball.radius < paddle.x + paddle.width &&
-		_ball.x + _ball.radius > paddle.x &&
-		_ball.y - _ball.radius < paddle.y + paddle.height &&
-		_ball.y + _ball.radius > paddle.y
-	);
+		return (
+			_ball.x - _ball.radius < paddle.x + paddle.width &&
+			_ball.x + _ball.radius > paddle.x &&
+			_ball.y - _ball.radius < paddle.y + paddle.height &&
+			_ball.y + _ball.radius > paddle.y
+		);
 	}
 
 	function resetBall(initial = false) {
@@ -250,7 +300,6 @@ export function setupLivePong()
 		//ctx.shadowColor = "white";
 		ctx.shadowBlur = 20;
 		
-		// 🔹 Marcadores
 		ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
 		ctx.fillText(
@@ -272,93 +321,84 @@ export function setupLivePong()
 	
 
 	function update() {
+		ball.x += ball.dx;
+		ball.y += ball.dy;
 
-	//   if (gameState.playerKeysUp) player.y -= player.dy;
-	//   if (gameState.playerKeysDown) player.y += player.dy;
-	//   if (gameState.playerTwoKeysUp) player2.y -= player2.dy;
-	//   if (gameState.playerTwoKeysDown) player2.y += player2.dy;
-
-	//   player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
-	//   player2.y = Math.max(0, Math.min(canvas.height - player2.height, player2.y));
-	
-	ball.x += ball.dx;
-	ball.y += ball.dy;
-
-	if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
-		ball.dy = -ball.dy;
-	}
-
-	if (collision(ball, player)) {
-		if (
-		ball.x - ball.radius  < player.x + player.width &&
-		ball.x + ball.radius > player.x &&
-		ball.y + ball.radius > player.y &&
-		ball.y - ball.radius < player.y + player.height
-		) {
-		let impactPoint = ball.y - player.y;
-		let third = player.height / 25;
-		ball.speed += 0.1;
-		ball.speed = Math.min(ball.speed, 10);
-
-		if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
-			ball.dx = -ball.dx;
+		if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
 			ball.dy = -ball.dy;
-		} else {
-			ball.dx = -ball.dx;
 		}
-		}
-		ball.x = player.x + player.width + ball.radius;
-	}
 
-	if (collision(ball, player2)) {
-		if (
-		ball.x - ball.radius < player2.x + player2.width &&
-		ball.x + ball.radius > player2.x &&
-		ball.y + ball.radius > player2.y &&
-		ball.y - ball.radius < player2.y + player2.height
-		) {
-		let impactPoint = ball.y - player2.y;
-		let third = player2.height / 25;
-		ball.speed += 0.1;
-		ball.speed = Math.min(ball.speed, 10);
-		if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
-			ball.dx = -ball.dx;
-			ball.dy = -ball.dy;
-		} else {
-			ball.dx = -ball.dx;
-		}
-		}
-		ball.x = player2.x - ball.radius;
-	}
+		if (collision(ball, player)) {
+			if (
+			ball.x - ball.radius  < player.x + player.width &&
+			ball.x + ball.radius > player.x &&
+			ball.y + ball.radius > player.y &&
+			ball.y - ball.radius < player.y + player.height
+			) {
+			let impactPoint = ball.y - player.y;
+			let third = player.height / 25;
+			ball.speed += 0.1;
+			ball.speed = Math.min(ball.speed, 10);
 
-	const user = getCurrentUser();
-	if (!user) {  return; }
-
-	if (ball.x - ball.radius < 0) {
-		player2.score++;
-		ball.speed = 5;
-		if (player2.score === scorepoints) {
-		gameState.winnerMessage = `Player2 has win!🎉`;
-		gameState.paused = true;
-		renderWinner();
-		resetBall();
-		return;
+			if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
+				ball.dx = -ball.dx;
+				ball.dy = -ball.dy;
+			} else {
+				ball.dx = -ball.dx;
+			}
+			}
+			ball.x = player.x + player.width + ball.radius;
 		}
-		resetBall();
-	}
 
-	if (ball.x + ball.radius > canvas.width) {
-		player.score++;
-		ball.speed = 5;
-		if (player.score === scorepoints) {
-		gameState.winnerMessage = `💫 ${user.nick} wins! 🏆`;
-		gameState.paused = true;
-		renderWinner();
-		resetBall();
-		return;
+		if (collision(ball, player2)) {
+			if (
+			ball.x - ball.radius < player2.x + player2.width &&
+			ball.x + ball.radius > player2.x &&
+			ball.y + ball.radius > player2.y &&
+			ball.y - ball.radius < player2.y + player2.height
+			) {
+			let impactPoint = ball.y - player2.y;
+			let third = player2.height / 25;
+			ball.speed += 0.1;
+			ball.speed = Math.min(ball.speed, 10);
+			if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
+				ball.dx = -ball.dx;
+				ball.dy = -ball.dy;
+			} else {
+				ball.dx = -ball.dx;
+			}
+			}
+			ball.x = player2.x - ball.radius;
 		}
-		resetBall();
-	}
+
+		const user = getCurrentUser();
+		if (!user) {  return; }
+
+		if (ball.x - ball.radius < 0) {
+			player2.score++;
+			ball.speed = 5;
+			if (player2.score === scorepoints) {
+				gameState.winnerMessage = `Player2 has win!🎉`;
+				gameState.paused = true;
+				renderWinner();
+				resetBall();
+				return;
+			}
+			resetBall();
+		}
+
+		if (ball.x + ball.radius > canvas.width) {
+			player.score++;
+			ball.speed = 5;
+			if (player.score === scorepoints) {
+				gameState.winnerMessage = `💫 ${user.nick} wins! 🏆`;
+				gameState.paused = true;
+				renderWinner();
+				resetBall();
+				return;
+			}
+			resetBall();
+		}
 	}
 
 	function render() {
@@ -404,14 +444,12 @@ export function setupLivePong()
 	}
 
 	function game() {
-		if (gameState.paused && !gameStarted && !gameState.countdownActive)
-		render();
 		if (gameState.paused && gameStarted && gameState.winnerMessage == "") {
 			ctx.save();
 			ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
 			ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
-	
+			
 			ctx.font = "bold 80px 'Press Start 2P', 'Audiowide', sans-serif";
 			ctx.fillStyle = "orange";
 			ctx.textAlign = "center";
@@ -425,6 +463,8 @@ export function setupLivePong()
 			ctx.fillText("OR PRESS [SPACE] TO CONTINUE ◀", canvas.width / 2, canvas.height / 2 + 100);
 			ctx.restore();
 		}
+		if (gameState.paused && !gameStarted && !gameState.countdownActive)
+			render();
 		if (!gameState.paused) {
 		update();
 		render();

@@ -45,6 +45,15 @@ export interface Match {
   duration_seconds: number;
   created_at: string;
 }
+
+/** Métricas opcionales por partido (si el backend las soporta vía `details`) */
+export interface MatchDetails {
+  shots_on_target_p1?: number;
+  saves_p1?: number;
+  shots_on_target_p2?: number;
+  saves_p2?: number;
+}
+
 export interface NewMatch {
   player1_id: number;
   player2_id: number;
@@ -52,6 +61,15 @@ export interface NewMatch {
   score_p2: number;
   winner_id: number;
   duration_seconds?: number;
+
+  /** Envío recomendado: objeto `details` con las métricas */
+  details?: MatchDetails;
+
+  /** Alternativa opcional (plano), por si el backend también lo acepta */
+  shots_on_target_p1?: number;
+  saves_p1?: number;
+  shots_on_target_p2?: number;
+  saves_p2?: number;
 }
 
 /* =========================
@@ -74,7 +92,6 @@ async function request<TResp = unknown, TBody = unknown>(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  // ensamblar URL sin dobles slashes
   const url = `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 
   try {
@@ -88,7 +105,6 @@ async function request<TResp = unknown, TBody = unknown>(
       signal: signal ?? controller.signal,
     });
 
-    // 204 No Content
     if (res.status === 204) {
       return undefined as TResp;
     }
@@ -123,7 +139,6 @@ async function requestArray<T>(path: string, opts?: RequestOptions): Promise<T[]
     const data = await request<T[] | null | undefined>(path, opts);
     return ensureArray<T>(data);
   } catch (e: any) {
-    // si el backend devolviera 404 en listados, devolvemos []
     if (e instanceof ApiError && (e.status === 404 || e.status === 204)) return [];
     throw e;
   }
@@ -169,7 +184,7 @@ export const getMatch = (id: number, signal?: AbortSignal) =>
   request<Match>(`/matches/${id}`, { signal });
 
 export const createMatch = (payload: NewMatch, signal?: AbortSignal) =>
-  request<{ id: number }>(' /matches', { method: 'POST', body: payload, signal });
+  request<{ id: number }>('/matches', { method: 'POST', body: payload, signal });
 
 export const deleteMatch = (id: number, signal?: AbortSignal) =>
   request<{ deleted: number }>(`/matches/${id}`, { method: 'DELETE', signal });

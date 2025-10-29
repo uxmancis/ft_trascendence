@@ -1,6 +1,7 @@
 // src/views/PlayAI.ts
 import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { navigate } from '../router';
+import { setupPong } from './LiveAI'; // ⬅️ import del juego 3D
 
 const LIVE_ROUTE = '#/live/ai'; // cambia si usas otra ruta (p.ej. '#/game/live')
 
@@ -88,21 +89,17 @@ export async function renderPlayAI(root: HTMLElement) {
     if (e.key === '3') setSelected('hard');
   });
 
-  // Start → guarda settings y navega
+  // Start → guarda settings, dibuja la pantalla de juego y arranca Babylon
   startBtn.onclick = () => {
-	if (!selected) return;
-	const settings = {
-		difficulty: selected,
-		seed: Math.floor(Math.random() * 1e9),
-		ts: Date.now(),
-	};
-	sessionStorage.setItem('ai:settings', JSON.stringify(settings));
-	const mainSection = document.querySelector("section"); // mantenemos la barra y estilos
-	if (!mainSection) {
-		console.error("No se encontró la sección principal");
-		return;
-	}
-	root.innerHTML = `
+    if (!selected) return;
+    const settings = {
+      difficulty: selected,
+      seed: Math.floor(Math.random() * 1e9),
+      ts: Date.now(),
+    };
+    sessionStorage.setItem('ai:settings', JSON.stringify(settings));
+
+    root.innerHTML = `
     <!-- Contenedor principal -->
     <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
 
@@ -117,16 +114,20 @@ export async function renderPlayAI(root: HTMLElement) {
       <!-- Contenedor del juego (sin fondo negro) -->
       <div class="flex flex-col items-center justify-center p-4">
         <canvas id="pong_AI" width="800" height="500"
-        class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
+          class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
       </div>
     </section>
-	`;
-	// Acción del botón de salir
-	document.getElementById("backBtn")?.addEventListener("click", () => {
-		navigate("#");
-	});
+    `;
 
-	navigate(LIVE_ROUTE);
+    // Botón salir vuelve al home
+    document.getElementById('backBtn')?.addEventListener('click', () => {
+      navigate('#');
+    });
+
+    // Arranca el juego 3D
+    setupPong();
+
+    navigate(LIVE_ROUTE);
   };
 }
 

@@ -436,10 +436,10 @@ export function setupLivePong3D() {
 
     if (state === 'PLAYING') {
       // palas (up=z- ; down=z+)
-      if (keys.w) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
-      if (keys.s) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
-      if (keys.i) p2.position.z = clampZ(p2.position.z - paddleSpeed * dt);
-      if (keys.k) p2.position.z = clampZ(p2.position.z + paddleSpeed * dt);
+      if (keys.s) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
+      if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
+      if (keys.k) p2.position.z = clampZ(p2.position.z - paddleSpeed * dt);
+      if (keys.i) p2.position.z = clampZ(p2.position.z + paddleSpeed * dt);
 
       // sub-steps anti-túnel
       const speed = ballVel.length();

@@ -10,6 +10,8 @@ echo "Base de datos: $DB_FILE"
 echo "Script init:  $INIT_FILE"
 echo "========================================"
 
+rm -rf "/data/sqlite.db"
+
 # Inicializar base de datos solo si no existe
 if [ ! -f "$DB_FILE" ]; then
   echo "📀 Base de datos no encontrada. Creando nueva..."

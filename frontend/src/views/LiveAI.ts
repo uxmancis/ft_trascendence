@@ -459,8 +459,8 @@ export function setupPong() {
 
     if (state === 'PLAYING') {
       // Jugador (up=z- ; down=z+)
-      if (keys.w || keys.ArrowUp)   p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
-      if (keys.s || keys.ArrowDown) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
+      if (keys.s || keys.ArrowDown)   p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
+      if (keys.w || keys.ArrowUp) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
 
       // IA – “think” throttle
       const now = performance.now();

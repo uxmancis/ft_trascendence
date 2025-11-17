@@ -29,6 +29,15 @@ const logger = PRETTY
 
 const fastify = Fastify({ logger });
 
+fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+  try {
+    const json = JSON.parse(body);
+    done(null, json);
+  } catch (err) {
+    done(err);
+  }
+});
+
 // CORS global
 await fastify.register(cors, { origin: '*' });
 

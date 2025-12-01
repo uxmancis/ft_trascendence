@@ -112,7 +112,15 @@ const renderTabs = () => {
         }
     });
     tabContainer.innerHTML = tabsHtml; // <-- Updates the tab bar
-    contentContainer.innerHTML = contentHtml; // <-- Updates the editor area
+    if (contentHtml === '') /* By default when no content is displayed */
+        contentContainer.innerHTML = `
+        <img src="/assets/VsCodeLogo_Black.png" class="w-80 opacity-35">
+                        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
+                        <p1 class="pt-4 text-white opacity-35"> Click in 
+                            <button class="hover:cursor-pointer hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
+                            and give your first steps in our trascendence! </p1>`;
+    else
+        contentContainer.innerHTML = contentHtml; // <-- Updates the editor area
 };
 /* The Controllers: closeFile() and selectFile()
 *

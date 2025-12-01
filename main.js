@@ -99,11 +99,11 @@ const renderTabs = () => {
         //1.- Choose the correct set of classes
         const dynamicClasses = file.isActive ? activeClasses : inactiveClasses;
         //2.- Combine static and dynamic classes
-        const staticClasses = 'file-tab items-center space-x-3 pl-4 pr-4 pt-2 pb-2 border-r border-gray-400/[0.20]';
+        const staticClasses = 'flex file-tab items-center space-x-3 pl-4 pr-4 pt-2 pb-2 border-r border-gray-400/[0.20]';
         // Updates the DOM (innerHTML)
         tabsHtml += `<div class="${dynamicClasses} ${staticClasses}" onclick="selectFile(${file.id})">
                 <span>${file.name}</span>
-                <span class="close-btn" onclick="closeFile(${file.id}, event)">x</span>
+                <img src="assets/crossIcon.png" class="object-contain h-5 hover:cursor-pointer hover:opacity-75 hover:brightness-50" onclick="closeFile(${file.id}, event)">
             </div>
         `;
         /* Displays content of active file*/

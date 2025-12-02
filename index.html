@@ -30,11 +30,21 @@
         <div id ="main-content" class="flex col-span-3">
 
             <!-- Left column: icons-->
-            <div id="left-icons" class="w-[3.5rem] p-1 border border-gray-400 border-opacity-15">
-                <button id="files-left-icon-btn">
-                    <img src="assets/files_Icon.png">
-                </button>
-                
+            <div id="left-icons" class="w-[3.5rem] p-1 flex flex-col border border-gray-400 border-opacity-15 ">
+                <div id="upIcons" class="mb-12">
+                    <button id="files-left-icon-btn">
+                        <img src="assets/files_Icon.png">
+                    </button>
+                </div>
+                <div id ="midFlex"></div>
+                <div id="downIcons" class="mt-auto mb-1">
+                    <button id="files-left-icon-btn" class="w-[2.5rem] mb-5 pl-2 pr-0 hover:cursor-pointer hover:brightness-150">
+                        <img src="assets/UserIcon_Left.png">
+                    </button>
+                    <button id="files-left-icon-btn" class="w-[2.5rem] pl-2 pr-0 hover:cursor-pointer hover:brightness-150">
+                        <img src="assets/SettingsIcon_Left.png">
+                    </button>
+                </div>
             </div>
 
             <!--Middle (horizontally): files sidebar that appears and disappears -->

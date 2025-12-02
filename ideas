@@ -1,0 +1,9 @@
+Ideas: (terminal + storytelling)
+instructions.txt --> can be visualized: click or cat (commandl line)
+game1, game2, game3 --> they can be instead of .html, they can be .c executables. Can be accesed: through click or through command line : compile (gcc ) + executable is generated + they can ./Game and play
+
+Pet: 
+- Saludito inicial: explicar por qué del VSCode. El texto:
+You might find the UX/UI familiar ...
+After being our best colleague all this time, after so many hours debugging, we thought it was time 
+we honoured our old friend and favourite IDE, VSCode, in this last project in our Common Core.

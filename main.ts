@@ -175,10 +175,17 @@ const renderTabs = (): void => {
     if(contentHtml === '') /* By default when no content is displayed, same message as at first :) */
         contentContainer.innerHTML = `
         <img src="/assets/VsCodeLogo_Black.png" class="w-80 opacity-35">
-        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
-        <p1 class="pt-4 text-white opacity-35"> Click in 
-                <button class="hover:cursor-pointer hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
-        and give your first steps in our trascendence! </p1>`;
+                        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
+                        <p1 class="mb-2 text-white opacity-35">
+                            <a href="assets/en.subject_trascendence_30_09_2025.pdf" class="hover:underline" target="_blank">Ft_trascendence</a> was developed with love ❤️ by  
+                            <a href="https://profile.intra.42.fr/users/emunoz" class="hover:underline" target="_blank">emunoz</a> 
+                            <a href="https://profile.intra.42.fr/users/ngastana" class="hover:underline" target="_blank">ngastana</a> and
+                            <a href="https://profile.intra.42.fr/users/uxmancis" class="hover:underline" target="_blank">uxmancis</a>.</p1>
+
+
+                        <p1 class="pt-4 text-white opacity-35"> Click in 
+                            <button class="hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
+                            and give your first steps in our trascendence! </p1>`;
     else
         contentContainer.innerHTML = contentHtml; // <-- Updates the editor area
 };

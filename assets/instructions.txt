@@ -1,0 +1,10 @@
+Welcome!
+
+Ft_trascendence was developed by <emunoz>, <ngastana> and <uxmancis>.
+
+
+You might find the UX/UI familiar ...
+After being our best colleague all this time, after so many hours debugging, we thought it was time 
+we honoured our old friend and favourite IDE, VSCode, in this last project in our Common Core.
+
+

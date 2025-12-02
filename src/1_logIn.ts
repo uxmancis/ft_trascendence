@@ -1,4 +1,4 @@
-import { getIntoIDE } from "./mainLayout.js";
+import { getIntoIDE } from "./2_mainLayout.js";
 
 export function askNicknameEnterIDE(){
 

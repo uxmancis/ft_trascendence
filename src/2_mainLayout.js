@@ -1,13 +1,9 @@
 import { clickOpenLeftSideBar } from "./openLeftSideBar.js";
-
 /* Here we have the implementations of the functions: */
-export function getIntoIDE()
-{
+export function getIntoIDE() {
     const background = document.getElementById('main-layout');
-
-    let backgroundHtml='';
-    
-    backgroundHtml=`
+    let backgroundHtml = '';
+    backgroundHtml = `
     <div id ="whole-content" class= "h-screen grid grid-cols-[3.5rem_15rem_1fr] grid-rows-[3rem_1fr_1.5rem] bg-neutral-900 border-[0.5px] border-gray-400 border-opacity-15">
 
         <!-- Top Header: logo, searchbar, - X icons right --->
@@ -150,12 +146,10 @@ export function getIntoIDE()
             <p class="text-white">Bottom info bar</p>
         </div>
 
-    `
-
+    `;
     if (background)
-        background.innerHTML=backgroundHtml;
-
-    /* Apply functionalities: 
+        background.innerHTML = backgroundHtml;
+    /* Apply functionalities:
     *
     *  It must be called from here because IDs of html elements are defined here. It doesn't work
     * when calling from outside */

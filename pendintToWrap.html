@@ -1,10 +1,24 @@
-/* Here we're calling the functions: */
-askNicknameAndEnterIDE();
-/* Here we have the implementations of the functions: */
-function getIntoIDE() {
-    const background = document.getElementById('main-layout');
-    let backgroundHtml = '';
-    backgroundHtml = `
+<!DOCTYPE html> <!-- Defines that document is HTML5 -->
+<html lang="en"> <!-- Root element of an HTML page. Good practice for accessibilty and search engine -->
+<head> <!-- Metainformation about the HTML document (data not displayed to the user)-->
+    <title>👩‍💻 devMode by Uxu❤️ </title>
+
+    <!-- This following line makes enables us to use Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+
+</head>
+
+
+<!-- This is the visible page content
+        h-screen: It takes the whole screen in height
+-->
+<body id="main-layout" class="h-screen overflow-hidden"> 
+    
+    <!-- Grid container: layout for whole page 
+        grid-cols-[]: how many columns + their Width (rem and 1fr for responsivity)
+        grid-rows-[]: how many rows + their Height
+    -->
     <div id ="whole-content" class= "h-screen grid grid-cols-[3.5rem_15rem_1fr] grid-rows-[3rem_1fr_1.5rem] bg-neutral-900 border-[0.5px] border-gray-400 border-opacity-15">
 
         <!-- Top Header: logo, searchbar, - X icons right --->
@@ -32,7 +46,6 @@ function getIntoIDE() {
                     </button>
                 </div>
             </div>
-
 
             <!--Middle (horizontally): files sidebar that appears and disappears -->
             <div id ="mid-files-sidebar" class="hidden w-[17rem] p-4 border-[0.5px] border-gray-400 border-opacity-15 text-white">
@@ -147,72 +160,34 @@ function getIntoIDE() {
             <p class="text-white">Bottom info bar</p>
         </div>
 
-    `;
-    if (background)
-        background.innerHTML = backgroundHtml;
-    /* Apply functionalities:
-    *
-    *  It must be called from here because IDs of html elements are defined here. It doesn't work
-    * when calling from outside */
-    openLeftSideBar();
-}
-function askNicknameAndEnterIDE() {
-    const background = document.getElementById('main-layout');
-    let backgroundHtml = '';
-    backgroundHtml = `<div id ="whole-content" class= "flex flex-col items-center justify-center h-full w-full bg-neutral-800 border-[0.5px] border-gray-400 border-opacity-15">
+        <script src="main.js"></script>
+    </div>
+    
+    <!--
+    - Top Header: logo, searchbar, - X icons right -
+    <div class="w-full h-10 bg-neutral-900 border-[0.5px] border-gray-400 border-opacity-20"></div>
 
-                        <input type="text" 
-                            id="nickname-input"
-                            name="nickname"
-                            autocomplete="off"
-                            placeholder="Insert here your nickname"
-                            class="
-                            py-3 px-6                /* Vertical and Horizontal Padding */
-                            text-base                /* Font size */
-                            text-gray-300            /* White text color */
-                            bg-neutral-700           /* Dark grey background for the input field */
-                            placeholder-gray-400     /* Lighter grey color for the placeholder text */
-                            rounded-md               /* Rounded corners */
-                            shadow-xl                /* Deep shadow for the floating effect */
-                            focus:outline-none       /* Remove default blue outline */
-                            focus:ring-2             /* Add a subtle ring on focus */
-                            focus:ring-blue-500"
-                            >
+    -- L -
+    <div class="w-14 h-screen bg-neutral-900 border-[0.5px] border-gray-400 border-opacity-20"></div>
+    
+    --  --
+    <div class="h-52 bg-red-500"> </div>
 
-                        <p1 class="mt-3 italic text-white "> Press Enter on your keyboard to continue </p1>
-                    </div>`;
-    /* Sets backgroound colour + input box + text below */
-    if (background) {
-        background.innerHTML = backgroundHtml;
-    }
-    /* Write Nickname and Press Enter to enter into the IDE. Pending: to get nickname and store it to use it in inside IDE*/
-    const nickname = document.getElementById('nickname-input');
-    if (nickname) {
-        nickname.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter')
-                getIntoIDE();
-        });
-    }
-}
-function openLeftSideBar() {
-    // 1. Get references to the key DOM elements
-    const filesIconButton = document.getElementById('files-left-icon-btn');
-    const filesSidebar = document.getElementById('mid-files-sidebar');
-    // Use a type guard to ensure the elements exist before proceeding
-    /* Click 'Files' icon and Sidebar both Appears and Disappears */
-    if (filesIconButton && filesSidebar) {
-        // 2. Define the event listener function
-        const toggleSidebar = () => {
-            // The core logic: Toggling the 'hidden' class
-            // - If 'hidden' is present, the sidebar is hidden (display: none)
-            // - If 'hidden' is removed, the sidebar appears (it defaults to display: flex/block based on its other classes)
-            filesSidebar.classList.toggle('hidden');
-        };
-        // 3. Attach the event listener to the icon button
-        filesIconButton.addEventListener('click', toggleSidebar);
-        // Optional: Log a message to the console to confirm the script loaded
-        console.log("TypeScript script loaded and ready to handle clicks!");
-    }
-    else
-        console.error("One or more required elements (icon or sidebar) were not found in the DOM.");
-}
+    -- Bottom 
+    <div class="flex-1 overflow-auto p-3 bg-neutral-900 border-[0.5px] border-gray-400 border-opacity-20"></div>
+-->
+
+</body>
+</html>
+
+<!--
+Dark black: bg-neutral-900 border-[0.5px]
+Light black (screen): bg-neutral-800
+Gray border: border-gray-400 border-opacity-20
+
+· rem is more accessible than fixed width size in pixels. Reason: it's responsive to letter size.
+
+
+Jokinek aholkautakua: https://daisyui.com/components/
+-->
+

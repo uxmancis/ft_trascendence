@@ -1,4 +1,5 @@
 import { clickOpenLeftSideBar } from "./openLeftSideBar.js";
+import { clickOpenFiles } from "./openFiles.js";
 
 /* Here we have the implementations of the functions: */
 export function getIntoIDE()
@@ -160,5 +161,5 @@ export function getIntoIDE()
     *  It must be called from here because IDs of html elements are defined here. It doesn't work
     * when calling from outside */
     clickOpenLeftSideBar();
-    // clickOpenFiles();
+    clickOpenFiles();
 }

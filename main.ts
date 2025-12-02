@@ -1,218 +1,31 @@
+import { askNicknameEnterIDE } from "./src/logIn.js";
+
+
 /* Here we're calling the functions: */
-askNicknameAndEnterIDE();
+askNicknameEnterIDE();
 
 
 
-/* Here we have the implementations of the functions: */
-function getIntoIDE()
-{
-    const background = document.getElementById('main-layout');
-
-    let backgroundHtml='';
-    
-    backgroundHtml=`
-    <div id ="whole-content" class= "h-screen grid grid-cols-[3.5rem_15rem_1fr] grid-rows-[3rem_1fr_1.5rem] bg-neutral-900 border-[0.5px] border-gray-400 border-opacity-15">
-
-        <!-- Top Header: logo, searchbar, - X icons right --->
-        <div id="header" class="col-span-3 p-2.5 border border-gray-400 border-opacity-15">
-            <img src="assets/VsCodeLogo.png" class="h-full w-auto">
-        </div>
-
-        <!-- MAIN (vertically): Everything between top header and bottom -->
-        <div id ="main-content" class="flex col-span-3">
-
-            <!-- Left column: icons-->
-            <div id="left-icons" class="w-[3.5rem] p-1 flex flex-col border border-gray-400 border-opacity-15 ">
-                <div id="upIcons" class="mb-12">
-                    <button id="files-left-icon-btn">
-                        <img src="assets/files_Icon.png">
-                    </button>
-                </div>
-                <div id ="midFlex"></div>
-                <div id="downIcons" class="mt-auto mb-1">
-                    <button id="files-left-icon-btn" class="w-[2.5rem] mb-5 pl-2 pr-0 hover:cursor-pointer hover:brightness-150">
-                        <img src="assets/UserIcon_Left.png">
-                    </button>
-                    <button id="files-left-icon-btn" class="w-[2.5rem] pl-2 pr-0 hover:cursor-pointer hover:brightness-150">
-                        <img src="assets/SettingsIcon_Left.png">
-                    </button>
-                </div>
-            </div>
-
-
-            <!--Middle (horizontally): files sidebar that appears and disappears -->
-            <div id ="mid-files-sidebar" class="hidden w-[17rem] p-4 border-[0.5px] border-gray-400 border-opacity-15 text-white">
-                
-                <!-- Title "Explorer"-->
-                <div>
-                    <p id ="up-title" class="pb-4 text-sm text-white text-opacity-80">EXPLORER</p> <!-- text-sm: text size -->
-                </div>
-
-                <!-- Files -->
-                <div id="list-files">
-
-                    <!-- File 1: Instructions -->
-                    <div class="px-4 flex items-center space-x-2">
-                        <!-- Left: file icon-->
-                        <div>
-                            <img src="/assets/1file_Icon.png" class="h-4">
-                        </div>
-                        <!-- Right: filename -->
-                        <button id="file1_ins" class="py-1">instructions.txt</button>
-                    </div>
-
-
-                    <!-- File 2: Game_vs_AI -->
-                    <div class="px-4 flex items-center space-x-2">
-                        <!-- Left: file icon-->
-                        <div>
-                            <img src="/assets/htmlIcon.png" class="h-4">
-                        </div>
-                        <!-- Right: filename -->
-                        <button id="file2_AI" class="py-1">Game_vs_AI.html</button>
-                    </div>
-
-
-                    <!-- File 3: Game_1vs1.html -->
-                    <div class="px-4 flex items-center space-x-2">
-                        <!-- Left: file icon-->
-                        <div>
-                            <img src="/assets/htmlIcon.png" class="h-4">
-                        </div>
-                        <!-- Right: filename -->
-                        <button id="file3_1v1" class="py-1">Game_1vs1.html</button>
-                    </div>
-
-                    <!-- File 4: Game_Tournament.html -->
-                    <div class="px-4 flex items-center space-x-2">
-                        <!-- Left: file icon-->
-                        <div>
-                            <img src="/assets/htmlIcon.png" class="h-4">
-                        </div>
-                        <!-- Right: filename -->
-                        <button id="file4_tour" class="py-1">Game_Tournament.html</button>
-                    </div>
 
 
 
-                </div>
-                
-            </div>
-
-            <!-- Right: Main part (grid): screen & terminal 
-                - flex-1: flexbox utility. It makes this container grow to fill
-                         all available space inside its parent flex container.
-            
-            -->
-            <div id="right-main" class="flex-1 , grid grid-rows-[1fr_200px]" >
-            <!-- <div class="flex-1" > -->
-
-                <!-- Screen: visualize code, game, everything here -->
-                <div id="up-screen" class="flex flex-col w-full bg-neutral-800 text-white">
-                    <!-- Files (disappears with no files)-->
-                    <!-- <div id="row-1-fixed" class="hidden h-10 w-full bg-red-500"> -->
-                    <div id="row-1-fixed" class="flex">
-                        <div id="opened-file" class="hidden flex items-center space-x-3 pl-4 pt-2 pb-2 bg-neutral-800 border-t-2 border-t-blue-500 border-r border-gray-400/[0.20]"></div>
-                        <div id="rest-no-files" class="border-b border-gray-400 border-opacity-20"></div>
-                    </div>
-
-                    <!-- Content (code, background vscodeblack when no files)-->
-                    <div id="row-2-display"class="flex flex-col flex-grow w-full items-center justify-center ">
-                        <img src="/assets/VsCodeLogo_Black.png" class="w-80 opacity-35">
-                        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
-                        <p1 class="mb-2 text-white opacity-35">
-                            <a href="assets/en.subject_trascendence_30_09_2025.pdf" class="hover:underline" target="_blank">Ft_trascendence</a> was developed with love ❤️ by  
-                            <a href="https://profile.intra.42.fr/users/emunoz" class="hover:underline" target="_blank">emunoz</a> 
-                            <a href="https://profile.intra.42.fr/users/ngastana" class="hover:underline" target="_blank">ngastana</a> and
-                            <a href="https://profile.intra.42.fr/users/uxmancis" class="hover:underline" target="_blank">uxmancis</a>.</p1>
-
-
-                        <p1 class="pt-4 text-white opacity-35"> Click in 
-                            <button class="hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
-                            and give your first steps in our trascendence! </p1>
-                    </div>
-                </div>
-
-                <!-- Terminal-->
-                <div id="down-terminal" class="grid grid-rows-2 border-[0.5px] border-gray-400 border-opacity-15 text-white">
-                    <!-- Titles -->
-                    <div class="grid grid-cols-[3.5rem-1fr-3.5rem] p-4">
-                        <p class="text-sm text-white text-opacity-80">TERMINAL</p> <!-- text-sm: text size -->
-                    </div>
-
-                    <!-- Input: User interaction-->
-                    <div></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom 
-            · col-span-3: defines width. It specifies how many columns must take this element regardin its size.
-        -->
-        <div class="col-span-3 border-gray-400 border-opacity-15">
-            <p class="text-white">Bottom info bar</p>
-        </div>
-
-    `
-
-    if (background)
-        background.innerHTML=backgroundHtml;
-
-    /* Apply functionalities: 
-    *
-    *  It must be called from here because IDs of html elements are defined here. It doesn't work
-    * when calling from outside */
-    openLeftSideBar();
-}
 
 
 
-function askNicknameAndEnterIDE(){
 
-    const background = document.getElementById('main-layout');
 
-    let backgroundHtml='';
 
-    backgroundHtml=`<div id ="whole-content" class= "flex flex-col items-center justify-center h-full w-full bg-neutral-800 border-[0.5px] border-gray-400 border-opacity-15">
 
-                        <input type="text" 
-                            id="nickname-input"
-                            name="nickname"
-                            autocomplete="off"
-                            placeholder="Insert here your nickname"
-                            class="
-                            py-3 px-6                /* Vertical and Horizontal Padding */
-                            text-base                /* Font size */
-                            text-gray-300            /* White text color */
-                            bg-neutral-700           /* Dark grey background for the input field */
-                            placeholder-gray-400     /* Lighter grey color for the placeholder text */
-                            rounded-md               /* Rounded corners */
-                            shadow-xl                /* Deep shadow for the floating effect */
-                            focus:outline-none       /* Remove default blue outline */
-                            focus:ring-2             /* Add a subtle ring on focus */
-                            focus:ring-blue-500"
-                            >
 
-                        <p1 class="mt-3 italic text-white "> Press Enter on your keyboard to continue </p1>
-                    </div>`
 
-    /* Sets backgroound colour + input box + text below */
-    if (background)
-    {
-        background.innerHTML=backgroundHtml;
-    }
 
-    /* Write Nickname and Press Enter to enter into the IDE. Pending: to get nickname and store it to use it in inside IDE*/
-    const nickname = document.getElementById('nickname-input');
-    if (nickname){
-        nickname.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter')
-                getIntoIDE();
-        })
-    }  
-}
 
-function openLeftSideBar(){
+
+
+
+
+/* Functionalities */
+function clickOpenLeftSideBar(){
     // 1. Get references to the key DOM elements
     const filesIconButton = document.getElementById('files-left-icon-btn');
     const filesSidebar = document.getElementById('mid-files-sidebar');
@@ -241,4 +54,219 @@ function openLeftSideBar(){
 }
 
 
+const instructionsFileButton = document.getElementById('file1_ins');
 
+
+
+/* navtarget: Navigation Target
+*
+*   About enum Syntax in Typescript:
+*       EnumMemberName (key) = 'Runtime value',
+* 
+*   We use key, not value.
+*  */
+enum navTarget {
+    Instructions = 'ins',
+    GamevsAI = 'vAI',
+    Game1vs1 = '1v1',
+    GameTournament = 'tour'
+}
+
+enum ColourBox {
+    Red = 'bg-red-500',
+    Blue = 'bg-blue-500',
+    Green = 'bg-green-500',
+    Yellow = 'bg-yellow-500',
+}
+
+/*  interface keyword is one of the most fundamental and powerful
+*   features that TypeScript adds to JavaScript. 
+* 
+*   It is used to define a blueprint for the structure of an object.
+*   It describes the names and types of the properties that an object
+*   must have.
+* 
+*   It's a design-time tool, only exist during compilation and are
+*   completely removed from the final JavaScript code.  
+* */
+interface OpenFile{
+    id: number;
+    name: string;
+    displayColour: ColourBox; //Used to hold file text/code
+    isActive: boolean;
+}
+
+// The central state that holds all open files
+let openFiles: OpenFile[] = [];
+
+const renderTabs = (): void => {
+    
+    // #1 Get containers: references to the main 2 HTML elements by their IDs
+    const tabContainer = document.getElementById('row-1-fixed');
+    const contentContainer = document.getElementById('row-2-display');
+    if (!tabContainer || !contentContainer) return; // Check if elements exist
+
+    /*#2 Initialize HTML strings: we create empty variables to hold the new
+    *    HTML that will represent the current state of the application.
+    *
+    *    It clears old content and prevents accumulation, making sure every time
+    *    renderTabs() runs, it redraws the tab bar to reflect the new state. By
+    *    starting with empty strings we ensure we are generating a fresh set of HTML.
+    */
+    let tabsHtml = ''; /* tab means pestaña in Spanish */
+    let contentHtml = ''; 
+
+    /* NEW - Define Active and Inactive Tailwind Class Sets */
+    //Class for UNSELECTED tab:
+    const inactiveClasses = 'bg-neutral-800 text-gray-400 border-b border-gray-400/[0.20]';
+
+    //Class for SELECTED tab:
+    const activeClasses = 'bg-neutral-900 text-white border-t-2 border-t-blue-500 border-b-0';
+
+    // #3 Loop through state: it iterates over the central list of files (openFiles)
+    openFiles.forEach(file => { // <-- Reads from the central data (openFiles)
+
+        //1.- Choose the correct set of classes
+        const dynamicClasses = file.isActive ? activeClasses : inactiveClasses;
+
+        //2.- Combine static and dynamic classes
+        const staticClasses = 'flex file-tab items-center space-x-3 pl-4 pr-4 pt-2 pb-2 border-r border-gray-400/[0.20]';
+        
+        // Updates the DOM (innerHTML)
+        tabsHtml += `<div class="${dynamicClasses} ${staticClasses}" onclick="selectFile(${file.id})">
+                <span>${file.name}</span>
+                <img src="assets/crossIcon.png" class="object-contain h-5 hover:cursor-pointer hover:opacity-75 hover:brightness-50" onclick="closeFile(${file.id}, event)">
+            </div>
+        `;
+
+        /* Displays content of active file*/
+        if (file.isActive) {
+            contentHtml = `<div class="h-full w-full ${file.displayColour}"></div>`; // Displays the active file's content
+        }
+        
+    });
+
+    tabContainer.innerHTML = tabsHtml;        // <-- Updates the tab bar
+
+    if(contentHtml === '') /* By default when no content is displayed, same message as at first :) */
+        contentContainer.innerHTML = `
+        <img src="/assets/VsCodeLogo_Black.png" class="w-80 opacity-35">
+                        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
+                        <p1 class="mb-2 text-white opacity-35">
+                            <a href="assets/en.subject_trascendence_30_09_2025.pdf" class="hover:underline" target="_blank">Ft_trascendence</a> was developed with love ❤️ by  
+                            <a href="https://profile.intra.42.fr/users/emunoz" class="hover:underline" target="_blank">emunoz</a> 
+                            <a href="https://profile.intra.42.fr/users/ngastana" class="hover:underline" target="_blank">ngastana</a> and
+                            <a href="https://profile.intra.42.fr/users/uxmancis" class="hover:underline" target="_blank">uxmancis</a>.</p1>
+
+
+                        <p1 class="pt-4 text-white opacity-35"> Click in 
+                            <button class="hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
+                            and give your first steps in our trascendence! </p1>`;
+    else
+        contentContainer.innerHTML = contentHtml; // <-- Updates the editor area
+};
+
+
+/* The Controllers: closeFile() and selectFile()
+*
+*   These functions are responsible for updating the central data (openFiles).
+*   Every time they modify the data, they must call renderTabs() to refresh the UI.
+*
+*
+* */
+const closeFile = (fileId: number, event: Event): void => {
+    // Prevent the parent tab click event from firing when closing
+    event.stopPropagation();
+
+    const closedFileIndex = openFiles.findIndex(file => file.id === fileId);
+    if (closedFileIndex === -1) return;
+
+    // 1. Check if the file to be closed was the active one
+    const wasActive = openFiles[closedFileIndex].isActive;
+
+    //2. Remove the file from the array
+    openFiles.splice(closedFileIndex, 1);
+
+    // 3. If the file we just closed was active, activate a new one
+    if (openFiles.length > 0 && wasActive){
+        const newActiveIndex = Math.min(closedFileIndex, openFiles.length - 1);
+
+        // Activate the chosen file, 
+        openFiles[newActiveIndex].isActive = true;
+        // If the list IS empty, 'isActive' remains false for all files (which is correct).
+    }
+
+
+    // 3. Re-render the UI
+    renderTabs();
+};
+
+
+const selectFile = (fileId: number): void => {
+    // 1. Find the selected file and update the active status
+    openFiles.forEach(file => {
+        file.isActive = (file.id === fileId);
+    });
+
+    // 2. Re-render the UI
+    renderTabs();
+};
+
+const openFile = (fileName: string, fileContent: ColourBox): void => {
+    // 1. Check if the file is already open
+
+    const existingFile = openFiles.find(file => file.name === fileName);
+
+    // 2. Deactivate all existing files
+    openFiles.forEach(file => file.isActive = false);
+
+    /* find() returns UNDEFINED if not found.
+    *
+    *   If file.name is FOUND, yes file exists, it is already open.
+    * */
+    if (existingFile)
+        existingFile.isActive = true; // If already open, just make it active
+    else {
+        // If not open, create a new entry and add it
+        const newFile: OpenFile = {
+            id: Date.now(), // Simple unique ID
+            name: fileName,
+            displayColour: fileContent,
+            isActive: true,
+        };
+        openFiles.push(newFile);
+    }
+    
+    // 3. Re-render the UI
+    renderTabs();
+};
+
+const file2_AI_btn = document.getElementById('file2_AI');
+const file3_1v1_btn = document.getElementById('file3_1v1');
+const file4_tour_btn = document.getElementById('file4_tour');
+
+function clickOpenFiles()
+{
+    // #1 We click
+    if (instructionsFileButton){
+        instructionsFileButton.addEventListener('click', () => {
+            openFile("instructions.txt", ColourBox.Blue);
+        });
+    }
+
+    if (file2_AI_btn){
+        file2_AI_btn.addEventListener('click', () => {
+            openFile("GamevsAI.html", ColourBox.Red);
+        });
+    }
+    if (file3_1v1_btn){
+    file3_1v1_btn.addEventListener('click', () => {
+            openFile("Game1vs1.html", ColourBox.Green);
+        });
+    }
+    if (file4_tour_btn){
+        file4_tour_btn.addEventListener('click', () => {
+            openFile("GameTournament.html", ColourBox.Yellow);
+        });
+    }
+}

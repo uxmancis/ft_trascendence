@@ -1,4 +1,9 @@
 // src/api.ts
+
+// export const API_URL =
+//   (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, '') ||
+//   'http://' + HOSTNAME + ':3000';
+
 export const API_URL =
   (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, '') ||
   'http://localhost:3000';

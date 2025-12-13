@@ -3,7 +3,7 @@ import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { navigate } from '../router';
 import { setupPong } from './LiveAI'; // ⬅️ import del juego 3D
 
-const LIVE_ROUTE = '#/live/ai'; // cambia si usas otra ruta (p.ej. '#/game/live')
+const LIVE_ROUTE = '#/live/ai';
 
 export type Diff = 'easy' | 'normal' | 'hard';
 

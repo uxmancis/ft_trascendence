@@ -17,6 +17,8 @@ const LINKS: LinkItem[] = [
   { labelKey: 'nav.ai',         hash: '#/play/ai' },
   { labelKey: 'nav.1v1',        hash: '#/play/1v1' },
   { labelKey: 'nav.tournament', hash: '#/play/tournament' },
+  { labelKey: 'nav.threeinrow', hash: '#/play/threeinrow' },
+  { labelKey: 'nav.4v4',        hash: '#/play/4v4' },
   { labelKey: 'nav.stats',      hash: '#/stats' },
 ];
 

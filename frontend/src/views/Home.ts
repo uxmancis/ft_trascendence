@@ -28,6 +28,20 @@ export async function renderHome(root: HTMLElement){
           <div class="text-2xl mb-2" data-i18n="home.tournament">${t('home.tournament')}</div>
           <p class="opacity-80 text-sm" data-i18n="home.tournament.desc">${t('home.tournament.desc')}</p>
         </button>
+
+        <!-- Tres en raya -->
+        <button id="btn-threeinrow"
+          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
+          <div class="text-2xl mb-2" data-i18n="home.threeinrow">${t('home.threeinrow')}</div>
+          <p class="opacity-80 text-sm" data-i18n="home.threeinrow.desc">${t('home.threeinrow.desc')}</p>
+        </button>
+
+        <!-- 4v4 -->
+        <button id="btn-4v4"
+          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
+          <div class="text-2xl mb-2" data-i18n="home.4v4">${t('home.4v4')}</div>
+          <p class="opacity-80 text-sm" data-i18n="home.4v4.desc">${t('home.4v4.desc')}</p>
+        </button>
       </div>
     </section>
   `;
@@ -35,4 +49,6 @@ export async function renderHome(root: HTMLElement){
   root.querySelector<HTMLButtonElement>('#btn-ai')!.onclick = () => navigate('#/play/ai');
   root.querySelector<HTMLButtonElement>('#btn-1v1')!.onclick = () => navigate('#/play/1v1');
   root.querySelector<HTMLButtonElement>('#btn-tournament')!.onclick = () => navigate('#/play/tournament');
+  root.querySelector<HTMLButtonElement>('#btn-threeinrow')!.onclick = () => navigate('#/play/threeinrow');
+  root.querySelector<HTMLButtonElement>('#btn-4v4')!.onclick = () => navigate('#/play/4v4');
 }

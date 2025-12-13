@@ -38,24 +38,24 @@ export function setupPong() {
   const DIFF = {
     easy: {
       ballBase: 8.0, ballMax: 13.5, paddle: 11.0,
-      aiMix: 0.88, jitter: 0.30, thinkMs: 120, reactErr: 14,
-      stepMul: 0.95,
+      aiMix: 0.88, thinkMs: 1000, reactErr: 14,
+      stepMul: 0.90,
       unforcedMiss: 0.10,
-      missAfterHits: 5,
+      missAfterHits: 7,
     },
     normal: {
       ballBase: 9.5, ballMax: 16.0, paddle: 13.0,
-      aiMix: 0.95, jitter: 0.18, thinkMs: 80, reactErr: 8,
-      stepMul: 1.10,
+      aiMix: 0.95, thinkMs: 1000, reactErr: 8,
+      stepMul: 1.0,
       unforcedMiss: 0.04,
-      missAfterHits: 7,
+      missAfterHits: 12,
     },
     hard: {
-      ballBase: 11.0, ballMax: 18.0, paddle: 15.5,
-      aiMix: 1.00, jitter: 0.08, thinkMs: 45, reactErr: 3,
-      stepMul: 1.45,
+      ballBase: 11.0, ballMax: 20.0, paddle: 15.5,
+      aiMix: 1.00, thinkMs: 1000, reactErr: 0,
+      stepMul: 1.2,
       unforcedMiss: 0.00,
-      missAfterHits: 999,
+      missAfterHits: 99,
     },
   }[difficulty];
 
@@ -160,8 +160,6 @@ export function setupPong() {
     top: -fieldH / 2 + 0.6,
     bottom: fieldH / 2 - 0.6,
   };
-  const goalPlaneLeftX = bounds.left - ballR;   // gol AI
-  const goalPlaneRightX = bounds.right + ballR; // gol Player
 
   // ===== HUD =====
   const gui = AdvancedDynamicTexture.CreateFullscreenUI('UI', true, scene);
@@ -175,7 +173,10 @@ export function setupPong() {
   const scoreP = new TextBlock('scoreP', '0');   scoreP.color = 'white'; scoreP.fontSize = 44; scoreP.left = '-30%'; scoreP.top = '-42%'; gui.addControl(scoreP);
   const scoreAI = new TextBlock('scoreAI', '0'); scoreAI.color = 'white'; scoreAI.fontSize = 44; scoreAI.left =  '30%'; scoreAI.top = '-42%'; gui.addControl(scoreAI);
 
-  const banner = new TextBlock('banner', ''); banner.color = '#89ff89'; banner.fontSize = 56; banner.outlineColor = '#134d1f'; banner.outlineWidth = 2;
+  const banner = new TextBlock('banner', ''); banner.color = '#ffaa3bff'; banner.fontSize = 56; banner.outlineColor = '#134d1f'; banner.outlineWidth = 2;
+  banner.fontFamily = "'Press Start 2P', 'Audiowide', sans-serif";
+  banner.fontSize = 60;
+  banner.fontWeight = "bold";
   banner.textHorizontalAlignment = TextBlock.HORIZONTAL_ALIGNMENT_CENTER;
   banner.textVerticalAlignment = TextBlock.VERTICAL_ALIGNMENT_CENTER;
   gui.addControl(banner);
@@ -207,56 +208,62 @@ export function setupPong() {
   let collideCooldown = 0;
 
   // ===== IA (PD + EMA + errores controlados) =====
-  let aiVelZ = 0;
-  let emaTargetZ = ai.position.z;
+  let aiVelZ = 1; //velocidad actual de la pala IA
+  
   const AI_CTL = {
-    kP: 6.0, kD: 2.0, emaAlpha: 0.22,
+    kP: 6.0, kD: 2.0, emaAlpha: 0.3, //cuanto suavizado hay emaAlpha
     maxSpeed: paddleSpeed * DIFF.stepMul,
-    maxAccel: paddleSpeed * 5.0,
     homeZ: 0,
   };
 
   function clampZ(z: number) {
     return Math.min(bounds.bottom - paddleH / 2, Math.max(bounds.top + paddleH / 2, z));
   }
-  function foldZ(z: number, top = bounds.top, bottom = bounds.bottom) {
-    const h = bottom - top; if (h <= 0) return z;
-    let rel = (z - top) % (2 * h); if (rel < 0) rel += 2 * h;
-    return rel <= h ? top + rel : bottom - (rel - h);
-  }
+
+  //Predicción del punto exacto donde la IA se coloca
   function predictTargetZ(): number | null {
-    if (ballVel.x <= 0 || Math.abs(ballVel.x) < 1e-5) return null;
-    const timeToAI = (ai.position.x - ball.position.x) / ballVel.x;
-    if (timeToAI < 0) return null;
+     // Copia el estado actual
+    let px = ball.position.x;
+    let pz = ball.position.z;
+    let vx = ballVel.x;
+    let vz = ballVel.z;
+    if (vx <= 0) return(null);
+    const dt = 0.016;   // 60fps
+    const wallTop = fieldH/2;
+    const wallBottom = -fieldH/2;
 
-    if (rallyHits >= DIFF.missAfterHits && Math.random() < DIFF.unforcedMiss) {
-      return clampZ(AI_CTL.homeZ + (Math.random() * 2 - 1) * 1.2);
+    // Simulación hacia adelante
+    while (px <= ai.position.x) {
+        // Avanzas
+        px += vx * dt;
+        pz += vz * dt;
+
+        // Rebote en paredes
+        if (pz <= wallBottom) { pz = wallBottom; vz *= -1; }
+        if (pz >= wallTop)    { pz = wallTop;    vz *= -1; }
     }
-
-    let target = foldZ(ball.position.z + ballVel.z * timeToAI);
-    target += (Math.random() * 2 - 1) * DIFF.reactErr;
-    target = ai.position.z * (1 - DIFF.aiMix) + target * DIFF.aiMix;
-    target += (Math.random() * 2 - 1) * DIFF.jitter;
-    return clampZ(target);
+    return pz;
   }
+
+  let aiTargetZ = 0;
+    
   function aiStep(dt: number) {
+
     const raw = predictTargetZ();
-    const target = raw ?? AI_CTL.homeZ;
-
-    emaTargetZ = emaTargetZ + AI_CTL.emaAlpha * (target - emaTargetZ);
-
-    const error = emaTargetZ - ai.position.z;
-    let desiredVel = AI_CTL.kP * error;
-    desiredVel = Math.max(-AI_CTL.maxSpeed, Math.min(AI_CTL.maxSpeed, desiredVel));
-    const damp = AI_CTL.kD * aiVelZ;
-
-    let accel = desiredVel - aiVelZ - damp;
-    accel = Math.max(-AI_CTL.maxAccel, Math.min(AI_CTL.maxAccel, accel));
-
-    aiVelZ += accel * dt;
-    ai.position.z = clampZ(ai.position.z + aiVelZ * dt);
-
-    if (raw === null && Math.abs(error) < 0.05) aiVelZ *= 0.85;
+    if (raw === null){
+        aiTargetZ = ai.position.z * 0.2 + AI_CTL.homeZ * 0.8;
+        aiVelZ *= 0.2;}
+    else{
+        aiTargetZ = raw;
+        aiVelZ = AI_CTL.kP * (aiTargetZ - ai.position.z);}
+     let error = aiTargetZ - ai.position.z;
+    if (difficulty === 'easy') {
+      error += (Math.random() - 0.5) * DIFF.reactErr; 
+    }
+     aiVelZ = AI_CTL.kP * error;
+     if (aiVelZ >  AI_CTL.maxSpeed) aiVelZ =  AI_CTL.maxSpeed;
+     if (aiVelZ < -AI_CTL.maxSpeed) aiVelZ = -AI_CTL.maxSpeed;
+    console.log("aiVelz=", aiVelZ);
   }
 
   // ===== Colisiones (robustas) =====
@@ -303,11 +310,8 @@ export function setupPong() {
     const relZ = (ball.position.z - pz) / (paddleH / 2);
     const aimZ = Math.max(-1, Math.min(1, relZ)) * spinFactor;
 
-    // Velocidad de pala (jugador usa W/S; IA usa aiVelZ)
-    const paddleVelZ = leftSide
-      ? ((keys.w ? -1 : keys.s ? 1 : 0) * paddleSpeed)
-      : aiVelZ;
-    const infZ = (paddleVelZ * dt) * paddleVelInfluence;
+
+    const infZ = (paddleSpeed * dt) * paddleVelInfluence;
 
     const n = new BABYLON.Vector3(nx, 0, nz).add(new BABYLON.Vector3(0, 0, aimZ + infZ)).normalize();
     ballVel = reflect(ballVel, n);
@@ -318,12 +322,6 @@ export function setupPong() {
     collideCooldown = 0.05;
     rallyHits += 1;
     return true;
-  }
-
-  // Detección de cruce de plano X=c con dirección
-  function crossesPlaneX(prevX: number, currX: number, planeX: number, dirPositive: boolean) {
-    if (dirPositive) return prevX <= planeX && currX > planeX;
-    return prevX >= planeX && currX < planeX;
   }
 
   // ===== Flow helpers =====
@@ -408,6 +406,20 @@ export function setupPong() {
     return false;
   }
 
+  function checkGoal(): boolean {
+  // Gol AI (bola cruzando lado izquierdo)
+    if (ball.position.x - ballR <= bounds.left && ball.position.z >= bounds.top && ball.position.z <= bounds.bottom) {
+      scorePoint(false);
+      return true;
+    }
+  // Gol Player (bola cruzando lado derecho)
+    if (ball.position.x + ballR >= bounds.right && ball.position.z >= bounds.top && ball.position.z <= bounds.bottom) {
+      scorePoint(true);
+      return true;
+    }
+    return false;
+  }
+
   function scorePoint(byPlayer: boolean) {
     if (state !== 'PLAYING') return;
     state = 'SERVE'; // bloquea inmediatamente
@@ -423,6 +435,36 @@ export function setupPong() {
 
   // ===== Input =====
   const keys: Record<string, boolean> = { w: false, s: false, ArrowUp: false, ArrowDown: false };
+  
+    // === AI keyboard simulation helpers ===
+  function dispatchKeyDown(key: string) {
+    // dispatch event to trigger onKeyDown (which updates keys[])
+    const ev = new KeyboardEvent('keydown', { key });
+    window.dispatchEvent(ev);
+  }
+  function dispatchKeyUp(key: string) {
+    const ev = new KeyboardEvent('keyup', { key });
+    window.dispatchEvent(ev);
+  }
+
+  // small helper to avoid spam de eventos: mantiene el estado local
+  const aiKeyState = { up: false, down: false };
+  function aiPressDirection(dir: number) {
+    // dir > 0 -> move "up" (ArrowUp). dir < 0 -> move "down" (ArrowDown). dir == 0 -> release both
+    console.log("dir=", dir);
+    const thr = difficulty === 'hard' ? 0.05 : 0.2;
+    if (dir > thr) {
+      if (!aiKeyState.up) { dispatchKeyDown('ArrowUp'); aiKeyState.up = true; }
+      if (aiKeyState.down) { dispatchKeyUp('ArrowDown'); aiKeyState.down = false; }
+    } else if (dir < -thr) {
+      if (!aiKeyState.down) { dispatchKeyDown('ArrowDown'); aiKeyState.down = true; }
+      if (aiKeyState.up) { dispatchKeyUp('ArrowUp'); aiKeyState.up = false; }
+    } else {
+      if (aiKeyState.up)    { dispatchKeyUp('ArrowUp'); aiKeyState.up = false; }
+      if (aiKeyState.down)  { dispatchKeyUp('ArrowDown'); aiKeyState.down = false; }
+    }
+  }
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
     if (e.key === 'Escape') { if (isFullscreen()) exitFullscreen(); if (state === 'PLAYING') { state = 'PAUSED'; showPause(); } }
@@ -459,15 +501,19 @@ export function setupPong() {
 
     if (state === 'PLAYING') {
       // Jugador (up=z- ; down=z+)
-      if (keys.s || keys.ArrowDown)   p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
-      if (keys.w || keys.ArrowUp) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
+      if (keys.s) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
+      if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
 
-      // IA – “think” throttle
       const now = performance.now();
-      if (now - lastAIThink.t >= DIFF.thinkMs) { aiStep(dt); lastAIThink.t = now; }
-      else { // si no piensa en este frame, al menos avanza con la vel integrada
-        ai.position.z = clampZ(ai.position.z + aiVelZ * dt * 0.2);
-      }
+      if (now - lastAIThink.t >= DIFF.thinkMs) {
+        aiStep(dt); 
+        lastAIThink.t = now;
+      } 
+      aiPressDirection(aiVelZ);
+
+      // MOVER la pala de la IA *solo* si las teclas ArrowUp/ArrowDown están activas
+      if (aiKeyState.up)   ai.position.z = clampZ(ai.position.z + aiVelZ * dt);
+      if (aiKeyState.down) ai.position.z = clampZ(ai.position.z + aiVelZ * dt);
 
       // Sub-steps anti-túnel
       const speed = ballVel.length();
@@ -475,8 +521,6 @@ export function setupPong() {
       const subDt = dt / steps;
 
       for (let s = 0; s < steps && state === 'PLAYING'; s++) {
-        const oldX = ball.position.x;
-
         // mover bola
         ball.position.x += ballVel.x * subDt;
         ball.position.z += ballVel.z * subDt;
@@ -494,9 +538,7 @@ export function setupPong() {
           else if (resolvePaddleCollision(ai, false, subDt)) { aiHits += 1; }
         }
 
-        // goles por cruce de plano
-        if (crossesPlaneX(oldX, ball.position.x, goalPlaneLeftX, false)) { scorePoint(false); break; }
-        if (crossesPlaneX(oldX, ball.position.x, goalPlaneRightX, true)) { scorePoint(true);  break; }
+        if (checkGoal()) break;
       }
     }
 
@@ -505,3 +547,4 @@ export function setupPong() {
 
   window.addEventListener('resize', () => engine.resize());
 }
+

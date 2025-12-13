@@ -7,13 +7,14 @@ import usersRoutes from './routes/users.js';
 import matchesRoutes from './routes/matches.js';
 import statsRoutes from './routes/stats.js';
 
+
 // ====== Logging “humano” ======
 const LOG_LEVEL = process.env.LOG_LEVEL || (NODE_ENV === 'production' ? 'warn' : 'info');
 // PRETTY por defecto en dev; en prod sólo si lo fuerzas con PRETTY_LOGS=true
 const PRETTY = (process.env.PRETTY_LOGS === 'true') || NODE_ENV !== 'production';
 
 const logger = PRETTY
-  ? {
+? {
       level: LOG_LEVEL,
       transport: {
         target: 'pino-pretty',
@@ -29,6 +30,12 @@ const logger = PRETTY
 
 const fastify = Fastify({ logger });
 
+await fastify.register(cors, {
+  origin: true, // permite todos los orígenes dinámicamente
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
+
 fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
   try {
     const json = JSON.parse(body);
@@ -38,8 +45,6 @@ fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, bo
   }
 });
 
-// CORS global
-await fastify.register(cors, { origin: '*' });
 
 // Manejador global de errores (json claro)
 fastify.setErrorHandler((error, request, reply) => {

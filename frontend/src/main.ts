@@ -9,6 +9,10 @@ import { setupLivePong3D } from './views/Live1v1';
 import { setupPong } from './views/LiveAI';
 import { renderTournament } from './views/Tournament';
 import { setupTournamentPong } from './views/LiveTournament';
+import { setupThreeInRow } from './views/threeinrow';
+import { renderPlayThreeInRow } from './views/threeinrow';
+import { renderPlay4v4 } from './views/Play4v4';
+import { setupLive4v4 } from './views/Live4v4';
 import { getCurrentUser } from './session';
 import { renderLogin } from './views/Login';
 
@@ -61,8 +65,13 @@ function bootRoutes() {
   register('#/play/1v1',        wrap(renderPlay1v1));
   register('#/live/1v1',        wrap(setupLivePong3D));
   register('#/live/ai',         wrap(setupPong));
+  register('#/live/threeinrow', wrap(setupThreeInRow));
   register('#/play/tournament', wrap(renderTournament));
+  register('#/play/threeinrow', wrap(renderPlayThreeInRow));
   register('#/game/live',       wrap(setupTournamentPong));
+  register('#/play/4v4',        wrap(renderPlay4v4));
+  register('#/live/4v4',        wrap(setupLive4v4));
+
   register('#/404', async () => {
     page.innerHTML = `<div class="p-6">
       <h1 class="text-2xl font-bold" data-i18n="common.notfound"></h1>

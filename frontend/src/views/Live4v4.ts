@@ -1,3 +1,6 @@
+import { createMatch, type NewMatch } from '../api';
+import { getCurrentUser, getLocalP2, getLocalP3, getLocalP4 } from '../session';
+
 export function setupLive4v4() 
 {
 	const canvas = document.getElementById("Play4v4") as HTMLCanvasElement;
@@ -33,7 +36,13 @@ export function setupLive4v4()
 		playerFourRight: false,
 	};
 
+	const user = getCurrentUser();
+	const p2 = getLocalP2();
+	const p3 = getLocalP3();
+	const p4 = getLocalP4();
+
 	const player = {
+	user: user,
 	x: 10,
 	y: canvas.height / 2 - paddleHeight / 2,
 	width: paddleWidth,
@@ -44,6 +53,7 @@ export function setupLive4v4()
 	};
 
 	const player2 = {
+	user: p2, 
 	x: canvas.width - paddleWidth - 10,
 	y: canvas.height / 2 - paddleHeight / 2,
 	width: paddleWidth,
@@ -54,6 +64,7 @@ export function setupLive4v4()
 	};
 
 	const player3 = {
+		user: p3,
 		x: canvas.width / 2 - paddleHeight / 2,
 		y: 10,
 		width: paddleHeight +10,
@@ -66,6 +77,7 @@ export function setupLive4v4()
 	
 
 	const player4 = {
+		user: p4,
 		x: canvas.width / 2 - paddleHeight / 2,
 		y: canvas.height - paddleWidth - 10,
 		width: paddleHeight  +10,
@@ -76,13 +88,13 @@ export function setupLive4v4()
 		score: 0,
 	};
 	
-	let lastPlayerHit: "player1" | "player2" | "player3" | "player4" | null = null;
+	let lastPlayerHit: "player" | "player2" | "player3" | "player4" | null = null;
 
 	const ball = {
 	x: canvas.width / 2,
 	y: canvas.height / 2,
 	radius: ballRadius,
-	speed: 3,
+	speed: 6,
 	dx: 4,
 	dy: 4,
 	color: "black",
@@ -369,11 +381,30 @@ export function setupLive4v4()
 	
 		ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
-		ctx.fillText(`Player1: ${player.score} 🥸`, canvas.width / 2, canvas.height / 10);
-		ctx.fillText(`Player2: ${player2.score} 🤠`, canvas.width / 2, canvas.height / 10 + 25);
-		ctx.fillText(`Player3: ${player3.score} 😎`, canvas.width / 2, canvas.height / 10 + 25 * 2);
-		ctx.fillText(`Player4: ${player4.score} 🤓`, canvas.width / 2, canvas.height / 10 + 25 * 3);
-		ctx.font = `bold 28px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
+		ctx.fillText(
+                     `Player1: ${player.score} 🥸`,
+                     canvas.width / 2,
+                     canvas.height / 10
+        );
+        
+        ctx.fillText(
+                     `${p2?.nick ?? "Player2"}: ${player2.score} 🤠`,
+                     canvas.width / 2,
+                     canvas.height / 10 + 25
+        );
+
+        ctx.fillText(
+                     `${p3?.nick ?? "Player3"}: ${player3.score} 😎`,
+                     canvas.width / 2,
+                     canvas.height / 10 + 25 * 2
+        );
+
+        ctx.fillText(
+                     `${p4?.nick ?? "Player4"}: ${player4.score} 🤓`,
+                     canvas.width / 2,
+                     canvas.height / 10 + 25 * 3
+        );
+        ctx.font = `bold 28px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
 		ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
 		ctx.font = `bold 12px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
@@ -402,7 +433,7 @@ export function setupLive4v4()
 
 		if (collision(ball, player, "vertical")) {
 			ball.speed = Math.min(ball.speed + 0.05, 10);
-			lastPlayerHit = "player1";
+			lastPlayerHit = "player";
 			if (
 			ball.x - ball.radius  < player.x + player.width &&
 			ball.x + ball.radius > player.x &&
@@ -492,7 +523,7 @@ export function setupLive4v4()
 			ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
 			if (lastPlayerHit) {
 				switch (lastPlayerHit) {
-					case "player1": 
+					case "player": 
 						player.score++;
 						break;
 					case "player2": 
@@ -510,7 +541,16 @@ export function setupLive4v4()
 			const players = [player, player2, player3, player4];
 			const winner = players.find(p => p.score === scorepoints);
 			if (winner) {
-				gameState.winnerMessage = `Player ${winner === player ? "1" : winner === player2 ? "2" : winner === player3 ? "3" : "4"} wins!🥳`;
+				gameState.winnerMessage =
+                    `Player ${
+                     winner === player
+                     ? player.user?.nick
+                     : winner === player2
+                     ? p2?.nick
+                     : winner === player3
+                     ? p3?.nick
+                     : p4?.nick
+                     } wins! 🥳`;
 				gameState.paused = true;
 				renderWinner();
 			}

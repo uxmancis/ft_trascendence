@@ -1,3 +1,6 @@
+/* When we use import and export our entire file is treated as a module. RETAKE CONVER HERE */
+import { renderPlayAI } from './PlayAI.js';
+// import { updateContent } from './test.js';
 /* navtarget: Navigation Target
 *
 *   About enum Syntax in Typescript:
@@ -19,63 +22,6 @@ var ColourBox;
     ColourBox["Green"] = "bg-green-500";
     ColourBox["Yellow"] = "bg-yellow-500";
 })(ColourBox || (ColourBox = {}));
-// The central state that holds all open files
-let openFiles = [];
-const renderTabs = () => {
-    // #1 Get containers: references to the main 2 HTML elements by their IDs
-    const tabContainer = document.getElementById('row-1-fixed');
-    const contentContainer = document.getElementById('row-2-display');
-    if (!tabContainer || !contentContainer)
-        return; // Check if elements exist
-    /*#2 Initialize HTML strings: we create empty variables to hold the new
-    *    HTML that will represent the current state of the application.
-    *
-    *    It clears old content and prevents accumulation, making sure every time
-    *    renderTabs() runs, it redraws the tab bar to reflect the new state. By
-    *    starting with empty strings we ensure we are generating a fresh set of HTML.
-    */
-    let tabsHtml = ''; /* tab means pestaña in Spanish */
-    let contentHtml = '';
-    /* NEW - Define Active and Inactive Tailwind Class Sets */
-    //Class for UNSELECTED tab:
-    const inactiveClasses = 'bg-neutral-800 text-gray-400 border-b border-gray-400/[0.20]';
-    //Class for SELECTED tab:
-    const activeClasses = 'bg-neutral-900 text-white border-t-2 border-t-blue-500 border-b-0';
-    // #3 Loop through state: it iterates over the central list of files (openFiles)
-    openFiles.forEach(file => {
-        //1.- Choose the correct set of classes
-        const dynamicClasses = file.isActive ? activeClasses : inactiveClasses;
-        //2.- Combine static and dynamic classes
-        const staticClasses = 'flex file-tab items-center space-x-3 pl-4 pr-4 pt-2 pb-2 border-r border-gray-400/[0.20]';
-        // Updates the DOM (innerHTML)
-        tabsHtml += `<div class="${dynamicClasses} ${staticClasses}" onclick="selectFile(${file.id})">
-                <span>${file.name}</span>
-                <img src="assets/crossIcon.png" class="object-contain h-5 hover:cursor-pointer hover:opacity-75 hover:brightness-50" onclick="closeFile(${file.id}, event)">
-            </div>
-        `;
-        /* Displays content of active file*/
-        if (file.isActive) {
-            contentHtml = `<div class="h-full w-full ${file.displayColour}"></div>`; // Displays the active file's content
-        }
-    });
-    tabContainer.innerHTML = tabsHtml; // <-- Updates the tab bar
-    if (contentHtml === '') /* By default when no content is displayed, same message as at first :) */
-        contentContainer.innerHTML = `
-        <img src="/assets/VsCodeLogo_Black.png" class="w-80 opacity-35">
-                        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
-                        <p1 class="mb-2 text-white opacity-35">
-                            <a href="assets/en.subject_trascendence_30_09_2025.pdf" class="hover:underline" target="_blank">Ft_trascendence</a> was developed with love ❤️ by  
-                            <a href="https://profile.intra.42.fr/users/emunoz" class="hover:underline" target="_blank">emunoz</a> 
-                            <a href="https://profile.intra.42.fr/users/ngastana" class="hover:underline" target="_blank">ngastana</a> and
-                            <a href="https://profile.intra.42.fr/users/uxmancis" class="hover:underline" target="_blank">uxmancis</a>.</p1>
-
-
-                        <p1 class="pt-4 text-white opacity-35"> Click in 
-                            <button class="hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
-                            and give your first steps in our trascendence! </p1>`;
-    else
-        contentContainer.innerHTML = contentHtml; // <-- Updates the editor area
-};
 /* The Controllers: closeFile() and selectFile()
 *
 *   These functions are responsible for updating the central data (openFiles).
@@ -102,6 +48,68 @@ const closeFile = (fileId, event) => {
     }
     // 3. Re-render the UI
     renderTabs();
+};
+// The central state that holds all open files
+let openFiles = [];
+const renderTabs = async () => {
+    // #1 Get containers: references to the main 2 HTML elements by their IDs
+    const tabContainer = document.getElementById('row-1-fixed');
+    const contentContainer = document.getElementById('row-2-display');
+    if (!tabContainer || !contentContainer)
+        return; // Check if elements exist
+    /*#2 Initialize HTML strings: we create empty variables to hold the new
+    *    HTML that will represent the current state of the application.
+    *
+    *    It clears old content and prevents accumulation, making sure every time
+    *    renderTabs() runs, it redraws the tab bar to reflect the new state. By
+    *    starting with empty strings we ensure we are generating a fresh set of HTML.
+    */
+    let tabsHtml = ''; /* tab means pestaña in Spanish */
+    let contentHtml = '';
+    /* NEW - Define Active and Inactive Tailwind Class Sets */
+    //Class for UNSELECTED tab:
+    const inactiveClasses = 'bg-neutral-800 text-gray-400 border-b border-gray-400/[0.20]';
+    //Class for SELECTED tab:
+    const activeClasses = 'bg-neutral-900 text-white border-t-2 border-t-blue-500 border-b-0';
+    // #3 Loop through state: it iterates over the central list of files (openFiles)
+    // openFiles.forEach(file => { // <-- Reads from the central data (openFiles)
+    for (const file of openFiles) //for...of, instead of openFiles.forEach() because of not being async (to use wait)
+     {
+        //1.- Choose the correct set of classes
+        const dynamicClasses = file.isActive ? activeClasses : inactiveClasses;
+        //2.- Combine static and dynamic classes
+        const staticClasses = 'flex file-tab items-center space-x-3 pl-4 pr-4 pt-2 pb-2 border-r border-gray-400/[0.20]';
+        // Updates the DOM (innerHTML)
+        tabsHtml += `<div class="${dynamicClasses} ${staticClasses}" onclick="selectFile(${file.id})">
+                <span>${file.name}</span>
+                <img src="assets/crossIcon.png" class="object-contain h-5 hover:cursor-pointer hover:opacity-75 hover:brightness-50" onclick="closeFile(${file.id}, event)">
+            </div>
+        `;
+        /* Displays content of active file*/
+        if (file.isActive) {
+            contentHtml = await renderPlayAI(tabContainer); /* AWAIT: it resolves Promise<string> to a string */
+            // contentHtml = updateContent(contentHtml);
+            // contentHtml = `<div class="h-full w-full ${file.displayColour}"></div>`; // Displays the active file's content
+        }
+    }
+    // });
+    tabContainer.innerHTML = tabsHtml; // <-- Updates the tab bar
+    if (contentHtml === '') /* By default when no content is displayed, same message as at first :) */
+        contentContainer.innerHTML = `
+        <img src="/assets/VsCodeLogo_Black.png" class="w-80 opacity-35">
+                        <h1 class="pt-4 opacity-35">WELCOME TO OUR TRASCENDENCE!</h1>
+                        <p1 class="mb-2 text-white opacity-35">
+                            <a href="assets/en.subject_trascendence_30_09_2025.pdf" class="hover:underline" target="_blank">Ft_trascendence</a> was developed with love ❤️ by  
+                            <a href="https://profile.intra.42.fr/users/emunoz" class="hover:underline" target="_blank">emunoz</a> 
+                            <a href="https://profile.intra.42.fr/users/ngastana" class="hover:underline" target="_blank">ngastana</a> and
+                            <a href="https://profile.intra.42.fr/users/uxmancis" class="hover:underline" target="_blank">uxmancis</a>.</p1>
+
+
+                        <p1 class="pt-4 text-white opacity-35"> Click in 
+                            <button class="hover:underline" onclick="openFile('instructions.txt', ColourBox.Blue)">instructions.txt</button>
+                            and give your first steps in our trascendence! </p1>`;
+    else
+        contentContainer.innerHTML = contentHtml; // <-- Updates the editor area
 };
 const selectFile = (fileId) => {
     // 1. Find the selected file and update the active status

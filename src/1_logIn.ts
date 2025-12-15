@@ -40,7 +40,7 @@ export function askNicknameEnterIDE(){
     if (nickname){
         nickname.addEventListener('keyup', (event) => {
             if (event.key === 'Enter')
-                getIntoIDE();
+                getIntoIDE(); //TODO: enter nickname to DB
         })
     }  
 }

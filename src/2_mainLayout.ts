@@ -162,4 +162,5 @@ export function getIntoIDE()
     * when calling from outside */
     clickOpenLeftSideBar();
     clickOpenFiles();
+    
 }

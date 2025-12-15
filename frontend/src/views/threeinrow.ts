@@ -1,15 +1,41 @@
 // src/views/PlayThreeInRow.ts
+import { createMatch, type NewMatch } from '../api';
 import { createUser, NewUser } from '../api';
-import { getCurrentUser, getLocalP2, setLocalP2 } from '../session';
+import { getCurrentUser, getLocalP2, setLocalP2, clearLocalP2} from '../session';
 import { navigate } from '../router';
 import { t, bindI18n } from '../i18n/i18n';
 
 const LIVE_ROUTE = '#/live/threeinrow';
 
+export function postThreeInRowResult(winner: 'X' | 'O' | 'draw', board: (string | null)[]) {
+    const player = getCurrentUser();
+    const p2 = getLocalP2();
+
+    if (!player || !p2) return;
+
+    const payload: NewMatch = {
+        player1_id: player.id,
+        player2_id: p2.id,
+        score_p1: winner === 'X' ? 1 : 0,
+        score_p2: winner === 'O' ? 1 : 0,
+        winner_id: winner === 'X' ? player.id : winner === 'O' ? p2.id : 0,
+        duration_seconds: 0,
+        details: {
+            mode: 'three-in-row',
+            board,
+            players: {
+                p1: player.nick,
+                p2: p2.nick,
+            }
+        } as any
+    };
+
+    createMatch(payload).catch(err => console.error('[threeinrow] error saving match', err));
+}
+
 export async function renderPlayThreeInRow(root: HTMLElement) {
   const me = getCurrentUser();
   const p2 = getLocalP2();
-
   root.innerHTML = `
     <section class="mx-auto max-w-6xl p-6 grow space-y-6">
       <h1 class="text-2xl font-bold" data-i18n="threeinrow.title">${t('threeinrow.title')}</h1>
@@ -35,12 +61,14 @@ export async function renderPlayThreeInRow(root: HTMLElement) {
   `;
 
   bindI18n(root);
-
   // cambiar jugador 2
   const change = root.querySelector<HTMLButtonElement>('#changeP2');
-  if (change) change.onclick = () => { localStorage.removeItem('pong:local:p2'); renderPlayThreeInRow(root); };
-
-  // formulario jugador 2
+  if (change) {
+      change.onclick = () => { 
+      clearLocalP2(); // limpia P2
+      renderPlayThreeInRow(root); // recarga el HTML
+    };
+  }
   const form = root.querySelector<HTMLFormElement>('#p2-form');
   if (form) {
     const errBox = form.querySelector<HTMLDivElement>('#err')!;
@@ -57,13 +85,12 @@ export async function renderPlayThreeInRow(root: HTMLElement) {
         setLocalP2({ id: created.id, nick: created.nick, avatar: created.avatar });
         renderPlayThreeInRow(root);
       } catch (err: any) {
-        errBox.textContent = err?.message || t('threeinrow.err.createP2');
+        errBox.textContent = err?.message || t('pvp.err.createP2');
         errBox.classList.remove('hidden');
       }
     };
   }
 
-  // iniciar juego
   const startBtn = root.querySelector<HTMLButtonElement>('#startBtn')!;
   startBtn.onclick = () => {
     const p2Now = getLocalP2();
@@ -71,19 +98,28 @@ export async function renderPlayThreeInRow(root: HTMLElement) {
     sessionStorage.setItem('threeinrow:players', JSON.stringify([me, p2Now]));
 
     root.innerHTML = `
-      <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
-        <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
-          <span class="text-lg font-bold">🎮 ${t('threeinrow.title')}</span>
-          <button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
-        </div>
-        <div class="flex flex-col items-center justify-center p-4">
-          <div id="tic-tac-toe" class="grid grid-cols-3 gap-2 w-64 h-64">
-            ${'<div class="cell border border-white flex items-center justify-center text-4xl cursor-pointer"></div>'.repeat(9)}
-          </div>
-          <div id="message" class="mt-4 text-xl font-bold text-center"></div>
-        </div>
-      </section>
-    `;
+  <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
+    <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+      <span class="text-lg font-bold">🎮 ${t('threeinrow.title')}</span>
+      <button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
+    </div>
+
+    <div class="flex flex-col items-center justify-center p-4 gap-3">
+      <!-- 👇 INFO DE JUGADORES -->
+      <div id="turn-info" class="text-sm opacity-90">
+        <span class="font-semibold">${me?.nick}</span> juega con <b>X</b> · 
+        <span class="font-semibold">${p2?.nick}</span> juega con <b>O</b>
+      </div>
+
+      <div id="tic-tac-toe" class="grid grid-cols-3 gap-2 w-64 h-64">
+        ${'<div class="cell border border-white flex items-center justify-center text-4xl cursor-pointer"></div>'.repeat(9)}
+      </div>
+
+      <div id="message" class="mt-4 text-xl font-bold text-center"></div>
+    </div>
+  </section>
+`;
+
 
     document.getElementById("backBtn")?.addEventListener("click", () => { navigate("#"); });
 
@@ -135,16 +171,14 @@ export async function setupThreeInRow() {
         const winner = turn === 'X' ? getCurrentUser()?.nick || 'Jugador 1' 
                                     : getLocalP2()?.nick || 'Jugador 2';
         message.textContent = `${winner} gana! 🎉`;
+        postThreeInRowResult(turn as 'X' | 'O', board);
         return;
       }
 
-      // Revisar empate
       if (!board.includes(null)) {
         message.textContent = "Empate 😐";
         return;
       }
-
-      // Cambiar turno
       turn = turn === 'X' ? 'O' : 'X';
     };
   });
@@ -159,11 +193,6 @@ function checkWin(board: (string|null)[], player: string) {
     [0,4,8],[2,4,6]
   ];
   return wins.some(line => line.every(i => board[i] === player));
-}
-
-function resetBoard(board: (string|null)[], cells: NodeListOf<HTMLDivElement>) {
-  board.fill(null);
-  cells.forEach(c => c.textContent = ' ');
 }
 
 /* ---------- helpers UI ---------- */
@@ -226,7 +255,9 @@ function loginCard() {
 }
 
 function randInt(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function randomColorHex(): string { const h = randInt(0, 359), s = 80, l = 45;
+
+function randomColorHex(): string {
+  const h = randInt(0, 359), s = 80, l = 45;
   const s1 = s / 100, l1 = l / 100;
   const c = (1 - Math.abs(2 * l1 - 1)) * s1;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));

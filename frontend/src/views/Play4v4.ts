@@ -131,11 +131,10 @@ export async function renderPlay4v4(root: HTMLElement){
   startBtn.onclick = () => {
     const localsNow2 = getTournamentPlayers();
     if (!me || localsNow2.filter(Boolean).length !== 3) return;
-
+    
     const players = [me, ...localsNow2]; // [J1, J2, J3, J4]
     sessionStorage.setItem('tournament:players', JSON.stringify(players));
     location.hash = LIVE_ROUTE;
-
     root.innerHTML = `
       <!-- Contenedor principal -->
       <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
@@ -149,8 +148,15 @@ export async function renderPlay4v4(root: HTMLElement){
         </div>
 
         <!-- Contenedor del juego -->
-        <div class="flex flex-col items-center justify-center p-4">
-          <canvas id="Play4v4" width="550" height="550"
+        <div class="flex flex-col items-center justify-center p-4 gap-3">
+          <!-- 👇 INFO DE JUGADORES -->
+          <div id="turn-info" class="text-sm opacity-90">
+            <span class="font-semibold">${players[0]?.nick}</span> = <b>W / S</b>  ·  
+            <span class="font-semibold">${players[1]?.nick}</span> = <b>↑ / ↓</b>  ·  
+            <span class="font-semibold">${players[2]?.nick}</span> = <b>C / V</b>  ·  
+            <span class="font-semibold">${players[3]?.nick}</span> = <b>L / Ñ</b>
+        </div>
+        <canvas id="Play4v4" width="550" height="550"
             class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
         </div>
 

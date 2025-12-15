@@ -1,6 +1,6 @@
 // src/views/Play1v1.ts
 import { createUser, NewUser } from '../api';
-import { getCurrentUser, getLocalP2, setLocalP2 } from '../session';
+import { getCurrentUser, getLocalP2, setLocalP2, clearLocalP2} from '../session';
 import { navigate } from '../router';
 import { t, bindI18n } from '../i18n/i18n';
 import { setupLivePong3D } from './Live1v1'; // ← mantiene tu import/estructura
@@ -53,8 +53,12 @@ export async function renderPlay1v1(root: HTMLElement) {
   bindI18n(root);
 
   const change = root.querySelector<HTMLButtonElement>('#changeP2');
-  if (change) change.onclick = () => { localStorage.removeItem('pong:local:p2'); renderPlay1v1(root); };
-
+if (change) {
+  change.onclick = () => { 
+    clearLocalP2(); // limpia P2
+    renderPlay1v1(root); // recarga el HTML
+  };
+}
   const form = root.querySelector<HTMLFormElement>('#p2-form');
   if (form) {
     const errBox = form.querySelector<HTMLDivElement>('#err')!;

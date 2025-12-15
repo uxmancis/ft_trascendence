@@ -1,7 +1,7 @@
 import { createMatch, type NewMatch } from '../api';
 import { getCurrentUser, getLocalP2, getLocalP3, getLocalP4 } from '../session';
 
-export function setupLive4v4() 
+export function setupLive4v4()
 {
 	const canvas = document.getElementById("Play4v4") as HTMLCanvasElement;
 	const ctx = canvas.getContext("2d")!;
@@ -10,7 +10,7 @@ export function setupLive4v4()
 	const paddleWidth = 10;
 	const ballRadius = 15;
 	const scorepoints = 3;
-	
+
 	const ballImg = new Image();
 
 	const backgroundGame = new Image();
@@ -32,15 +32,16 @@ export function setupLive4v4()
 		playerTwoKeysDown: false,
 		playerThreeLeft: false,
 		playerThreeRight: false,
-		playerFourLeft: false,
+        playerFourLeft: false,
 		playerFourRight: false,
 	};
 
 	const user = getCurrentUser();
-	const p2 = getLocalP2();
+    const p2 = getLocalP2();
 	const p3 = getLocalP3();
 	const p4 = getLocalP4();
-
+	let postedResult = false;
+	let matchStartedAt = Date.now();
 	const player = {
 	user: user,
 	x: 10,
@@ -53,7 +54,7 @@ export function setupLive4v4()
 	};
 
 	const player2 = {
-	user: p2, 
+	user: p2,
 	x: canvas.width - paddleWidth - 10,
 	y: canvas.height / 2 - paddleHeight / 2,
 	width: paddleWidth,
@@ -74,7 +75,7 @@ export function setupLive4v4()
 		dy: 0,
 		score: 0,
 	};
-	
+
 
 	const player4 = {
 		user: p4,
@@ -87,7 +88,7 @@ export function setupLive4v4()
 		dy: 0,
 		score: 0,
 	};
-	
+
 	let lastPlayerHit: "player" | "player2" | "player3" | "player4" | null = null;
 
 	const ball = {
@@ -107,15 +108,15 @@ export function setupLive4v4()
 		gameState.ballReady = true;};
 	// ballImg.onerror = () => {
 	//   console.error("No se pudo cargar la imagen", ballImg.src);};
-	ballImg.src = new URL("/src/assets/customization/metalball.png", import.meta.url).href;
+	ballImg.src = new URL("/public/assets/customization/metalball.png", import.meta.url).href;
 
 	backgroundGame.onload = () => {
 		console.log("La imagen del mapa ya está lista para dibujar");
 		gameState.backgroundReady = true;};
 	// backgroundGame.onerror = () => {
 	//   console.error("No se pudo cargar la imagen", backgroundGame.src);};
-	backgroundGame.src = new URL("/src/assets/customization/arcade5.jpg", import.meta.url).href;
-	
+	backgroundGame.src = new URL("/public/assets/customization/arcade5.jpg", import.meta.url).href;
+
 	function drawRect(x: number, y: number, w: number, h: number, color: string, backgroundGame?: HTMLImageElement) {
 		if (backgroundGame)
 		ctx.drawImage(backgroundGame, x, y, w, h);
@@ -134,7 +135,7 @@ export function setupLive4v4()
 			ctx.closePath();
 			ctx.clip(); // todo lo que dibujemos ahora quedará dentro del círculo
 			ctx.drawImage(ballImg, x - r, y - r, r * 2, r * 2);
-	
+
 			ctx.restore();
 		}
 		else {
@@ -149,7 +150,7 @@ export function setupLive4v4()
 
 	function drawText(text: string, x: number, y: number) {
 		ctx.save();
-	
+
 		ctx.translate(x, y);
 		ctx.translate(-x, -y);
 		// // Efecto de sombra para darle profundidad
@@ -157,14 +158,14 @@ export function setupLive4v4()
 		// ctx.shadowBlur = 10;
 		// ctx.shadowOffsetX = 3;
 		// ctx.shadowOffsetY = 3;
-	
+
 		ctx.fillStyle = 'white';
 		ctx.font = 'bold 38px "Orbitron", Entirely';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'top';
 
 		ctx.fillText(text, x, y);
-	
+
 		ctx.restore();
 	}
 
@@ -173,13 +174,13 @@ export function setupLive4v4()
 		ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
 		ctx.fillStyle = "rgba(33, 34, 35, 0.6)";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-	
+
 		ctx.textAlign = "center";
 		//ctx.shadowColor = "white";
 		ctx.shadowBlur = 25;
-	
+
 		ctx.font = "bold 90px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
-	
+
 		ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#FFFFFF";
 		const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
 			if (text === "GO!") {
@@ -187,7 +188,7 @@ export function setupLive4v4()
 				//ctx.shadowColor = "white";
 			}
 		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-	
+
 		ctx.shadowBlur = 0;
 		}
 	}
@@ -197,9 +198,11 @@ export function setupLive4v4()
 	  gameState.countdownValue = 3;
 	  gameState. winnerMessage = "";
 	  gameState.paused = true;
-	
+      postedResult = false;
+      matchStartedAt = Date.now();
+
 	  if (gameState.countdownTimer) clearInterval(gameState.countdownTimer);
-	
+
 	  gameState.countdownTimer = window.setInterval(() => {
 		gameState.countdownValue--;
 		if (gameState.countdownValue <= 0) {
@@ -226,7 +229,7 @@ export function setupLive4v4()
 		if (e.key === "l") gameState.playerFourLeft = true;
 		if (e.key === "ñ") gameState.playerFourRight = true;
 	});
-	
+
 	document.addEventListener("keyup", (e) => {
 		if (e.key === "ArrowUp") gameState.playerTwoKeysUp = false;
 		if (e.key === "ArrowDown") gameState.playerTwoKeysDown = false;
@@ -241,7 +244,7 @@ export function setupLive4v4()
 	document.addEventListener("keydown", (e) => {
 		if (gameState.playerKeysUp && !gameState.paused) {
 			player.y -= player.dy * 2;
-			if (player.y < 0) 
+			if (player.y < 0)
 			player.y = 0;
 		}
 		if (gameState.playerKeysDown && !gameState.paused) {
@@ -252,7 +255,7 @@ export function setupLive4v4()
 		}
 		if (gameState.playerTwoKeysUp && !gameState.paused) {
 			player2.y -= player2.dy * 2;
-			if (player2.y < 0) 
+			if (player2.y < 0)
 			player2.y = 0;
 		}
 		if (gameState.playerTwoKeysDown && !gameState.paused) {
@@ -295,7 +298,7 @@ export function setupLive4v4()
 			player4.score = 0;
 			return;
 		}
-	
+
 		if (!gameState.countdownActive && gameState. winnerMessage === "") {
 			gameState.paused = !gameState.paused;
 		}
@@ -314,7 +317,7 @@ export function setupLive4v4()
 		player4.score = 0;
 		return;
 		}
-	
+
 		if (gameState. winnerMessage !== "" && !gameState.countdownActive) {
 		gameState. winnerMessage = "";
 		resetBall();
@@ -325,7 +328,7 @@ export function setupLive4v4()
 		player4.score = 0;
 		return;
 		}
-	
+
 		if (gameStarted && !gameState.countdownActive && gameState. winnerMessage === "") {
 		gameState.paused = !gameState.paused;
 		}
@@ -355,56 +358,56 @@ export function setupLive4v4()
 		ball.dy = 0;
 		ball.x = canvas.width / 2;
 		ball.y = canvas.height / 2;
-	
+
 		const ranges = [
 			[25, 65],
 			[115, 165],
 			[195, 245],
 			[295, 345]
 		].map(([min, max]) => [min * Math.PI/180, max * Math.PI/180]);
-	
+
 		const selectedRange = ranges[Math.floor(Math.random() * ranges.length)];
 		const angle = Math.random() * (selectedRange[1] - selectedRange[0]) + selectedRange[0];
-	
+
 		const startDelay = initial ? 0 : 1000;
 		setTimeout(() => ball.dx = ball.speed * Math.cos(angle), startDelay);
 		setTimeout(() => ball.dy = ball.speed * Math.sin(angle), startDelay);
 	}
-	
+
 
 	function renderWinner() {
 		drawRect(0, 0, canvas.width, canvas.height, "black");
-	
+
 		ctx.textAlign = "center";
 		//ctx.shadowColor = "white";
 		ctx.shadowBlur = 20;
-	
+
 		ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
 		ctx.fillText(
-                     `Player1: ${player.score} 🥸`,
-                     canvas.width / 2,
-                     canvas.height / 10
-        );
-        
-        ctx.fillText(
-                     `${p2?.nick ?? "Player2"}: ${player2.score} 🤠`,
-                     canvas.width / 2,
-                     canvas.height / 10 + 25
-        );
+					 `Player1: ${player.score} 🥸`,
+					 canvas.width / 2,
+					 canvas.height / 10
+		);
 
-        ctx.fillText(
-                     `${p3?.nick ?? "Player3"}: ${player3.score} 😎`,
-                     canvas.width / 2,
-                     canvas.height / 10 + 25 * 2
-        );
+		ctx.fillText(
+					 `${p2?.nick ?? "Player2"}: ${player2.score} 🤠`,
+					 canvas.width / 2,
+					 canvas.height / 10 + 25
+		);
 
-        ctx.fillText(
-                     `${p4?.nick ?? "Player4"}: ${player4.score} 🤓`,
-                     canvas.width / 2,
-                     canvas.height / 10 + 25 * 3
-        );
-        ctx.font = `bold 28px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
+		ctx.fillText(
+					 `${p3?.nick ?? "Player3"}: ${player3.score} 😎`,
+					 canvas.width / 2,
+					 canvas.height / 10 + 25 * 2
+		);
+
+		ctx.fillText(
+					 `${p4?.nick ?? "Player4"}: ${player4.score} 🤓`,
+					 canvas.width / 2,
+					 canvas.height / 10 + 25 * 3
+		);
+		ctx.font = `bold 28px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
 		ctx.fillStyle = "white";
 		ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
 		ctx.font = `bold 12px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
@@ -414,9 +417,51 @@ export function setupLive4v4()
 		canvas.width / 2,
 		canvas.height / 2 + canvas.height / 4
 		);
-	
+
 		ctx.shadowBlur = 0;
 	}
+    function postResultIfNeeded(winner: typeof player) {
+        if (postedResult) return;
+        postedResult = true;
+   
+        if (!player.user) return;
+   
+        const duration_seconds = Math.max(
+             1,
+             Math.round((Date.now() - matchStartedAt) / 1000)
+        );
+        const isPlayer1Winner = winner === player;
+        const payload: NewMatch = {
+             player1_id: player.user.id,
+             player2_id: player2.user?.id ?? 0,
+             score_p1: player.score,
+             score_p2: Math.max(
+                     player2.score,
+                     player3.score,
+                     player4.score
+             ),
+             winner_id: isPlayer1Winner ? player.user.id : 0,
+             duration_seconds,
+             details: {
+                     mode: "live-4v4",
+                     scores: {
+                                  p1: player.score,
+                                  p2: player2.score,
+                                  p3: player3.score,
+                                  p4: player4.score,
+                     },
+                     players: {
+                                  p1: player.user?.nick,
+                                  p2: p2?.nick,
+                                  p3: p3?.nick,
+                                  p4: p4?.nick,
+                     }
+             } as any,
+        };
+
+        createMatch(payload)
+             .catch(err => console.error("[match] error 4v4", err));
+   }
 
 	function update() {
 
@@ -427,12 +472,12 @@ export function setupLive4v4()
 
 	//   player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
 	//   player2.y = Math.max(0, Math.min(canvas.height - player2.height, player2.y));
-	
+
 		ball.x += ball.dx;
 		ball.y += ball.dy;
 
 		if (collision(ball, player, "vertical")) {
-			ball.speed = Math.min(ball.speed + 0.05, 10);
+			ball.speed = Math.min(ball.speed + 0.1, 10);
 			lastPlayerHit = "player";
 			if (
 			ball.x - ball.radius  < player.x + player.width &&
@@ -442,7 +487,7 @@ export function setupLive4v4()
 			) {
 			let impactPoint = ball.y - player.y;
 			let third = player.height / 25;
-			
+
 			if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
 				ball.dx = -ball.dx;
 				ball.dy = -ball.dy;
@@ -464,7 +509,7 @@ export function setupLive4v4()
 			) {
 			let impactPoint = ball.y - player2.y;
 			let third = player2.height / 25;
-			
+
 			if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
 				ball.dx = -ball.dx;
 				ball.dy = -ball.dy;
@@ -523,35 +568,35 @@ export function setupLive4v4()
 			ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
 			if (lastPlayerHit) {
 				switch (lastPlayerHit) {
-					case "player": 
+					case "player":
 						player.score++;
 						break;
-					case "player2": 
-						player2.score++; 
+					case "player2":
+						player2.score++;
 						break;
-					case "player3": 
-						player3.score++;  
+					case "player3":
+						player3.score++;
 						break;
-					case "player4": 
-						player4.score++;  
+					case "player4":
+						player4.score++;
 						break;
 				}
 			}
-			// Comprobar si alguien ganó
 			const players = [player, player2, player3, player4];
 			const winner = players.find(p => p.score === scorepoints);
 			if (winner) {
 				gameState.winnerMessage =
-                    `Player ${
-                     winner === player
-                     ? player.user?.nick
-                     : winner === player2
-                     ? p2?.nick
-                     : winner === player3
-                     ? p3?.nick
-                     : p4?.nick
-                     } wins! 🥳`;
+					`Player ${
+					 winner === player
+					 ? player.user?.nick
+					 : winner === player2
+					 ? p2?.nick
+					 : winner === player3
+					 ? p3?.nick
+					 : p4?.nick
+					 } wins! 🥳`;
 				gameState.paused = true;
+                postResultIfNeeded(winner);
 				renderWinner();
 			}
 			resetBall();
@@ -595,7 +640,7 @@ Player 4: L / Ñ
 		if (gameState. winnerMessage !== "") {
 			renderWinner();
 			return;
-		}  
+		}
 		drawRect(0, 0, canvas.width, canvas.height, "black", gameState.backgroundReady ? backgroundGame : undefined);
 
 		drawRect(player.x, player.y, player.width, player.height, player.color);
@@ -610,7 +655,7 @@ Player 4: L / Ñ
 		drawText(player2.score.toString(), canvas.width - 50, canvas.height / 2);
 		drawText(player3.score.toString(), canvas.width / 2, 50);
 		drawText(player4.score.toString(), canvas.width / 2, canvas.height - 50);
-		
+
 		if (gameState.paused && gameState.winnerMessage !== "") {
 			ctx.font = "40px Arial";
 		ctx.fillStyle = "yellow";

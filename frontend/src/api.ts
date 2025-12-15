@@ -6,7 +6,7 @@
 
 export const API_URL =
   (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, '') ||
-  'http://c4r6s3.42urduliz.com:3000';
+  '/api';
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {

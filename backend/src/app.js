@@ -31,9 +31,18 @@ const logger = PRETTY
 const fastify = Fastify({ logger });
 
 await fastify.register(cors, {
-  origin: true, // permite todos los orígenes dinámicamente
+  origin: (origin, cb) => {
+    // permite navegador + curl + same-origin
+    if (!origin) return cb(null, true);
+    return cb(null, true);
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+  ],
 });
 
 fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {

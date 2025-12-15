@@ -15,6 +15,7 @@ import { renderPlay4v4 } from './views/Play4v4';
 import { setupLive4v4 } from './views/Live4v4';
 import { getCurrentUser } from './session';
 import { renderLogin } from './views/Login';
+import { getIntoIDE } from './views/GetIntoIDE';
 
 // 🧩 Accesibilidad
 import { applyA11yFromStorage } from './a11y/prefs';
@@ -33,23 +34,24 @@ initI18n();
 applyA11yFromStorage();
 applyThemeFromStorage();
 
-const app = document.getElementById('app')!;
 
-// 🔧 Limpia el splash inicial del index.html
+// Montamos la APP
+const app = document.getElementById('app')!;
 app.innerHTML = '';
 
-const header = document.createElement('div');
-const page = document.createElement('main');
-page.className = 'flex-1';
-app.appendChild(header);
-app.appendChild(page);
+// 1️⃣ Montamos el layout VSCode
+getIntoIDE();
+
+// 2️⃣ Este será el contenedor del router
+const page = document.getElementById('router-view')!;
+
 
 // Helper para (re)montar el navbar y traducirlo
-function renderNavbarAndBind() {
+/* function renderNavbarAndBind() {
   header.innerHTML = '';
   renderNavbar(header);
   bindI18n(header);
-}
+} */
 
 // Helper: crea un handler 0-args que pinta y luego traduce `page`
 const wrap = (renderFn: (c: HTMLElement) => void | Promise<void>) =>
@@ -73,7 +75,8 @@ function bootRoutes() {
   register('#/live/4v4',        wrap(setupLive4v4));
 
   register('#/404', async () => {
-    page.innerHTML = `<div class="p-6">
+    page.innerHTML = 
+    `<div class="p-6">
       <h1 class="text-2xl font-bold" data-i18n="common.notfound"></h1>
     </div>`;
     bindI18n(page);
@@ -87,33 +90,33 @@ onLangChange(() => {
 
   // si hay sesión, re-render del navbar (textos dinámicos/sin data-i18n)
   if (getCurrentUser()) {
-    renderNavbarAndBind();
+    /* renderNavbarAndBind(); */
   }
 
   // si existe el panel suelto (en login), retradúcelo
-  const panel = document.getElementById('unified-control-panel');
-  if (panel) bindI18n(panel);
+/*   const panel = document.getElementById('unified-control-panel');
+  if (panel) bindI18n(panel); */
 });
 
 const user = getCurrentUser();
 
 if (!user) {
   // ⛔️ sin navbar en login
-  header.innerHTML = '';
-  // Panel inferior disponible en login
-  UnifiedControlPanel();
+/*   header.innerHTML = '';
+ */  // Panel inferior disponible en login
+/*   UnifiedControlPanel();
   {
     const panel = document.getElementById('unified-control-panel');
     if (panel) bindI18n(panel);
-  }
+  } */
   // Render de login + traducción inicial
   renderLogin(page, () => {
     // tras login
-    header.innerHTML = '';
-    page.innerHTML = '';
+/*     header.innerHTML = '';
+ */    page.innerHTML = '';
     // elimina panel inferior si existe
     document.getElementById('unified-control-panel')?.remove();
-    renderNavbarAndBind();         // <— reusamos helper
+   /*  renderNavbarAndBind();     */     // <— reusamos helper
     bootRoutes();
     location.hash = '#/';          // a Inicio
     startRouter();
@@ -121,7 +124,7 @@ if (!user) {
   bindI18n(page);
 } else {
   // ✅ con navbar persistente
-  renderNavbarAndBind();           // <— reusamos helper
+  /* renderNavbarAndBind();  */          // <— reusamos helper
   bootRoutes();
   startRouter();
 }

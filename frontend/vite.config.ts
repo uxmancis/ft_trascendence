@@ -1,18 +1,27 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: ".",
+  root: '.',
+
   build: {
-    outDir: "dist", // Carpeta de build
+    outDir: 'dist',
     rollupOptions: {
       input: {
         main: 'index.html',
       },
     },
   },
+
   server: {
+    host: true,
     port: 5173,
-    open: true,
-    historyApiFallback: true,
+    strictPort: true,
+    open: false,
+
+    hmr: {
+      protocol: 'wss',
+      host: 'localhost',
+      clientPort: 8443,
+    },
   },
 });

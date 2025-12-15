@@ -107,8 +107,8 @@ export async function renderPlayThreeInRow(root: HTMLElement) {
     <div class="flex flex-col items-center justify-center p-4 gap-3">
       <!-- 👇 INFO DE JUGADORES -->
       <div id="turn-info" class="text-sm opacity-90">
-        <span class="font-semibold">${me?.nick}</span> juega con <b>X</b> · 
-        <span class="font-semibold">${p2?.nick}</span> juega con <b>O</b>
+        <span class="font-semibold">${me?.nick}</span> = <b>X</b> · 
+        <span class="font-semibold">${p2?.nick}</span> = <b>O</b>
       </div>
 
       <div id="tic-tac-toe" class="grid grid-cols-3 gap-2 w-64 h-64">

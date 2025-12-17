@@ -4,6 +4,7 @@ import { getCurrentUser, clearAppStorage } from './session';
 import { UnifiedControlPanel } from './components/UnifiedControlPanel';
 import { bindI18n } from './i18n/i18n';
 import { getTheme } from './custom/prefs';
+import { initTerminal, logTerminal } from './components/IDEComponets/Terminal';
 
 /* ================= THEME INIT ================= */
 
@@ -127,8 +128,8 @@ export function getIntoIDE(): void {
                    text-white grid grid-rows-[auto_minmax(0,1fr)]
                    overflow-hidden">
 
-            <div class="p-3 text-sm text-white/70">TERMINAL</div>
-            <div class="overflow-auto"></div>
+            <div class="p-3 text-sm text-white/70" style="padding:7px">TERMINAL</div>
+            <div id="terminal-container" class="overflow-auto"></div>
           </div>
         </section>
       </div>
@@ -141,6 +142,15 @@ export function getIntoIDE(): void {
       </footer>
     </div>
   `;
+
+  /* ================= TERMINAL ================= */
+
+  const terminalContainer = document.getElementById('terminal-container');
+  if (terminalContainer) 
+  {
+    initTerminal(terminalContainer);
+  }
+  logTerminal('Entered IDE');
 
   /* ================= FILE EXPLORER ================= */
 

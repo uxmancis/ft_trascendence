@@ -1,54 +1,92 @@
+// src/views/Home.ts
+
 import { navigate } from '../router';
 import { t } from '../i18n/i18n';
+import { logTerminal } from '../components/IDEComponets/Terminal';
 
-export async function renderHome(root: HTMLElement){
+/*
+** createCard
+**
+** Small helper to render a VSCode-like action card.
+** - id: DOM id for click binding
+** - titleKey / descKey: i18n keys
+*/
+function createCard(id: string, titleKey: string, descKey: string): string 
+{
+  return `
+    <button
+      id="${id}"
+      class="
+        rounded-lg
+        bg-white/5 hover:bg-white/10
+        border border-white/10
+        p-4 text-left
+        transition
+      ">
+      <div class="text-lg font-medium mb-1" data-i18n="${titleKey}">
+        ${t(titleKey)}
+      </div>
+      <p class="text-sm opacity-70" data-i18n="${descKey}">
+        ${t(descKey)}
+      </p>
+    </button>
+  `;
+}
+
+/*
+** renderHome
+**
+** Home view of the application.
+** - Shows main navigation cards
+** - Binds navigation actions
+** - Logs user actions to terminal
+*/
+
+export async function renderHome(root: HTMLElement): Promise<void> 
+{
+  /* Render layout */
   root.innerHTML = `
-    <section class="mx-auto max-w-6xl p-6 grow">
-      <h1 class="text-3xl font-bold mb-2" data-i18n="home.title">${t('home.title')}</h1>
-      <p class="opacity-80 mb-6" data-i18n="home.subtitle">${t('home.subtitle')}</p>
+    <section class="mx-auto max-w-6xl p-6 w-full">
+      <h1
+        class="text-2xl font-semibold mb-1"
+        data-i18n="home.title">
+        ${t('home.title')}
+      </h1>
 
-      <div class="grid gap-4 md:grid-cols-3">
-        <!-- AI -->
-        <button id="btn-ai"
-          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2" data-i18n="home.ai">${t('home.ai')}</div>
-          <p class="opacity-80 text-sm" data-i18n="home.ai.desc">${t('home.ai.desc')}</p>
-        </button>
+      <p
+        class="text-sm opacity-70 mb-6"
+        data-i18n="home.subtitle">
+        ${t('home.subtitle')}
+      </p>
 
-        <!-- 1v1 -->
-        <button id="btn-1v1"
-          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2" data-i18n="home.1v1">${t('home.1v1')}</div>
-          <p class="opacity-80 text-sm" data-i18n="home.1v1.desc">${t('home.1v1.desc')}</p>
-        </button>
-
-        <!-- Torneo -->
-        <button id="btn-tournament"
-          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2" data-i18n="home.tournament">${t('home.tournament')}</div>
-          <p class="opacity-80 text-sm" data-i18n="home.tournament.desc">${t('home.tournament.desc')}</p>
-        </button>
-
-        <!-- Tres en raya -->
-        <button id="btn-threeinrow"
-          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2" data-i18n="home.threeinrow">${t('home.threeinrow')}</div>
-          <p class="opacity-80 text-sm" data-i18n="home.threeinrow.desc">${t('home.threeinrow.desc')}</p>
-        </button>
-
-        <!-- 4v4 -->
-        <button id="btn-4v4"
-          class="rounded-2xl bg-white/10 hover:bg-white/20 transition p-6 text-left shadow-lg">
-          <div class="text-2xl mb-2" data-i18n="home.4v4">${t('home.4v4')}</div>
-          <p class="opacity-80 text-sm" data-i18n="home.4v4.desc">${t('home.4v4.desc')}</p>
-        </button>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        ${createCard('btn-ai', 'home.ai', 'home.ai.desc')}
+        ${createCard('btn-1v1', 'home.1v1', 'home.1v1.desc')}
+        ${createCard('btn-tournament', 'home.tournament', 'home.tournament.desc')}
+        ${createCard('btn-threeinrow', 'home.threeinrow', 'home.threeinrow.desc')}
+        ${createCard('btn-4v4', 'home.4v4', 'home.4v4.desc')}
       </div>
     </section>
   `;
 
-  root.querySelector<HTMLButtonElement>('#btn-ai')!.onclick = () => navigate('#/play/ai');
-  root.querySelector<HTMLButtonElement>('#btn-1v1')!.onclick = () => navigate('#/play/1v1');
-  root.querySelector<HTMLButtonElement>('#btn-tournament')!.onclick = () => navigate('#/play/tournament');
-  root.querySelector<HTMLButtonElement>('#btn-threeinrow')!.onclick = () => navigate('#/play/threeinrow');
-  root.querySelector<HTMLButtonElement>('#btn-4v4')!.onclick = () => navigate('#/play/4v4');
+  logTerminal('Home view loaded');
+
+  /* Bind navigation buttons */
+  const bind = (id: string, route: string, msg: string) => 
+  {
+    const btn = root.querySelector<HTMLButtonElement>(`#${id}`);
+    if (!btn) 
+        return;
+    btn.onclick = () => 
+    {
+        logTerminal(msg);
+        navigate(route);
+    };
+  };
+
+  bind('btn-ai', '#/play/ai', 'Selected: Play vs AI');
+  bind('btn-1v1', '#/play/1v1', 'Selected: Play 1v1');
+  bind('btn-tournament', '#/play/tournament', 'Selected: Tournament');
+  bind('btn-threeinrow', '#/play/threeinrow', 'Selected: Three in a row');
+  bind('btn-4v4', '#/play/4v4', 'Selected: Play 4v4');
 }

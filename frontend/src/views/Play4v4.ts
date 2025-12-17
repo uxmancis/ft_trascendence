@@ -1,70 +1,126 @@
+// src/views/Play4v4.ts
+
 import { createUser, NewUser } from '../api';
-import {
-  getCurrentUser,
-  getTournamentPlayers,
-  setTournamentPlayers,
-  clearTournamentPlayers
-} from '../session';
+import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers } from '../session';
 import { t, bindI18n } from '../i18n/i18n';
 import { navigate } from '../router';
+import { logTerminal } from '../components/IDEComponets/Terminal';
 
 const LIVE_ROUTE = '#/live/4v4';
 
-function randInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function randomColorHex(): string {
-  const h = randInt(0, 359), s = 80, l = 45;
-  const s1 = s/100, l1 = l/100;
-  const c = (1 - Math.abs(2*l1 - 1)) * s1;
-  const x = c * (1 - Math.abs(((h/60) % 2) - 1));
-  const m = l1 - c/2;
-  let r=0,g=0,b=0;
-  if (h < 60)       { r = c; g = x; b = 0; }
-  else if (h < 120) { r = x; g = c; b = 0; }
-  else if (h < 180) { r = 0; g = c; b = x; }
-  else if (h < 240) { r = 0; g = x; b = c; }
-  else if (h < 300) { r = x; g = 0; b = c; }
-  else              { r = c; g = 0; b = x; }
-  const toHex = (n:number)=>Math.round((n+m)*255).toString(16).padStart(2,'0');
+/* ============================================================
+** Utils
+** ============================================================ */
+
+function randInt(min: number, max: number): number { return Math.floor(Math.random() * (max - min + 1)) + min;}
+
+/*
+** randomColorHex
+**
+** Generates a readable random color for dummy avatars.
+*/
+function randomColorHex(): string 
+{
+  const h = randInt(0, 359);
+  const s = 80;
+  const l = 45;
+
+  const s1 = s / 100;
+  const l1 = l / 100;
+  const c = (1 - Math.abs(2 * l1 - 1)) * s1;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l1 - c / 2;
+
+  let r = 0, g = 0, b = 0;
+
+  if (h < 60)
+  { 
+    r = c; g = x; 
+  }
+  else if (h < 120) 
+  { 
+    r = x; g = c; 
+  }
+  else if (h < 180) 
+  { 
+    g = c; b = x; 
+  }
+  else if (h < 240) 
+  { 
+    g = x; b = c; 
+  }
+  else if (h < 300) 
+  { 
+    r = x; b = c; 
+  }
+  else              
+  { 
+    r = c; 
+  }
+
+  const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+
   return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-export async function renderPlay4v4(root: HTMLElement){
+/* ============================================================
+** View
+** ============================================================ */
+
+export async function renderPlay4v4(root: HTMLElement): Promise<void> 
+{
+  logTerminal('View: Play 4v4');
+
   const me = getCurrentUser();
-  let locals = getTournamentPlayers().slice(0, 3); // 3 plazas locales
+  const locals = getTournamentPlayers().slice(0, 3); // 3 jugadores locales
+
+  /* ---------------- RENDER ---------------- */
 
   root.innerHTML = `
     <section class="mx-auto max-w-6xl p-6 grow space-y-6">
+
       <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold" data-i18n="tour.title">${t('tour.title')}</h1>
-        <div class="flex items-center gap-2">
-          <button id="reset" class="text-xs px-2 py-1 rounded bg-black/30 hover:bg-black/50" data-i18n="tour.reset">${t('tour.reset')}</button>
-        </div>
+        <h1 class="text-2xl font-bold" data-i18n="tour.title">
+          ${t('tour.title')}
+        </h1>
+
+        <button id="reset"
+                class="text-xs px-2 py-1 rounded
+                       bg-black/30 hover:bg-black/50"
+                data-i18n="tour.reset">
+          ${t('tour.reset')}
+        </button>
       </div>
 
-      <!-- GRID 2x2, estilo tarjetas AI -->
+      <!-- Grid 2x2 -->
       <div class="rounded-2xl bg-white/10 p-4">
         <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-4">
-          <!-- TL: YOU -->
           ${me ? youCard(me.nick, me.id, me.avatar) : waitingCard('LOGIN')}
-
-          <!-- TR / BL / BR: asientos locales -->
           ${seatCard(0, locals[0])}
           ${seatCard(1, locals[1])}
           ${seatCard(2, locals[2])}
         </div>
       </div>
 
+      <!-- Start area -->
       <div class="rounded-2xl bg-white/10 p-4">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="font-semibold" data-i18n="game.4v4">${t('game.4v4')}</h3>
-            <p class="opacity-80 text-sm" data-i18n="tour.schema">${t('tour.schema')}</p>
+            <h3 class="font-semibold" data-i18n="game.4v4">
+              ${t('game.4v4')}
+            </h3>
+            <p class="opacity-80 text-sm" data-i18n="tour.schema">
+              ${t('tour.schema')}
+            </p>
           </div>
+
           <button id="startBtn"
-            class="px-4 py-2 rounded bg-emerald-500/80 hover:bg-emerald-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            data-i18n="common.startTournament">${t('common.startTournament')}
+                  class="px-4 py-2 rounded
+                         bg-emerald-500/80 hover:bg-emerald-600
+                         text-white disabled:opacity-50
+                         disabled:cursor-not-allowed"
+                  data-i18n="common.startTournament">
+            ${t('common.startTournament')}
           </button>
         </div>
       </div>
@@ -73,175 +129,241 @@ export async function renderPlay4v4(root: HTMLElement){
 
   bindI18n(root);
 
-  // RESET
-  root.querySelector<HTMLButtonElement>('#reset')!.onclick = () => {
+  /* ---------------- RESET ---------------- */
+
+  root.querySelector<HTMLButtonElement>('#reset')?.addEventListener('click', () => 
+  {
+    logTerminal('Tournament reset');
     clearTournamentPlayers();
     renderPlay4v4(root);
-  };
+  });
 
-  // Formularios (3 asientos)
-  for (let seat = 0; seat < 3; seat++) {
+  /* ---------------- CREATE LOCAL PLAYERS ---------------- */
+
+  for (let seat = 0; seat < 3; seat++) 
+  {
     const form = root.querySelector<HTMLFormElement>(`#seat-form-${seat}`);
-    if (!form) continue;
+    if (!form) 
+      continue;
 
     const errBox = form.querySelector<HTMLDivElement>('.err')!;
-    form.onsubmit = async (e) => {
+
+    form.onsubmit = async (e) => 
+    {
       e.preventDefault();
       errBox.classList.add('hidden');
 
       const nick = (form.querySelector('.nick') as HTMLInputElement).value.trim();
-      if (!nick) return;
-      const initial = encodeURIComponent((nick.charAt(0) || 'P').toUpperCase());
-      const bg = randomColorHex();
-      const avatar = `https://dummyimage.com/96x96/${bg}/ffffff&text=${initial}`;
+      if (!nick) 
+        return;
+
+      const initial = encodeURIComponent(nick[0]?.toUpperCase() || 'P');
+      const avatar = `https://dummyimage.com/96x96/${randomColorHex()}/ffffff&text=${initial}`;
+
       const payload: NewUser = { nick, avatar };
 
-      try {
+      try 
+      {
         const created = await createUser(payload);
         const players = getTournamentPlayers();
-        while (players.length < 3) players.push(undefined as any);
-        players[seat] = { id: created.id, nick: created.nick, avatar: created.avatar };
-        setTournamentPlayers(players.slice(0,3));
+
+        while (players.length < 3)
+          players.push(undefined as any);
+        players[seat] = created;
+
+        setTournamentPlayers(players.slice(0, 3));
+        logTerminal(`Tournament seat ${seat} set: ${created.nick}`);
         renderPlay4v4(root);
-      } catch (err: any) {
+      } 
+      catch (err: any) 
+      {
         errBox.textContent = err?.message || t('tour.err.create');
         errBox.classList.remove('hidden');
       }
     };
   }
 
-  // Botones "Change player"
-  for (let seat = 0; seat < 3; seat++) {
+  /* ---------------- CHANGE PLAYER ---------------- */
+
+  for (let seat = 0; seat < 3; seat++) 
+  {
     const btn = root.querySelector<HTMLButtonElement>(`#change-seat-${seat}`);
-    if (!btn) continue;
-    btn.onclick = () => {
+    if (!btn) 
+      continue;
+    btn.onclick = () => 
+    {
       const players = getTournamentPlayers();
       players.splice(seat, 1); // compacta
       setTournamentPlayers(players);
+      logTerminal(`Tournament seat ${seat} cleared`);
       renderPlay4v4(root);
     };
   }
 
-  // START
-  const startBtn = root.querySelector<HTMLButtonElement>('#startBtn')!;
+  /* ---------------- START TOURNAMENT ---------------- */
+
+  const startBtn = root.querySelector<HTMLButtonElement>('#startBtn');
   const localsNow = getTournamentPlayers();
   const allReady = !!me && localsNow.filter(Boolean).length === 3;
-  startBtn.disabled = !allReady;
 
-  startBtn.onclick = () => {
-    const localsNow2 = getTournamentPlayers();
-    if (!me || localsNow2.filter(Boolean).length !== 3) return;
-    
-    const players = [me, ...localsNow2]; // [J1, J2, J3, J4]
-    sessionStorage.setItem('tournament:players', JSON.stringify(players));
-    location.hash = LIVE_ROUTE;
-    root.innerHTML = `
-      <!-- Contenedor principal -->
-      <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
+  if (startBtn) 
+    startBtn.disabled = !allReady;
 
-        <!-- Barra superior translúcida -->
-        <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
-          <span class="font-semibold" data-i18n="game.4v4"></span>
-          <span class="text-lg font-bold">🏆 Pong 4</span>
-          <button id="backBtn"
-            class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
-        </div>
+  startBtn?.addEventListener('click', () => 
+  {
+    const localsFinal = getTournamentPlayers();
+    if (!me || localsFinal.filter(Boolean).length !== 3) 
+      return;
 
-        <!-- Contenedor del juego -->
-        <div class="flex flex-col items-center justify-center p-4 gap-3">
-          <!-- 👇 INFO DE JUGADORES -->
-          <div id="turn-info" class="text-sm opacity-90">
-            <span class="font-semibold">${players[0]?.nick}</span> = <b>W / S</b>  ·  
-            <span class="font-semibold">${players[1]?.nick}</span> = <b>↑ / ↓</b>  ·  
-            <span class="font-semibold">${players[2]?.nick}</span> = <b>C / V</b>  ·  
-            <span class="font-semibold">${players[3]?.nick}</span> = <b>L / Ñ</b>
-        </div>
-        <canvas id="Play4v4" width="550" height="550"
-            class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
-        </div>
+    const players = [me, ...localsFinal]; sessionStorage.setItem('tournament:players', JSON.stringify(players));
 
-      </section>
-    `;
-
-    // Botón de volver
-    document.getElementById("backBtn")?.addEventListener("click", () => {
-      navigate("#");
-    });
-
+    logTerminal('Tournament started');
+    renderLiveTournament(root, players);
     navigate(LIVE_ROUTE);
-  };
+  });
 }
 
-/* ============ helpers (tarjetas estilo AI) ============ */
-function baseCard(inner: string) {
+/* ============================================================
+** Live tournament
+** ============================================================ */
+
+function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): void 
+{
+  root.innerHTML = `
+    <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
+
+      <div class="flex justify-between items-center
+                  bg-white/10 px-6 py-3 rounded-2xl">
+        <span class="font-semibold" data-i18n="game.4v4"></span>
+        <span class="text-lg font-bold">🏆 Pong 4</span>
+        <button id="backBtn"
+                class="bg-red-500 hover:bg-red-600
+                       px-4 py-1 rounded">
+          Salir
+        </button>
+      </div>
+
+      <div class="flex flex-col items-center gap-3">
+        <div class="text-sm opacity-90 text-center">
+          <span class="font-semibold">${players[0].nick}</span> = W / S ·
+          <span class="font-semibold">${players[1].nick}</span> = ↑ / ↓ ·
+          <span class="font-semibold">${players[2].nick}</span> = C / V ·
+          <span class="font-semibold">${players[3].nick}</span> = L / Ñ
+        </div>
+
+        <canvas id="Play4v4"
+                width="550" height="550"
+                class="border-4 border-white
+                       rounded-2xl shadow-xl">
+        </canvas>
+      </div>
+    </section>
+  `;
+
+  document.getElementById('backBtn')?.addEventListener('click', () => 
+  {
+    logTerminal('Exit tournament');
+    navigate('#');
+  });
+}
+
+/* ============================================================
+** UI helpers
+** ============================================================ */
+
+function baseCard(inner: string): string 
+{
   return `
-    <div
-      class="group relative rounded-2xl bg-white/10 p-4 aspect-video flex items-center justify-center text-center
-             hover:bg-white/20 focus-within:ring-4 focus-within:ring-sky-400 transition ring-0"
-    >
-      <div class="absolute top-2 right-3 text-2xl mark" aria-hidden="true"></div>
+    <div class="relative rounded-2xl bg-white/10 p-4 aspect-video
+                flex items-center justify-center text-center
+                hover:bg-white/20 transition">
       ${inner}
     </div>
   `;
 }
 
-function youCard(nick: string, id: number, avatar: string) {
-  return baseCard(`
-    <div class="text-center">
-      <div class="text-6xl mb-2">✅</div>
+function youCard(nick: string, id: number, avatar: string): string 
+{
+  return baseCard
+  (`
+    <div>
+      <div class="text-5xl mb-2">✅</div>
       <div class="flex items-center gap-3 justify-center">
         <img src="${avatar}" class="w-10 h-10 rounded-full"/>
         <div>
           <div class="font-semibold">${nick}</div>
-          <div class="text-xs opacity-80">${t('common.id')} ${id}</div>
+          <div class="text-xs opacity-70">${t('common.id')} ${id}</div>
         </div>
       </div>
     </div>
   `);
 }
 
-function readySeat(nick: string, id: number, avatar: string, index: number) {
-  return baseCard(`
-    <div class="text-center">
-      <div class="text-6xl mb-2">✅</div>
+function readySeat(nick: string, id: number, avatar: string, index: number): string 
+{
+  return baseCard
+  (`
+    <div>
+      <div class="text-5xl mb-2">✅</div>
       <div class="flex items-center gap-3 justify-center">
         <img src="${avatar}" class="w-10 h-10 rounded-full"/>
         <div>
           <div class="font-semibold">${nick}</div>
-          <div class="text-xs opacity-80">${t('common.id')} ${id}</div>
+          <div class="text-xs opacity-70">${t('common.id')} ${id}</div>
         </div>
       </div>
-      <button id="change-seat-${index}" class="mt-3 text-xs px-2 py-1 rounded bg-black/30 hover:bg-black/50"
-              data-i18n="pvp.changePlayer">${t('pvp.changePlayer')}</button>
+      <button id="change-seat-${index}"
+              class="mt-3 text-xs px-2 py-1 rounded
+                     bg-black/40 hover:bg-black/60"
+              data-i18n="pvp.changePlayer">
+        ${t('pvp.changePlayer')}
+      </button>
     </div>
   `);
 }
 
-function loginSeat(index: number) {
-  return baseCard(`
-    <form id="seat-form-${index}" class="w-60 bg-white/90 rounded-xl p-4 shadow flex flex-col gap-2">
-      <div class="text-center text-black font-semibold mb-1" data-i18n="login.title">${t('login.title')}</div>
+function loginSeat(index: number): string 
+{
+  return baseCard
+  (`
+    <form id="seat-form-${index}"
+          class="w-60 bg-white/90 rounded-xl p-4 shadow
+                 flex flex-col gap-2">
+      <div class="text-black font-semibold text-center"
+           data-i18n="login.title">
+        ${t('login.title')}
+      </div>
+
       <input class="nick px-3 py-2 rounded border text-black"
              placeholder="${t('login.nick')}"
              data-i18n-attr="placeholder:login.nick"
              minlength="2" maxlength="20" required />
-      <button class="px-3 py-2 rounded bg-black/80 hover:bg-black text-white text-sm"
-              data-i18n="login.submit">${t('login.submit')}</button>
+
+      <button class="px-3 py-2 rounded
+                     bg-black/80 hover:bg-black text-white">
+        ${t('login.submit')}
+      </button>
+
       <div class="err text-red-600 text-xs hidden"></div>
     </form>
   `);
 }
 
-function waitingCard(text = 'LOGIN') {
-  return baseCard(`
-    <div class="text-center opacity-80">
+function waitingCard(text = 'LOGIN'): string 
+{
+  return baseCard
+  (`
+    <div class="opacity-80">
       <div class="text-4xl mb-2">⏳</div>
-      <div class="px-2 py-1 rounded bg-red-600/80 text-white text-xs font-semibold">${text}</div>
+      <div class="px-2 py-1 rounded
+                  bg-red-600/80 text-xs font-semibold">
+        ${text}
+      </div>
     </div>
   `);
 }
 
-function seatCard(index: number, p?: {id:number; nick:string; avatar:string}) {
-  if (p) return readySeat(p.nick, p.id, p.avatar, index);
-  return loginSeat(index);
+function seatCard(index: number, p?: { id: number; nick: string; avatar: string }): string 
+{
+  return p ? readySeat(p.nick, p.id, p.avatar, index) : loginSeat(index);
 }

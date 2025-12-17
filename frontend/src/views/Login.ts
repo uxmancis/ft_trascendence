@@ -1,11 +1,27 @@
 // src/views/Login.ts
+
 import { createUser, NewUser } from '../api';
 import { setCurrentUser } from '../session';
 import { t } from '../i18n/i18n';
 import { UnifiedControlPanel } from '../components/UnifiedControlPanel';
 
-function randInt(min: number, max: number) {return Math.floor(Math.random() * (max - min + 1)) + min;}
+/* Prefs persistentes */
+import { applyThemeFromStorage } from '../custom/prefs';
+import { applyA11yFromStorage } from '../a11y/prefs';
 
+/*
+** randInt
+**
+** Returns a random integer between min and max (inclusive).
+*/
+function randInt(min: number, max: number): number { return Math.floor(Math.random() * (max - min + 1)) + min;}
+
+/*
+** randomColorHex
+**
+** Generates a readable random color (HSL → RGB → HEX).
+** Used for default avatar background.
+*/
 function randomColorHex(): string 
 {
   const h = randInt(0, 359);
@@ -19,22 +35,60 @@ function randomColorHex(): string
   const m = l1 - c / 2;
 
   let r = 0, g = 0, b = 0;
-  if (h < 60)       { r = c; g = x; }
-  else if (h < 120) { r = x; g = c; }
-  else if (h < 180) { g = c; b = x; }
-  else if (h < 240) { g = x; b = c; }
-  else if (h < 300) { r = x; b = c; }
-  else              { r = c; }
+
+  if (h < 60)       
+  { 
+      r = c; g = x; 
+  }
+  else if (h < 120) 
+  { 
+    r = x; g = c; 
+  }
+  else if (h < 180) 
+  { 
+    g = c; b = x; 
+  }
+  else if (h < 240) 
+  { 
+    g = x; b = c; 
+  }
+  else if (h < 300) 
+  { 
+    r = x; b = c; 
+  }
+  else              
+  { 
+    r = c; 
+  }
 
   const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+
   return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-export async function renderLogin(root: HTMLElement, onSuccess: () => void) 
+/*
+** renderLogin
+**
+** Login screen entry point.
+** - Applies theme & accessibility prefs
+** - Renders login UI
+** - Creates user and stores session
+*/
+export async function renderLogin(root: HTMLElement, onSuccess: () => void): Promise<void>
 {
-  UnifiedControlPanel("login");
+  /* ================= PREFS INIT ================= */
+
+  applyThemeFromStorage();
+  applyA11yFromStorage();
+
+  /* ================= SETTINGS PANEL ================= */
+
+  UnifiedControlPanel('login');
+
+  /* ================= UI RENDER ================= */
+
   root.innerHTML = `
-    <section class="min-h-screen flex items-center justify-center bg-neutral-900 text-white">
+    <section class="min-h-screen flex items-center justify-center text-white">
       <div class="w-full max-w-xl p-8 rounded-2xl
                   bg-neutral-800/70 backdrop-blur
                   border border-white/10 shadow-xl">
@@ -56,16 +110,18 @@ export async function renderLogin(root: HTMLElement, onSuccess: () => void)
         <form id="login-form" class="space-y-3">
           <input
             id="nick"
-            class="w-full px-3 py-2 rounded bg-neutral-900 border border-white/10
-                   focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            class="w-full px-3 py-2 rounded
+                   bg-neutral-900 border border-white/10
+                   focus:outline-none focus:ring-2
+                   focus:ring-blue-500 text-white"
             placeholder="${t('login.nick.placeholder')}"
             data-i18n-attr="placeholder:login.nick.placeholder"
             required minlength="2" maxlength="20"
           />
 
           <button
-            class="w-full py-2 rounded bg-blue-600 hover:bg-blue-500
-                   transition font-medium"
+            class="w-full py-2 rounded bg-blue-600
+                   hover:bg-blue-500 transition font-medium"
             data-i18n="login.submit">
             ${t('login.submit')}
           </button>
@@ -76,31 +132,36 @@ export async function renderLogin(root: HTMLElement, onSuccess: () => void)
     </section>
   `;
 
+  /* ================= FORM LOGIC ================= */
+
   const form = root.querySelector<HTMLFormElement>('#login-form')!;
   const errBox = root.querySelector<HTMLDivElement>('#error')!;
+  const nickInput = root.querySelector<HTMLInputElement>('#nick')!;
 
-  form.onsubmit = async (e) => {
+  form.onsubmit = async (e) => 
+  {
     e.preventDefault();
     errBox.classList.add('hidden');
 
-    const nickInput = root.querySelector<HTMLInputElement>('#nick')!;
     const nick = nickInput.value.trim();
+    if (!nick) 
+      return;
 
-    const initial = encodeURIComponent((nick[0] || 'P').toUpperCase());
+    /* Avatar generation */
+    const initial = encodeURIComponent(nick[0].toUpperCase());
     const bg = randomColorHex();
     const avatar = `https://dummyimage.com/96x96/${bg}/ffffff&text=${initial}`;
 
     const payload: NewUser = { nick, avatar };
 
-    try {
-      const created = await createUser(payload);
-      setCurrentUser({
-        id: created.id,
-        nick: created.nick,
-        avatar: created.avatar
-      });
+    try 
+    {
+      const user = await createUser(payload);
+      setCurrentUser(user);
       onSuccess();
-    } catch (err: any) {
+    } 
+    catch (err: any) 
+    {
       errBox.textContent = err?.message || t('login.error');
       errBox.classList.remove('hidden');
     }

@@ -8,8 +8,11 @@ export interface FileItem {
 
 /* ===== FILE TREE (IDE STYLE) ===== */
 const FILE_TREE: FileItem[] = [
+  { label: 'instructions.txt', route: '#/instructions' },
+
   { label: 'Home.tsx', route: '#/' },
   { label: 'Stats.tsx', route: '#/stats' },
+
   {
     label: 'Play',
     children: [
@@ -18,49 +21,82 @@ const FILE_TREE: FileItem[] = [
       { label: 'Play4v4.tsx', route: '#/play/4v4' },
     ],
   },
+
   { label: 'Tournament.tsx', route: '#/play/tournament' },
 ];
 
+/* ===== FOLDER STATE ===== */
+
+const openFolders = new Set<string>();
+
+/* ===== ICON HELPERS ===== */
+
+function fileIcon(label: string): string {
+  if (label.endsWith('.txt')) return '📄';
+  if (label.endsWith('.tsx')) return '📘';
+  return '📄';
+}
+
+function folderIcon(open: boolean): string {
+  return open ? '▾' : '▸';
+}
+
 /* ===== RENDER ===== */
+
 export function renderFileExplorer(container: HTMLElement): void {
   container.innerHTML = '';
 
-  const renderItems = (items: FileItem[], depth = 0) => {
+  const renderItems = (items: FileItem[], depth = 0): void => {
     items.forEach(item => {
       const row = document.createElement('div');
       const isActive = item.route && location.hash === item.route;
+      const isFolder = !!item.children;
+      const isOpen = isFolder && openFolders.has(item.label);
 
       row.className = `
-        flex items-center gap-1
-        px-2 py-1 rounded cursor-pointer
+        flex items-center gap-2
+        px-2 py-1 rounded cursor-pointer select-none
         hover:bg-neutral-700
         ${isActive ? 'bg-neutral-700' : ''}
       `;
 
       row.style.paddingLeft = `${depth * 12 + 8}px`;
 
-      /* icon */
+      /* ICON */
       const icon = document.createElement('span');
       icon.className = 'w-4 text-xs opacity-60 text-center';
-      icon.textContent = item.children ? '▸' : '•';
 
-      /* label */
+      icon.textContent = isFolder
+        ? folderIcon(isOpen)
+        : fileIcon(item.label);
+
+      /* LABEL */
       const label = document.createElement('span');
       label.className = 'truncate';
       label.textContent = item.label;
 
       row.append(icon, label);
+      container.appendChild(row);
 
-      if (item.route) {
-        row.onclick = () => {
+      /* CLICK HANDLING */
+      if (isFolder) {
+        row.onclick = (): void => {
+          if (isOpen)
+            openFolders.delete(item.label);
+          else
+            openFolders.add(item.label);
+
+          renderFileExplorer(container);
+        };
+      } else if (item.route) {
+        row.onclick = (): void => {
           location.hash = item.route!;
         };
       }
 
-      container.appendChild(row);
-
-      if (item.children) {
-        renderItems(item.children, depth + 1);
+      /* CHILDREN */
+      if (isFolder && isOpen) {
+        renderItems(item.children!, depth + 1);
       }
     });
   };
@@ -68,10 +104,9 @@ export function renderFileExplorer(container: HTMLElement): void {
   renderItems(FILE_TREE);
 }
 
-/* ===== AUTO UPDATE ACTIVE FILE ===== */
+/* ===== UPDATE ACTIVE FILE ===== */
+
 window.addEventListener('hashchange', () => {
   const container = document.getElementById('list-files');
-  if (container) {
-    renderFileExplorer(container);
-  }
+  if (container) renderFileExplorer(container);
 });

@@ -17,6 +17,8 @@ import { setupTournamentPong } from './play/LiveTournament';
 import { setupThreeInRow, renderPlayThreeInRow } from './views/threeinrow';
 import { renderPlay4v4 } from './views/Play4v4';
 import { setupLive4v4 } from './play/Live4v4';
+import { renderInstructions } from './components/IDEComponets/Instructions';
+
 
 // 🧩 Accesibilidad
 import { applyA11yFromStorage } from './a11y/prefs';
@@ -55,6 +57,7 @@ const wrap =
 function bootRoutes() {
   register('#/',                wrap(renderHome));
   register('#/stats',           wrap(renderStats));
+  register('#/instructions',    wrap(renderInstructions));
   register('#/play/ai',         wrap(renderPlayAI));
   register('#/play/1v1',        wrap(renderPlay1v1));
   register('#/live/1v1',        wrap(setupLivePong3D));

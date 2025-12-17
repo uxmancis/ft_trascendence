@@ -115,11 +115,12 @@ export function getIntoIDE(): void {
               <div class="flex-1"></div>
             </div>
 
-            <div
-              id="router-view"
-              class="flex-1 overflow-auto p-4
-                     flex items-start justify-center">
-            </div>
+                  <div
+        id="router-view"
+        class="flex-1 min-h-0 overflow-hidden
+              flex">
+      </div>
+
           </div>
 
           <!-- TERMINAL -->

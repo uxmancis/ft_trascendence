@@ -4,7 +4,7 @@ const K_TRACK = 'custom:music:track';        // índice de pista (number) o -1 (
 const K_VOL   = 'custom:music:volume';       // 0..1
 const K_MUTED = 'custom:music:muted';        // '1'/'0'
 
-export type ThemeId = 'classic'|'neon'|'vapor'|'earth'|'space'|'matrix';
+export type ThemeId = 'classic'|'vscode'|'neon'|'vapor'|'earth'|'space'|'matrix';
 
 export function getTheme(): ThemeId {
   const v = localStorage.getItem(K_THEME) as ThemeId | null;

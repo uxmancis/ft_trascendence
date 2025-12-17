@@ -1,51 +1,55 @@
+// src/getIntoIDE.ts
 import { renderFileExplorer } from './components/IDEComponets/FileExplorer';
 import { getCurrentUser, clearAppStorage } from './session';
 import { UnifiedControlPanel } from './components/UnifiedControlPanel';
 import { bindI18n } from './i18n/i18n';
+import { getTheme } from './custom/prefs';
+
+/* ================= THEME INIT ================= */
+
+function applyTheme() {
+  const theme = getTheme() || 'classic';
+  document.documentElement.setAttribute('data-theme', theme);
+}
 
 /**
  * Layout principal tipo IDE (VSCode-like).
- * - Layout rígido (NO cambia de tamaño).
- * - Scroll solo en router-view.
- * - Shell persistente.
  */
 export function getIntoIDE(): void {
+  applyTheme(); // 👈 AQUI ESTÁ LA CLAVE
+
   const app = document.getElementById('app');
+  if (!app) throw new Error('getIntoIDE: #app not found');
 
-  if (!app) {
-    throw new Error('getIntoIDE: #app not found');
-  }
+  /* ================= HTML BASE ================= */
 
-  /* ======================================================
-   * HTML BASE DEL IDE (RÍGIDO)
-   * ====================================================== */
   app.innerHTML = `
     <div
       id="whole-content"
       class="h-screen overflow-hidden
              grid grid-cols-[3.5rem_15rem_1fr]
              grid-rows-[3rem_minmax(0,1fr)_1.5rem]
-             bg-neutral-900 border border-gray-400/20">
+             border border-gray-400/20">
 
-      <!-- ================= HEADER ================= -->
+      <!-- HEADER -->
       <header
         class="col-span-3 flex items-center px-3
-               border-b border-gray-400/20" style="padding: 5px">
+               border-b border-gray-400/20"
+        style="padding:5px">
         <img
           src="/assets/customization/VsCodeLogo.png"
           class="h-full w-auto"
           alt="FT_TRANSCENDENCE" />
       </header>
 
-      <!-- ================= MAIN ================= -->
+      <!-- MAIN -->
       <div class="col-span-3 flex min-h-0">
 
-        <!-- ===== LEFT ICON BAR ===== -->
+        <!-- LEFT BAR -->
         <aside
           class="w-[3.5rem] flex flex-col items-center
                  border-r border-gray-400/20 p-1">
 
-          <!-- FILE EXPLORER -->
           <button
             id="files-left-icon-btn"
             class="mb-10 hover:brightness-150 transition">
@@ -54,10 +58,9 @@ export function getIntoIDE(): void {
 
           <div class="flex-1"></div>
 
-          <!-- USER + SETTINGS -->
           <div class="mb-2 flex flex-col items-center gap-4">
 
-            <!-- USER / LOGOUT -->
+            <!-- USER -->
             <button
               id="user-btn"
               class="relative w-8 h-8 rounded-full overflow-hidden group"
@@ -65,17 +68,14 @@ export function getIntoIDE(): void {
 
               <img
                 id="user-avatar"
-                src="/assets/customization/UserIcon_Left.png"
                 class="w-full h-full object-cover"
-                alt="User avatar" />
+                src="/assets/customization/UserIcon_Left.png" />
 
               <div
                 class="absolute inset-0 bg-black/70
                        flex items-center justify-center
                        opacity-0 group-hover:opacity-100 transition">
-                <img
-                  src="/assets/customization/logout.png"
-                  class="w-4 h-4" />
+                <img src="/assets/customization/logout.png" class="w-4 h-4" />
               </div>
             </button>
 
@@ -86,11 +86,10 @@ export function getIntoIDE(): void {
               title="Settings">
               <img src="/assets/customization/SettingsIcon_Left.png" />
             </button>
-
           </div>
         </aside>
 
-        <!-- ===== FILE EXPLORER ===== -->
+        <!-- FILE EXPLORER -->
         <aside
           id="mid-files-sidebar"
           class="hidden w-[17rem] p-4
@@ -101,25 +100,20 @@ export function getIntoIDE(): void {
           <nav id="list-files" class="space-y-1 text-sm"></nav>
         </aside>
 
-        <!-- ===== MAIN VIEW ===== -->
-        <section
-          class="flex-1 grid grid-rows-[minmax(0,1fr)_200px] min-h-0">
+        <!-- MAIN VIEW -->
+        <section class="flex-1 grid grid-rows-[minmax(0,1fr)_200px] min-h-0">
 
           <!-- EDITOR -->
-          <div class="flex flex-col bg-neutral-800 text-white min-h-0">
+          <div class="flex flex-col min-h-0">
 
-            <!-- TABS -->
             <div class="flex h-9 border-b border-gray-400/20">
-              <div
-                id="opened-file"
-                class="hidden items-center px-4
-                       border-t-2 border-blue-500
-                       border-r border-gray-400/20">
-              </div>
+              <div id="opened-file"
+                   class="hidden items-center px-4
+                          border-t-2 border-blue-500
+                          border-r border-gray-400/20"></div>
               <div class="flex-1"></div>
             </div>
 
-            <!-- ROUTER VIEW (SCROLL AQUÍ) -->
             <div
               id="router-view"
               class="flex-1 overflow-auto p-4
@@ -133,15 +127,13 @@ export function getIntoIDE(): void {
                    text-white grid grid-rows-[auto_minmax(0,1fr)]
                    overflow-hidden">
 
-            <div class="p-3 text-sm text-white/70">
-              TERMINAL
-            </div>
+            <div class="p-3 text-sm text-white/70">TERMINAL</div>
             <div class="overflow-auto"></div>
           </div>
         </section>
       </div>
 
-      <!-- ================= FOOTER ================= -->
+      <!-- FOOTER -->
       <footer
         class="col-span-3 border-t border-gray-400/20
                px-4 py-1 text-xs text-white/60">
@@ -150,33 +142,25 @@ export function getIntoIDE(): void {
     </div>
   `;
 
-  /* ======================================================
-   * FILE EXPLORER
-   * ====================================================== */
+  /* ================= FILE EXPLORER ================= */
+
   const fileList = document.getElementById('list-files');
   if (fileList) renderFileExplorer(fileList);
 
   const filesBtn = document.getElementById('files-left-icon-btn');
   const explorer = document.getElementById('mid-files-sidebar');
+  filesBtn?.addEventListener('click', () => explorer?.classList.toggle('hidden'));
 
-  filesBtn?.addEventListener('click', () => {
-    explorer?.classList.toggle('hidden');
-  });
+  /* ================= USER ================= */
 
-  /* ======================================================
-   * USER AVATAR + LOGOUT
-   * ====================================================== */
   const avatarImg = document.getElementById('user-avatar') as HTMLImageElement;
   const userBtn = document.getElementById('user-btn');
   const user = getCurrentUser();
 
+  if (user?.avatar) avatarImg.src = user.avatar;
   avatarImg.onerror = () => {
     avatarImg.src = '/assets/customization/UserIcon_Left.png';
   };
-
-  if (user?.avatar) {
-    avatarImg.src = user.avatar;
-  }
 
   userBtn?.addEventListener('click', () => {
     clearAppStorage();
@@ -184,9 +168,8 @@ export function getIntoIDE(): void {
     location.reload();
   });
 
-  /* ======================================================
-   * SETTINGS PANEL (TOGGLE IDE STYLE)
-   * ====================================================== */
+  /* ================= SETTINGS PANEL ================= */
+
   const settingsBtn = document.getElementById('settings-btn');
   let panelVisible = false;
 
@@ -201,37 +184,24 @@ export function getIntoIDE(): void {
     return panel;
   };
 
-  const showPanel = () => {
+  const togglePanel = () => {
     const panel = ensurePanel();
-    panel.classList.remove('hidden');
-    settingsBtn?.classList.add('brightness-150');
-    panelVisible = true;
-  };
-
-  const hidePanel = () => {
-    const panel = document.getElementById('unified-control-panel');
-    if (!panel) return;
-    panel.classList.add('hidden');
-    settingsBtn?.classList.remove('brightness-150');
-    panelVisible = false;
+    panelVisible = !panelVisible;
+    panel.classList.toggle('hidden', !panelVisible);
+    settingsBtn?.classList.toggle('brightness-150', panelVisible);
   };
 
   settingsBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    panelVisible ? hidePanel() : showPanel();
+    togglePanel();
   });
 
-  // click fuera → cerrar (UX IDE real)
   document.addEventListener('click', (e) => {
-    if (!panelVisible) return;
-
     const panel = document.getElementById('unified-control-panel');
-    if (
-      panel &&
-      !panel.contains(e.target as Node) &&
-      e.target !== settingsBtn
-    ) {
-      hidePanel();
+    if (panelVisible && panel && !panel.contains(e.target as Node)) {
+      panel.classList.add('hidden');
+      panelVisible = false;
+      settingsBtn?.classList.remove('brightness-150');
     }
   });
 }

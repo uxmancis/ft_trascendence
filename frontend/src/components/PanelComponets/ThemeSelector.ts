@@ -10,6 +10,7 @@ type ThemeDef = {
 
 export const THEMES: ThemeDef[] = [
   { id: 'classic', name: 'theme.classic', preview: 'linear-gradient(135deg,#0f172a,#1f2937)' },
+  { id: 'vscode',  name: 'theme.vscode',  preview: 'linear-gradient(135deg,#1e1e1e,#252526)' },
   { id: 'neon',    name: 'theme.neon',    preview: 'linear-gradient(135deg,#22c55e,#06b6d4)' },
   { id: 'vapor',   name: 'theme.vapor',   preview: 'linear-gradient(135deg,#ff7ab6,#8b5cf6)' },
   { id: 'earth',   name: 'theme.earth',   preview: 'linear-gradient(135deg,#166534,#4d7c0f)' },

@@ -1,12 +1,9 @@
 // src/components/MusicButton.ts
-import {
-  getTrackIndex, setTrackIndex,
-  getVolume, setVolume,
-  isMuted as isPausedPref, setMuted as setPausedPref
-} from '../../custom/prefs';
+import { getTrackIndex, setTrackIndex, getVolume, isMuted as isPausedPref, setMuted as setPausedPref} from '../../custom/prefs';
 import { t, onLangChange } from '../../i18n/i18n';
 
-export function MusicButton(): HTMLElement {
+export function MusicButton(): HTMLElement 
+{
   const wrap = document.createElement('div');
   wrap.className = 'flex items-center gap-1';
 
@@ -41,9 +38,9 @@ export function MusicButton(): HTMLElement {
   /* ================= AUDIO LOGIC ================= */
 
   const tracks = [
-    new URL('/assets/customization/music/music1.mp3', import.meta.url).href,
-    new URL('/assets/customization/music/music2.mp3', import.meta.url).href,
-    new URL('/assets/customization/music/music3.mp3', import.meta.url).href,
+    new URL('/assets/music/music1.mp3', import.meta.url).href,
+    new URL('/assets/music/music2.mp3', import.meta.url).href,
+    new URL('/assets/music/music3.mp3', import.meta.url).href,
   ];
 
   let audio: HTMLAudioElement | null = null;

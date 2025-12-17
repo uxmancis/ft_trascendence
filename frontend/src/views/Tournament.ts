@@ -1,13 +1,8 @@
 // src/views/Tournament.ts
 import { createUser, type NewUser } from '../api';
-import {
-  getCurrentUser,
-  getTournamentPlayers,
-  setTournamentPlayers,
-  clearTournamentPlayers,
-} from '../session';
+import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, } from '../session';
 import { t, bindI18n } from '../i18n/i18n';
-import { setupLivePong3D } from './Live1v1';
+import { setupLivePong3D } from '../play/Live1v1';
 
 type SessionUser = { id: number; nick: string; avatar?: string };
 

@@ -2,17 +2,15 @@
 import { createUser, NewUser } from '../api';
 import { setCurrentUser } from '../session';
 import { t } from '../i18n/i18n';
+import { UnifiedControlPanel } from '../components/UnifiedControlPanel';
 
-function randInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-// Genera un color vistoso aleatorio (en hex sin # para dummyimage)
-function randomColorHex(): string {
-  // HSL -> Hex para colores saturados y con buena legibilidad en texto blanco
+function randInt(min: number, max: number) {return Math.floor(Math.random() * (max - min + 1)) + min;}
+
+function randomColorHex(): string 
+{
   const h = randInt(0, 359);
-  const s = 80; // 0-100
-  const l = 45; // 0-100
-  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  const s = 80;
+  const l = 45;
 
   const s1 = s / 100;
   const l1 = l / 100;
@@ -21,32 +19,58 @@ function randomColorHex(): string {
   const m = l1 - c / 2;
 
   let r = 0, g = 0, b = 0;
-  if (h < 60)       { r = c; g = x; b = 0; }
-  else if (h < 120) { r = x; g = c; b = 0; }
-  else if (h < 180) { r = 0; g = c; b = x; }
-  else if (h < 240) { r = 0; g = x; b = c; }
-  else if (h < 300) { r = x; g = 0; b = c; }
-  else              { r = c; g = 0; b = x; }
+  if (h < 60)       { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else              { r = c; }
 
-  const R = Math.round((r + m) * 255);
-  const G = Math.round((g + m) * 255);
-  const B = Math.round((b + m) * 255);
-  return `${toHex(R)}${toHex(G)}${toHex(B)}`; // sin '#'
+  const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+  return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-export async function renderLogin(root: HTMLElement, onSuccess: () => void){
+export async function renderLogin(root: HTMLElement, onSuccess: () => void) 
+{
+  UnifiedControlPanel("login");
   root.innerHTML = `
-    <section class="mx-auto max-w-md p-6 w-full">
-      <div class="rounded-2xl bg-white/10 p-6 shadow-lg">
-        <h1 class="text-2xl font-bold mb-4" data-i18n="login.welcome">${t('login.welcome')}</h1>
-        <p class="opacity-80 mb-4 text-sm" data-i18n="login.subtitle">
+    <section class="min-h-screen flex items-center justify-center bg-neutral-900 text-white">
+      <div class="w-full max-w-xl p-8 rounded-2xl
+                  bg-neutral-800/70 backdrop-blur
+                  border border-white/10 shadow-xl">
+
+        <h1 class="text-3xl font-bold tracking-wide mb-2">
+          FT_TRANSCENDENCE
+        </h1>
+
+        <p class="text-sm opacity-70 mb-6">
           ${t('login.subtitle')}
         </p>
-        <form id="login-form" class="grid gap-3">
-          <input id="nick" class="px-3 py-2 rounded text-black" placeholder="${t('login.nick.placeholder')}" data-i18n-attr="placeholder:login.nick.placeholder"
-                 required minlength="2" maxlength="20" />
-          <button class="px-4 py-2 rounded bg-black/40 hover:bg-black/60 text-white" data-i18n="login.submit">${t('login.submit')}</button>
-          <div id="error" class="text-red-300 text-sm hidden"></div>
+
+        <div class="text-sm opacity-80 mb-6 space-y-1">
+          <p>• Pong AI, 1v1, 4v4 & tournaments</p>
+          <p>• IDE-inspired interface (VSCode style)</p>
+          <p>• Accessibility, themes & language built-in</p>
+        </div>
+
+        <form id="login-form" class="space-y-3">
+          <input
+            id="nick"
+            class="w-full px-3 py-2 rounded bg-neutral-900 border border-white/10
+                   focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="${t('login.nick.placeholder')}"
+            data-i18n-attr="placeholder:login.nick.placeholder"
+            required minlength="2" maxlength="20"
+          />
+
+          <button
+            class="w-full py-2 rounded bg-blue-600 hover:bg-blue-500
+                   transition font-medium"
+            data-i18n="login.submit">
+            ${t('login.submit')}
+          </button>
+
+          <div id="error" class="text-red-400 text-sm hidden"></div>
         </form>
       </div>
     </section>
@@ -59,19 +83,22 @@ export async function renderLogin(root: HTMLElement, onSuccess: () => void){
     e.preventDefault();
     errBox.classList.add('hidden');
 
-    const nickInput = root.querySelector('#nick') as HTMLInputElement;
+    const nickInput = root.querySelector<HTMLInputElement>('#nick')!;
     const nick = nickInput.value.trim();
 
-    const initial = encodeURIComponent((nick.charAt(0) || 'P').toUpperCase());
-    const bg = randomColorHex(); // p.ej. "0ea5e9"
-    // texto blanco fijo (ffffff) para buen contraste
+    const initial = encodeURIComponent((nick[0] || 'P').toUpperCase());
+    const bg = randomColorHex();
     const avatar = `https://dummyimage.com/96x96/${bg}/ffffff&text=${initial}`;
 
     const payload: NewUser = { nick, avatar };
 
     try {
       const created = await createUser(payload);
-      setCurrentUser({ id: created.id, nick: created.nick, avatar: created.avatar });
+      setCurrentUser({
+        id: created.id,
+        nick: created.nick,
+        avatar: created.avatar
+      });
       onSuccess();
     } catch (err: any) {
       errBox.textContent = err?.message || t('login.error');

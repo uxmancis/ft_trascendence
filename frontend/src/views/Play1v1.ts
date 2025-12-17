@@ -3,7 +3,7 @@ import { createUser, NewUser } from '../api';
 import { getCurrentUser, getLocalP2, setLocalP2, clearLocalP2} from '../session';
 import { navigate } from '../router';
 import { t, bindI18n } from '../i18n/i18n';
-import { setupLivePong3D } from './Live1v1'; // ← mantiene tu import/estructura
+import { setupLivePong3D } from '../play/Live1v1'; // ← mantiene tu import/estructura
 
 const LIVE_ROUTE = '#/live/1v1';
 

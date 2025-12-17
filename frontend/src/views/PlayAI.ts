@@ -1,7 +1,7 @@
 // src/views/PlayAI.ts
 import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { navigate } from '../router';
-import { setupPong } from './LiveAI'; // ⬅️ import del juego 3D
+import { setupPong } from '../play/LiveAI'; // ⬅️ import del juego 3D
 
 const LIVE_ROUTE = '#/live/ai';
 

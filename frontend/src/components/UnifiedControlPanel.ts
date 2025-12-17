@@ -1,62 +1,121 @@
 // src/components/UnifiedControlPanel.ts
-import { TextSizeButtons } from './TextSizeButtons';
-import { HighContrastButton } from './HighContrastButton';
-import { ThemeSelector } from './ThemeSelector';
-import { MusicButton } from './MusicButton';
-import { LanguageSelector } from './LanguageSelector'; // � NEW
+import { AccessibilityControls } from './PanelComponets/AccessibilityControls';
+import { ThemeSelector } from './PanelComponets/ThemeSelector';
+import { MusicButton } from './PanelComponets/MusicButton';
+import { LanguageSelector } from './PanelComponets/LanguageSelector';
 import { t, onLangChange } from '../i18n/i18n';
 
-export function UnifiedControlPanel() {
+export type ControlPanelMode = 'ide' | 'login';
+
+const PANEL_WIDTH = 'w-80'; // 320px
+const ROW_HEIGHT  = 'h-9';
+const CTRL_WIDTH  = 'w-40';
+
+export function UnifiedControlPanel(mode: ControlPanelMode = 'ide') {
   if (document.getElementById('unified-control-panel')) return;
 
-  // Barra inferior full-width
-  const bar = document.createElement('div');
-  bar.id = 'unified-control-panel';
-  bar.setAttribute('role', 'region');
-  bar.setAttribute('aria-label', t('panel.title'));
+  const isLogin = mode === 'login';
 
-  bar.className = [
-    'fixed bottom-0 left-0 right-0 z-50',
-    'border-t border-white/10',
-    'bg-black/40 backdrop-blur',
-    'px-3 py-2'
-  ].join(' ');
-  bar.style.paddingBottom = 'calc(env(safe-area-inset-bottom, 0px) + 0.25rem)';
+  /* ================= PANEL ================= */
+  const panel = document.createElement('div');
+  panel.id = 'unified-control-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', t('panel.title'));
 
-  // Contenedor interno con WRAP
-  const inner = document.createElement('div');
-  inner.className = [
-    'mx-auto w-full max-w-screen-2xl',
-    'flex flex-wrap items-center justify-between gap-2'
-  ].join(' ');
+  panel.className = isLogin
+    ? [
+        'fixed bottom-0 left-0 right-0 z-50',
+        'bg-black/50 backdrop-blur',
+        'border-t border-white/10',
+        'px-4 py-2',
+        'text-white text-xs'
+      ].join(' ')
+    : [
+        'fixed z-50 bottom-10 left-16',
+        PANEL_WIDTH,
+        'rounded-md',
+        'bg-neutral-900',
+        'border border-white/15',
+        'shadow-2xl',
+        'text-white text-xs'
+      ].join(' ');
 
-  const group = (titleKey: string, ...els: HTMLElement[]) => {
-    const g = document.createElement('div');
-    g.className = [
-      'flex items-center gap-2',
-      'px-2 py-1 rounded-xl bg-white/5',
-      'border border-white/10'
+  /* ================= HEADER (IDE only) ================= */
+  let header: HTMLDivElement | null = null;
+
+  if (!isLogin) {
+    header = document.createElement('div');
+    header.className = [
+      'px-3 py-2',
+      'border-b border-white/10',
+      'uppercase tracking-wide',
+      'text-white/70'
     ].join(' ');
+    header.textContent = t('panel.title');
+    panel.appendChild(header);
+  }
+
+  /* ================= CONTENT ================= */
+  const content = document.createElement('div');
+
+  content.className = isLogin
+    ? 'flex items-center justify-center gap-4'
+    : 'p-2 space-y-1';
+
+  /* ---------- helper fila IDE ---------- */
+  const row = (titleKey: string, controls: HTMLElement[]) => {
+    const r = document.createElement('div');
+    r.className = [
+      'grid grid-cols-[112px_1fr]',
+      ROW_HEIGHT,
+      'items-center',
+      'px-2 rounded',
+      'hover:bg-white/5'
+    ].join(' ');
+
     const label = document.createElement('span');
-    label.className = 'hidden sm:inline text-xs opacity-80 mr-1';
+    label.className = 'text-white/70 truncate';
     label.textContent = t(titleKey);
     label.setAttribute('data-i18n', titleKey);
-    g.append(label, ...els);
-    return g;
+
+    const ctrl = document.createElement('div');
+    ctrl.className = [
+      'flex items-center justify-end gap-1',
+      CTRL_WIDTH
+    ].join(' ');
+    ctrl.append(...controls);
+
+    r.append(label, ctrl);
+    return r;
   };
 
-  const gA11y  = group('panel.access', TextSizeButtons(true), HighContrastButton(true));
-  const gTheme = group('panel.theme', ThemeSelector(true));
-  const gMusic = group('panel.music', MusicButton(true));
-  const gLang  = group('panel.lang', LanguageSelector(true)); // � NEW
+  /* ================= CONTROLS ================= */
+  if (isLogin) {
+    // Horizontal, icon-only, stable
+    content.append(
+      AccessibilityControls(),
+      ThemeSelector(),
+      MusicButton(),
+      LanguageSelector()
+    );
+  } else {
+    // IDE layout
+    content.append(
+      row('panel.access', [AccessibilityControls()]),
+      row('panel.theme',  [ThemeSelector()]),
+      row('panel.music',  [MusicButton()]),
+      row('panel.lang',   [LanguageSelector()])
+    );
+  }
 
-  inner.append(gA11y, gTheme, gMusic, gLang);
-  bar.appendChild(inner);
-  document.body.appendChild(bar);
+  panel.appendChild(content);
+  document.body.appendChild(panel);
 
+  /* ================= I18N ================= */
   const off = onLangChange(() => {
-    bar.setAttribute('aria-label', t('panel.title'));
-    // labels have data-i18n and will be rebound elsewhere if needed
+    panel.setAttribute('aria-label', t('panel.title'));
+    if (header) header.textContent = t('panel.title');
   });
-  (bar as any)._cleanup = () => off();
+
+  (panel as any)._cleanup = () => off();
 }

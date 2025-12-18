@@ -5,6 +5,7 @@ import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTourna
 import { t, bindI18n } from '../i18n/i18n';
 import { navigate } from '../router';
 import { logTerminal } from '../components/IDEComponets/Terminal';
+import { setupLive4v4 } from '../play/Live4v4';
 
 const LIVE_ROUTE = '#/live/4v4';
 
@@ -234,8 +235,8 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
 
       <div class="flex justify-between items-center
                   bg-white/10 px-6 py-3 rounded-2xl">
-        <span class="font-semibold" data-i18n="game.4v4"></span>
-        <span class="text-lg font-bold">🏆 Pong 4v4</span>
+        <span class="font-semibold" data-i18n="game.4v4">4v4</span>
+        <span class="text-lg font-bold">🏆 Pong 4v4 3D</span>
         <button id="backBtn"
                 class="bg-red-500 hover:bg-red-600
                        px-4 py-1 rounded">
@@ -246,12 +247,12 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
       <div class="flex-1 min-h-0 flex flex-col items-center justify-center gap-3">
         <div class="text-sm opacity-90 text-center">
           <span class="font-semibold">${players[0].nick}</span> = W / S ·
-          <span class="font-semibold">${players[1].nick}</span> = ↑ / ↓ ·
+          <span class="font-semibold">${players[1].nick}</span> = I / K ·
           <span class="font-semibold">${players[2].nick}</span> = C / V ·
           <span class="font-semibold">${players[3].nick}</span> = L / Ñ
         </div>
 
-        <div class="w-full h-full max-w-2xl max-h-[60vh]">
+        <div class="w-full h-full max-w-6xl max-h-[70vh]">
           <canvas id="Play4v4"
                   class="w-full h-full block
                          border-4 border-white
@@ -267,6 +268,9 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
     logTerminal('Exit tournament');
     navigate('#');
   });
+  
+  // CRITICAL: Call the game setup
+  requestAnimationFrame(() => setupLive4v4());
 }
 
 /* ============================================================

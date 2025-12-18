@@ -1,721 +1,442 @@
 import { createMatch, type NewMatch } from '../api';
 import { getCurrentUser, getLocalP2, getLocalP3, getLocalP4 } from '../session';
 
-export function setupLive4v4()
-{
-	const canvas = document.getElementById("Play4v4") as HTMLCanvasElement;
-	if (!canvas) return;
+// @ts-ignore
+import * as BABYLON from '@babylonjs/core';
+// @ts-ignore
+import '@babylonjs/loaders';
+// @ts-ignore
+import { AdvancedDynamicTexture, TextBlock, Rectangle } from '@babylonjs/gui';
 
-	if ((canvas as any)._pong4v4Bound) return;
-	(canvas as any)._pong4v4Bound = true;
+type GameState = 'READY' | 'COUNTDOWN' | 'SERVE' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
-	// ===== Canvas resize =====
-	function resizeCanvasToDisplaySize() {
-		const rect = canvas.getBoundingClientRect();
-		const dpr = window.devicePixelRatio || 1;
+export function setupLive4v4() {
+  const canvas = document.getElementById('Play4v4') as HTMLCanvasElement;
+  if (!canvas) return;
 
-		const width = Math.round(rect.width * dpr);
-		const height = Math.round(rect.height * dpr);
+  if ((canvas as any)._pong4v4Bound) return;
+  (canvas as any)._pong4v4Bound = true;
 
-		if (canvas.width !== width || canvas.height !== height) {
-			canvas.width = width;
-			canvas.height = height;
-		}
-	}
+  // ===== UI/FS restore =====
+  const rect = canvas.getBoundingClientRect();
+  const initialSizePx = { width: Math.round(rect.width), height: Math.round(rect.height) };
+  const initialOverflow = {
+    html: document.documentElement.style.overflow,
+    body: document.body.style.overflow,
+  };
 
-	resizeCanvasToDisplaySize();
+  // ===== Fullscreen helpers =====
+  function enterFullscreen(el: HTMLElement) {
+    const anyEl = el as any;
+    (anyEl.requestFullscreen || anyEl.webkitRequestFullscreen || anyEl.mozRequestFullScreen || anyEl.msRequestFullscreen)?.call(anyEl);
+  }
+  function exitFullscreen() {
+    const d: any = document;
+    (document.exitFullscreen || d.webkitExitFullscreen || d.mozCancelFullScreen || d.msExitFullscreen)?.call(document);
+  }
+  function isFullscreen(): boolean {
+    const d: any = document;
+    return !!(document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement);
+  }
+  function applyCanvasFullscreenStyle(active: boolean) {
+    if (active) {
+      canvas.style.width = '100vw';
+      canvas.style.height = '100vh';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    } else {
+      canvas.style.width = `${initialSizePx.width}px`;
+      canvas.style.height = `${initialSizePx.height}px`;
+      document.documentElement.style.overflow = initialOverflow.html;
+      document.body.style.overflow = initialOverflow.body;
+    }
+    const anyEngine = (engine as any);
+    if (anyEngine && typeof anyEngine.resize === 'function') engine.resize();
+  }
 
-	const ctx = canvas.getContext("2d")!;
+  // ===== Canvas resize =====
+  function resizeCanvasToDisplaySize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
 
-	const paddleHeight = 80;
-	const paddleWidth = 10;
-	const ballRadius = 15;
-	const scorepoints = 3;
+  resizeCanvasToDisplaySize();
 
-	const ballImg = new Image();
+  // ===== Engine/Scene =====
+  const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
+  const scene = new BABYLON.Scene(engine);
+  scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-	const backgroundGame = new Image();
+  engine.resize();
 
-	const gameState = {
-		countdownActive: false,
-		countdownValue: 3,
-		countdownTimer: null as number | null,
-		paused: true,
-		winnerMessage: "",
-		playerKeysUp: false,
-		playerKeysDown: false,
-		aiKeysUp: false,
-		aiKeysDown: false,
-		ballReady: false,
-		backgroundReady: false,
-		lastAiUpdate: 0,
-		playerTwoKeysUp: false,
-		playerTwoKeysDown: false,
-		playerThreeLeft: false,
-		playerThreeRight: false,
-        playerFourLeft: false,
-		playerFourRight: false,
-	};
+  const glow = new BABYLON.GlowLayer('glow', scene, { blurKernelSize: 24 });
+  glow.intensity = 0.6;
 
-	const user = getCurrentUser();
-    const p2 = getLocalP2();
-	const p3 = getLocalP3();
-	const p4 = getLocalP4();
-	let postedResult = false;
-	let matchStartedAt = Date.now();
-	const player = {
-	user: user,
-	x: 10,
-	y: canvas.height / 2 - paddleHeight / 2,
-	width: paddleWidth,
-	height: paddleHeight +10,
-	color: "white",
-	dy: 3,
-	score: 0,
-	};
+  const camera = new BABYLON.ArcRotateCamera('cam', -Math.PI / 2, Math.PI / 2.5, 50, new BABYLON.Vector3(0, 0, 0), scene);
+  camera.attachControl(canvas, true);
+  camera.lowerBetaLimit = 0.5; camera.upperBetaLimit = 1.4;
+  camera.lowerRadiusLimit = 35; camera.upperRadiusLimit = 70;
+  camera.panningSensibility = 0; camera.inertia = 0.85; camera.wheelPrecision = 60;
 
-	const player2 = {
-	user: p2,
-	x: canvas.width - paddleWidth - 10,
-	y: canvas.height / 2 - paddleHeight / 2,
-	width: paddleWidth,
-	height: paddleHeight +10,
-	color: "white",
-	dy: 3,
-	score: 0,
-	};
+  new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0, 1, 0), scene);
 
-	const player3 = {
-		user: p3,
-		x: canvas.width / 2 - paddleHeight / 2,
-		y: 10,
-		width: paddleHeight +10,
-		height: paddleWidth,
-		color: "white",
-		dx: 3,
-		dy: 0,
-		score: 0,
-	};
+  // ===== Campo cuadrado para 4 jugadores =====
+  const fieldSize = 40;
+  const table = BABYLON.MeshBuilder.CreateGround('table', { width: fieldSize, height: fieldSize }, scene);
+  const tableMat = new BABYLON.StandardMaterial('tableMat', scene);
+  tableMat.diffuseColor = new BABYLON.Color3(0, 0, 0);
+  tableMat.emissiveColor = new BABYLON.Color3(0.02, 0.35, 0.1);
+  table.material = tableMat;
 
+  // Grid
+  const gridParent = new BABYLON.TransformNode('grid', scene);
+  for (let i = -fieldSize / 2; i <= fieldSize / 2; i += 2) {
+    const lx = BABYLON.MeshBuilder.CreateLines('gx' + i, {
+      points: [new BABYLON.Vector3(i, 0.01, -fieldSize / 2), new BABYLON.Vector3(i, 0.01, fieldSize / 2)]
+    }, scene); lx.color = new BABYLON.Color3(0.3, 1, 0.4); lx.parent = gridParent;
+    
+    const lz = BABYLON.MeshBuilder.CreateLines('gz' + i, {
+      points: [new BABYLON.Vector3(-fieldSize / 2, 0.01, i), new BABYLON.Vector3(fieldSize / 2, 0.01, i)]
+    }, scene); lz.color = new BABYLON.Color3(0.3, 1, 0.4); lz.parent = gridParent;
+  }
 
-	const player4 = {
-		user: p4,
-		x: canvas.width / 2 - paddleHeight / 2,
-		y: canvas.height - paddleWidth - 10,
-		width: paddleHeight  +10,
-		height: paddleWidth,
-		color: "white",
-		dx: 3,
-		dy: 0,
-		score: 0,
-	};
+  // ===== Palas (4 jugadores en los bordes) =====
+  const paddleW = 0.9, paddleH = 6.0, paddleD = 0.6;
+  const offset = fieldSize / 2 - 2;
 
-	let lastPlayerHit: "player" | "player2" | "player3" | "player4" | null = null;
+  const p1Mat = new BABYLON.StandardMaterial('p1Mat', scene); p1Mat.emissiveColor = new BABYLON.Color3(1, 0.2, 0.2);
+  const p2Mat = new BABYLON.StandardMaterial('p2Mat', scene); p2Mat.emissiveColor = new BABYLON.Color3(0.2, 0.2, 1);
+  const p3Mat = new BABYLON.StandardMaterial('p3Mat', scene); p3Mat.emissiveColor = new BABYLON.Color3(1, 1, 0.2);
+  const p4Mat = new BABYLON.StandardMaterial('p4Mat', scene); p4Mat.emissiveColor = new BABYLON.Color3(0.2, 1, 0.2);
 
-	const ball = {
-	x: canvas.width / 2,
-	y: canvas.height / 2,
-	radius: ballRadius,
-	speed: 6,
-	dx: 4,
-	dy: 4,
-	color: "black",
-	};
+  // P1: left (-X)
+  const p1 = BABYLON.MeshBuilder.CreateBox('p1', { width: paddleW, height: paddleD, depth: paddleH }, scene);
+  p1.position.set(-offset, 0.4, 0); p1.material = p1Mat;
 
-	let gameStarted = false;
+  // P2: right (+X)
+  const p2 = BABYLON.MeshBuilder.CreateBox('p2', { width: paddleW, height: paddleD, depth: paddleH }, scene);
+  p2.position.set(offset, 0.4, 0); p2.material = p2Mat;
 
-	ballImg.onload = () => {
-		console.log("La imagen de la bola ya está lista para dibujar");
-		gameState.ballReady = true;};
-	// ballImg.onerror = () => {
-	//   console.error("No se pudo cargar la imagen", ballImg.src);};
-	ballImg.src = new URL("/public/assets/customization/metalball.png", import.meta.url).href;
+  // P3: bottom (+Z) - INVERTIDO CON P4
+  const p3 = BABYLON.MeshBuilder.CreateBox('p3', { width: paddleH, height: paddleD, depth: paddleW }, scene);
+  p3.position.set(0, 0.4, offset); p3.material = p3Mat;
 
-	backgroundGame.onload = () => {
-		console.log("La imagen del mapa ya está lista para dibujar");
-		gameState.backgroundReady = true;};
-	// backgroundGame.onerror = () => {
-	//   console.error("No se pudo cargar la imagen", backgroundGame.src);};
-	backgroundGame.src = new URL("/public/assets/customization/arcade5.jpg", import.meta.url).href;
+  // P4: top (-Z) - INVERTIDO CON P3
+  const p4 = BABYLON.MeshBuilder.CreateBox('p4', { width: paddleH, height: paddleD, depth: paddleW }, scene);
+  p4.position.set(0, 0.4, -offset); p4.material = p4Mat;
 
-	function drawRect(x: number, y: number, w: number, h: number, color: string, backgroundGame?: HTMLImageElement) {
-		if (backgroundGame)
-		ctx.drawImage(backgroundGame, x, y, w, h);
-		else {
-		ctx.fillStyle = color;
-		ctx.fillRect(x, y, w, h);
-		}
-	}
+  // ===== Bola =====
+  const ballR = 0.6;
+  const ball = BABYLON.MeshBuilder.CreateSphere('ball', { diameter: ballR * 2, segments: 24 }, scene);
+  ball.position.set(0, 0.6, 0);
+  const ballMat = new BABYLON.StandardMaterial('ballMat', scene);
+  ballMat.emissiveColor = new BABYLON.Color3(0.6, 1, 0.7); ball.material = ballMat;
 
-	function drawCircle(x: number, y: number, r: number, color: string, ballImg?: HTMLImageElement) {
-		if (ballImg) {
-			ctx.save();
-			// Creamos un círculo para recortar
-			ctx.beginPath();
-			ctx.arc(x, y, r, 0, Math.PI * 2);
-			ctx.closePath();
-			ctx.clip(); // todo lo que dibujemos ahora quedará dentro del círculo
-			ctx.drawImage(ballImg, x - r, y - r, r * 2, r * 2);
+  const trail = new BABYLON.ParticleSystem('trail', 250, scene);
+  trail.emitter = ball;
+  trail.particleTexture = new BABYLON.Texture('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVQoU2NkYGD4z0AEMDEwMDAAAGkMAc3b8wq0AAAAAElFTkSuQmCC', scene);
+  trail.minEmitBox = new BABYLON.Vector3(-0.05, -0.05, -0.05);
+  trail.maxEmitBox = new BABYLON.Vector3(0.05, 0.05, 0.05);
+  trail.color1 = new BABYLON.Color4(0.2, 1, 0.4, 0.9);
+  trail.color2 = new BABYLON.Color4(0.2, 1, 0.6, 0.4);
+  trail.minSize = 0.05; trail.maxSize = 0.15;
+  trail.minLifeTime = 0.15; trail.maxLifeTime = 0.35;
+  trail.emitRate = 250; trail.start();
 
-			ctx.restore();
-		}
-		else {
-			ctx.fillStyle = color;
-			ctx.beginPath();
-			const direction = Math.random() < 0.5 ? -1 : 1;
-			ctx.arc(x, y, r, 0, Math.PI * 2 * direction);
-			ctx.closePath();
-			ctx.fill();
-		}
-	}
+  // ===== Límites =====
+  const bounds = {
+    left: -fieldSize / 2 + 0.6,
+    right: fieldSize / 2 - 0.6,
+    top: -fieldSize / 2 + 0.6,
+    bottom: fieldSize / 2 - 0.6,
+  };
 
-	function drawText(text: string, x: number, y: number) {
-		ctx.save();
+  // ===== HUD =====
+  const gui = AdvancedDynamicTexture.CreateFullscreenUI('UI', true, scene);
 
-		ctx.translate(x, y);
-		ctx.translate(-x, -y);
-		// // Efecto de sombra para darle profundidad
-		// ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-		// ctx.shadowBlur = 10;
-		// ctx.shadowOffsetX = 3;
-		// ctx.shadowOffsetY = 3;
+  const user = getCurrentUser();
+  const p2info = getLocalP2();
+  const p3info = getLocalP3();
+  const p4info = getLocalP4();
 
-		ctx.fillStyle = 'white';
-		ctx.font = 'bold 38px "Orbitron", Entirely';
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'top';
+  const p1Nick = user?.nick ?? 'P1';
+  const p2Nick = p2info?.nick ?? 'P2';
+  const p3Nick = p3info?.nick ?? 'P3';
+  const p4Nick = p4info?.nick ?? 'P4';
 
-		ctx.fillText(text, x, y);
+  const nameP1 = new TextBlock('nameP1', p1Nick); nameP1.color = '#ff6666'; nameP1.fontSize = 18; nameP1.left = '-40%'; nameP1.top = '-48%'; gui.addControl(nameP1);
+  const nameP2 = new TextBlock('nameP2', p2Nick); nameP2.color = '#6666ff'; nameP2.fontSize = 18; nameP2.left = '40%'; nameP2.top = '-48%'; gui.addControl(nameP2);
+  const nameP3 = new TextBlock('nameP3', p3Nick); nameP3.color = '#ffff66'; nameP3.fontSize = 18; nameP3.left = '0%'; nameP3.top = '-48%'; gui.addControl(nameP3);
+  const nameP4 = new TextBlock('nameP4', p4Nick); nameP4.color = '#66ff66'; nameP4.fontSize = 18; nameP4.left = '0%'; nameP4.top = '45%'; gui.addControl(nameP4);
 
-		ctx.restore();
-	}
+  const scoreP1 = new TextBlock('scoreP1', '0'); scoreP1.color = 'white'; scoreP1.fontSize = 44; scoreP1.left = '-40%'; scoreP1.top = '-42%'; gui.addControl(scoreP1);
+  const scoreP2 = new TextBlock('scoreP2', '0'); scoreP2.color = 'white'; scoreP2.fontSize = 44; scoreP2.left = '40%'; scoreP2.top = '-42%'; gui.addControl(scoreP2);
+  const scoreP3 = new TextBlock('scoreP3', '0'); scoreP3.color = 'white'; scoreP3.fontSize = 44; scoreP3.left = '0%'; scoreP3.top = '-42%'; gui.addControl(scoreP3);
+  const scoreP4 = new TextBlock('scoreP4', '0'); scoreP4.color = 'white'; scoreP4.fontSize = 44; scoreP4.left = '0%'; scoreP4.top = '39%'; gui.addControl(scoreP4);
 
-	function renderCountdown() {
-		if (gameState.countdownActive) {
-		ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
-		ctx.fillStyle = "rgba(33, 34, 35, 0.6)";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const banner = new TextBlock('banner', ''); banner.color = '#89ff89'; banner.fontSize = 56; banner.outlineColor = '#134d1f'; banner.outlineWidth = 2;
+  banner.textHorizontalAlignment = TextBlock.HORIZONTAL_ALIGNMENT_CENTER;
+  banner.textVerticalAlignment = TextBlock.VERTICAL_ALIGNMENT_CENTER;
+  gui.addControl(banner);
 
-		ctx.textAlign = "center";
-		//ctx.shadowColor = "white";
-		ctx.shadowBlur = 25;
+  const help = new Rectangle('help');
+  help.thickness = 0; help.background = 'rgba(0,0,0,0.35)'; help.width = '70%'; help.height = '25%'; help.top = '30%'; help.cornerRadius = 10; gui.addControl(help);
+  const helpText = new TextBlock('helpText', 'Controls:\nP1: W/S  •  P2: I/K  •  P3: L/Ñ  •  P4: C/V\nStart/Pause: Space  •  Click to start');
+  helpText.color = 'white'; helpText.fontSize = 20; helpText.textWrapping = true; help.addControl(helpText);
+  const hint = new TextBlock('hint', '[ CLICK TO START ]'); hint.color = 'white'; hint.fontSize = 22; hint.top = '40%'; gui.addControl(hint);
 
-		ctx.font = "bold 90px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
+  // ===== Game state =====
+  const WIN_POINTS = 3;
+  let state: GameState = 'READY';
+  let scores = { p1: 0, p2: 0, p3: 0, p4: 0 };
+  let matchStartedAt = 0;
+  let postedResult = 0;
+  let lastPlayerHit: 'p1' | 'p2' | 'p3' | 'p4' | null = null;
 
-		ctx.fillStyle = gameState.countdownValue > 0 ? "#FFFFFF" : "#FFFFFF";
-		const text = gameState.countdownValue > 0 ? gameState.countdownValue.toString() : "GO!";
-			if (text === "GO!") {
-				ctx.font = "bold 110px 'Orbitron', 'Entirely', 'Audiowide', sans-serif";
-				//ctx.shadowColor = "white";
-			}
-		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  // ===== Física =====
+  const paddleSpeed = 13;
+  const ballBaseSpeed = 10.0;
+  const ballMaxSpeed = 16.5;
 
-		ctx.shadowBlur = 0;
-		}
-	}
+  let ballVel = new BABYLON.Vector3(ballBaseSpeed, 0, ballBaseSpeed * 0.6);
+  let collideCooldown = 0;
 
-	function startCountdown() {
-	  gameState.countdownActive = true;
-	  gameState.countdownValue = 3;
-	  gameState. winnerMessage = "";
-	  gameState.paused = true;
-      postedResult = false;
-      matchStartedAt = Date.now();
+  const keys: Record<string, boolean> = { w: false, s: false, i: false, k: false, c: false, v: false, l: false, ñ: false };
+  const clampZ = (z: number) => Math.min(bounds.bottom - paddleH / 2, Math.max(bounds.top + paddleH / 2, z));
+  const clampX = (x: number) => Math.min(bounds.right - paddleH / 2, Math.max(bounds.left + paddleH / 2, x));
 
-	  if (gameState.countdownTimer) clearInterval(gameState.countdownTimer);
+  // ===== Input =====
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
+    if (e.key === 'Escape') {
+      if (isFullscreen()) exitFullscreen();
+      if (state === 'PLAYING') pauseGame('⏸️ PAUSE', 'Press Space to continue');
+    }
+    if (e.code === 'Space') {
+      if (state === 'GAMEOVER') { startNewGame(); return; }
+      if (state === 'PAUSED') { resumeAfterPause(); return; }
+      if (state === 'PLAYING') { pauseGame('⏸️ PAUSE', 'Press Space to continue'); return; }
+      if (state === 'READY') { startNewGame(); return; }
+    }
+  }
+  function onKeyUp(e: KeyboardEvent) { if (e.key in keys) keys[e.key] = false; }
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
 
-	  gameState.countdownTimer = window.setInterval(() => {
-		gameState.countdownValue--;
-		if (gameState.countdownValue <= 0) {
-		  clearInterval(gameState.countdownTimer!);
-		  gameState.countdownValue = 0;
-		  setTimeout(() => {
-			gameState.countdownActive = false;
-			gameState.paused = false;
-		  }, 500);
-		}
-	  }, 1000);
-	}
+  canvas.addEventListener('click', () => {
+    if (!isFullscreen()) { enterFullscreen(canvas); applyCanvasFullscreenStyle(true); }
+    if (state === 'READY' || state === 'GAMEOVER') { startNewGame(); return; }
+    if (state === 'PLAYING') { pauseGame('⏸️ PAUSE', 'Press Space to continue'); return; }
+    if (state === 'PAUSED') { resumeAfterPause(); return; }
+  });
 
-	document.addEventListener("keydown", (e) => {
-		if (["ArrowUp", "ArrowDown"].includes(e.key)) {
-			e.preventDefault();
-		}
-		if (e.key === "ArrowUp") gameState.playerTwoKeysUp = true;
-		if (e.key === "ArrowDown") gameState.playerTwoKeysDown = true;
-		if (e.key === "w") gameState.playerKeysUp = true;
-		if (e.key === "s") gameState.playerKeysDown = true;
-		if (e.key === "c") gameState.playerThreeLeft = true;
-		if (e.key === "v") gameState.playerThreeRight = true;
-		if (e.key === "l") gameState.playerFourLeft = true;
-		if (e.key === "ñ") gameState.playerFourRight = true;
-	});
+  document.addEventListener('fullscreenchange', () => {
+    const active = isFullscreen();
+    applyCanvasFullscreenStyle(active);
+    if (!active && state === 'PLAYING') pauseGame('⏸️ PAUSE', 'Press Space to continue');
+  });
 
-	document.addEventListener("keyup", (e) => {
-		if (e.key === "ArrowUp") gameState.playerTwoKeysUp = false;
-		if (e.key === "ArrowDown") gameState.playerTwoKeysDown = false;
-		if (e.key === "w") gameState.playerKeysUp = false;
-		if (e.key === "s") gameState.playerKeysDown = false;
-		if (e.key === "c") gameState.playerThreeLeft = false;
-		if (e.key === "v") gameState.playerThreeRight = false;
-		if (e.key === "l") gameState.playerFourLeft = false;
-		if (e.key === "ñ") gameState.playerFourRight = false;
-	});
+  // ===== UI helpers =====
+  function pauseGame(msg: string, sub: string) { state = 'PAUSED'; banner.text = msg; hint.text = sub; help.isVisible = true; trail.emitRate = 80; }
+  function resumeAfterPause() { help.isVisible = false; hint.text = ''; banner.text = ''; state = 'PLAYING'; trail.emitRate = 250; }
+  function hideMsg() { banner.text = ''; hint.text = ''; help.isVisible = false; }
 
-	document.addEventListener("keydown", (e) => {
-		if (gameState.playerKeysUp && !gameState.paused) {
-			player.y -= player.dy * 2;
-			if (player.y < 0)
-			player.y = 0;
-		}
-		if (gameState.playerKeysDown && !gameState.paused) {
-		player.y += player.dy * 2;
-		if (player.y + player.height > canvas.height) {
-			player.y = canvas.height - player.height;
-		}
-		}
-		if (gameState.playerTwoKeysUp && !gameState.paused) {
-			player2.y -= player2.dy * 2;
-			if (player2.y < 0)
-			player2.y = 0;
-		}
-		if (gameState.playerTwoKeysDown && !gameState.paused) {
-		player2.y += player2.dy * 2;
-		if (player2.y + player2.height > canvas.height) {
-			player2.y = canvas.height - player2.height;
-		}
-		}
-		if (gameState.playerThreeLeft && !gameState.paused) {
-			player3.x -= player3.dx * 2;
-			if (player3.x < 0) player3.x = 0;
-		}
-		if (gameState.playerThreeRight && !gameState.paused) {
-			player3.x += player3.dx * 2;
-			if (player3.x + player3.width > canvas.width) {
-				player3.x = canvas.width - player3.width;
-			}
-		}
-		if (gameState.playerFourLeft && !gameState.paused) {
-			player4.x -= player4.dx * 2;
-			if (player4.x < 0) player4.x = 0;
-		}
-		if (gameState.playerFourRight && !gameState.paused) {
-			player4.x += player4.dx * 2;
-			if (player4.x + player4.width > canvas.width) {
-				player4.x = canvas.width - player4.width;
-			}
-		}
-	});
+  function countdown(n: number) {
+    state = 'COUNTDOWN';
+    return new Promise<void>((resolve) => {
+      let v = n; banner.text = String(v); hint.text = '';
+      const iv = setInterval(() => {
+        v -= 1;
+        banner.text = v > 0 ? String(v) : 'GO!';
+        if (v < 0) { clearInterval(iv); resolve(); }
+      }, 1000);
+    });
+  }
 
-	document.addEventListener("keydown", (e) => {
-		if (e.code === "Space") {
-		if (gameState. winnerMessage !== "" && !gameState.countdownActive) {
-			gameState. winnerMessage = "";
-			resetBall();
-			startCountdown();
-			player.score = 0;
-			player2.score = 0;
-			player3.score = 0;
-			player4.score = 0;
-			return;
-		}
+  function centerAndServe() {
+    ball.position.set(0, 0.6, 0);
+    const angle = Math.random() * Math.PI * 2;
+    const speed = ballBaseSpeed;
+    ballVel.set(Math.cos(angle) * speed, 0, Math.sin(angle) * speed);
+    collideCooldown = 0;
+    lastPlayerHit = null; // 👈 CRITICAL: Reset after each goal
+  }
 
-		if (!gameState.countdownActive && gameState. winnerMessage === "") {
-			gameState.paused = !gameState.paused;
-		}
-		}
-	});
+  function startNewGame() {
+    scores = { p1: 0, p2: 0, p3: 0, p4: 0 };
+    scoreP1.text = '0'; scoreP2.text = '0'; scoreP3.text = '0'; scoreP4.text = '0';
+    postedResult = 0; matchStartedAt = Date.now();
+    centerAndServe();
+    countdown(3).then(() => { hideMsg(); state = 'PLAYING'; trail.emitRate = 250; });
+  }
 
-	canvas.addEventListener("click", () => {
-		if (!gameStarted && !gameState.countdownActive) {
-		gameStarted = true;
-		gameState. winnerMessage = "";
-		resetBall(true);
-		startCountdown();
-		player.score = 0;
-		player2.score = 0;
-		player3.score = 0;
-		player4.score = 0;
-		return;
-		}
+  function reflect(v: BABYLON.Vector3, normal: BABYLON.Vector3) {
+    const dot = BABYLON.Vector3.Dot(v, normal);
+    return v.subtract(normal.scale(2 * dot));
+  }
 
-		if (gameState. winnerMessage !== "" && !gameState.countdownActive) {
-		gameState. winnerMessage = "";
-		resetBall();
-		startCountdown();
-		player.score = 0;
-		player2.score = 0;
-		player3.score = 0;
-		player4.score = 0;
-		return;
-		}
+  function checkPaddleCollision(paddle: BABYLON.Mesh, playerId: 'p1' | 'p2' | 'p3' | 'p4', vertical: boolean): boolean {
+    const px = paddle.position.x, pz = paddle.position.z;
+    const hw = vertical ? paddleW / 2 : paddleH / 2;
+    const hd = vertical ? paddleH / 2 : paddleW / 2;
 
-		if (gameStarted && !gameState.countdownActive && gameState. winnerMessage === "") {
-		gameState.paused = !gameState.paused;
-		}
-	});
+    const cx = Math.max(px - hw, Math.min(ball.position.x, px + hw));
+    const cz = Math.max(pz - hd, Math.min(ball.position.z, pz + hd));
+    const dx = ball.position.x - cx;
+    const dz = ball.position.z - cz;
+    const dist2 = dx * dx + dz * dz;
+    if (dist2 > ballR * ballR) return false;
 
-	function collision(_ball: typeof ball, paddle: typeof player, orientation: "vertical" | "horizontal" = "vertical") {
-		if (orientation === "vertical") {
-			return (
-			_ball.x - _ball.radius < paddle.x + paddle.width &&
-			_ball.x + _ball.radius > paddle.x &&
-			_ball.y - _ball.radius < paddle.y + paddle.height &&
-			_ball.y + _ball.radius > paddle.y
-			);
-		} else {
-			return (
-			_ball.y - _ball.radius < paddle.y + paddle.height &&
-			_ball.y + _ball.radius > paddle.y &&
-			_ball.x - _ball.radius < paddle.x + paddle.width &&
-			_ball.x + _ball.radius > paddle.x
-			);
-		}
-	}
+    let nx = 0, nz = 0;
+    if (vertical) {
+      nx = (ball.position.x < px) ? -1 : 1;
+      ball.position.x = px + (nx * (hw + ballR + 0.01));
+    } else {
+      nz = (ball.position.z < pz) ? -1 : 1;
+      ball.position.z = pz + (nz * (hd + ballR + 0.01));
+    }
 
-	function resetBall(initial = false) {
-		ball.speed = 3
-		ball.dx = 0;
-		ball.dy = 0;
-		ball.x = canvas.width / 2;
-		ball.y = canvas.height / 2;
+    const n = new BABYLON.Vector3(nx, 0, nz).normalize();
+    ballVel = reflect(ballVel, n);
+    const speed = Math.min(ballVel.length() + 0.5, ballMaxSpeed);
+    ballVel = ballVel.normalize().scale(speed);
 
-		const ranges = [
-			[25, 65],
-			[115, 165],
-			[195, 245],
-			[295, 345]
-		].map(([min, max]) => [min * Math.PI/180, max * Math.PI/180]);
+    collideCooldown = 0.05;
+    lastPlayerHit = playerId;
+    return true;
+  }
 
-		const selectedRange = ranges[Math.floor(Math.random() * ranges.length)];
-		const angle = Math.random() * (selectedRange[1] - selectedRange[0]) + selectedRange[0];
+  function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
+    if (state !== 'PLAYING') return;
+    state = 'SERVE';
 
-		const startDelay = initial ? 0 : 1000;
-		setTimeout(() => ball.dx = ball.speed * Math.cos(angle), startDelay);
-		setTimeout(() => ball.dy = ball.speed * Math.sin(angle), startDelay);
-	}
+    scores[scorer]++;
+    (gui.getControlByName(`score${scorer.toUpperCase()}`) as TextBlock).text = String(scores[scorer]);
 
+    const maxScore = Math.max(scores.p1, scores.p2, scores.p3, scores.p4);
+    if (maxScore >= WIN_POINTS) {
+      const winner = Object.keys(scores).find(k => scores[k as keyof typeof scores] === maxScore) as keyof typeof scores;
+      state = 'GAMEOVER';
+      trail.emitRate = 80;
+      banner.text = `🏆 ${winner.toUpperCase()} wins!`;
+      hint.text = 'Click or Space for new match';
 
-	function renderWinner() {
-		drawRect(0, 0, canvas.width, canvas.height, "black");
-
-		ctx.textAlign = "center";
-		//ctx.shadowColor = "white";
-		ctx.shadowBlur = 20;
-
-		ctx.font = `bold 18px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
-		ctx.fillStyle = "white";
-		ctx.fillText(
-					 `Player1: ${player.score} 🥸`,
-					 canvas.width / 2,
-					 canvas.height / 10
-		);
-
-		ctx.fillText(
-					 `${p2?.nick ?? "Player2"}: ${player2.score} 🤠`,
-					 canvas.width / 2,
-					 canvas.height / 10 + 25
-		);
-
-		ctx.fillText(
-					 `${p3?.nick ?? "Player3"}: ${player3.score} 😎`,
-					 canvas.width / 2,
-					 canvas.height / 10 + 25 * 2
-		);
-
-		ctx.fillText(
-					 `${p4?.nick ?? "Player4"}: ${player4.score} 🤓`,
-					 canvas.width / 2,
-					 canvas.height / 10 + 25 * 3
-		);
-		ctx.font = `bold 28px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
-		ctx.fillStyle = "white";
-		ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
-		ctx.font = `bold 12px 'Entirely', 'Audiowide', 'Press Start 2P', sans-serif`;
-		ctx.fillStyle = "white";
-		ctx.fillText(
-		"Press Space or click to start a new game",
-		canvas.width / 2,
-		canvas.height / 2 + canvas.height / 4
-		);
-
-		ctx.shadowBlur = 0;
-	}
-    function postResultIfNeeded(winner: typeof player) {
-        if (postedResult) return;
-        postedResult = true;
-   
-        if (!player.user) return;
-   
-        const duration_seconds = Math.max(
-             1,
-             Math.round((Date.now() - matchStartedAt) / 1000)
-        );
-        const isPlayer1Winner = winner === player;
+      if (!postedResult && user) {
+        postedResult = 1;
+        const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
         const payload: NewMatch = {
-             player1_id: player.user.id,
-             player2_id: player2.user?.id ?? 0,
-             score_p1: player.score,
-             score_p2: Math.max(
-                     player2.score,
-                     player3.score,
-                     player4.score
-             ),
-             winner_id: isPlayer1Winner ? player.user.id : 0,
-             duration_seconds,
-             details: {
-                     mode: "live-4v4",
-                     scores: {
-                                  p1: player.score,
-                                  p2: player2.score,
-                                  p3: player3.score,
-                                  p4: player4.score,
-                     },
-                     players: {
-                                  p1: player.user?.nick,
-                                  p2: p2?.nick,
-                                  p3: p3?.nick,
-                                  p4: p4?.nick,
-                     }
-             } as any,
+          player1_id: user.id,
+          player2_id: p2info?.id ?? 0,
+          score_p1: scores.p1,
+          score_p2: Math.max(scores.p2, scores.p3, scores.p4),
+          winner_id: winner === 'p1' ? user.id : 0,
+          duration_seconds,
+          details: { mode: 'live-4v4-3d', scores } as any,
         };
+        createMatch(payload).catch(err => console.error('[match] error 4v4 3D', err));
+      }
+      return;
+    }
 
-        createMatch(payload)
-             .catch(err => console.error("[match] error 4v4", err));
-   }
+    centerAndServe();
+    setTimeout(() => countdown(3).then(() => { banner.text = ''; state = 'PLAYING'; }), 300);
+  }
 
-	function update() {
+  // ===== Main loop =====
+  engine.runRenderLoop(() => {
+    const dtMs = Math.min(engine.getDeltaTime(), 50);
+    const dt = dtMs / 1000;
 
-	//   if (gameState.playerKeysUp) player.y -= player.dy;
-	//   if (gameState.playerKeysDown) player.y += player.dy;
-	//   if (gameState.playerTwoKeysUp) player2.y -= player2.dy;
-	//   if (gameState.playerTwoKeysDown) player2.y += player2.dy;
+    if (collideCooldown > 0) collideCooldown = Math.max(0, collideCooldown - dt);
 
-	//   player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
-	//   player2.y = Math.max(0, Math.min(canvas.height - player2.height, player2.y));
+    if (state === 'PLAYING') {
+      // P1 (left): W/S
+      if (keys.w) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
+      if (keys.s) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
 
-		ball.x += ball.dx;
-		ball.y += ball.dy;
+      // P2 (right): I/K
+      if (keys.i) p2.position.z = clampZ(p2.position.z - paddleSpeed * dt);
+      if (keys.k) p2.position.z = clampZ(p2.position.z + paddleSpeed * dt);
 
-		if (collision(ball, player, "vertical")) {
-			ball.speed = Math.min(ball.speed + 0.1, 10);
-			lastPlayerHit = "player";
-			if (
-			ball.x - ball.radius  < player.x + player.width &&
-			ball.x + ball.radius > player.x &&
-			ball.y + ball.radius > player.y &&
-			ball.y - ball.radius < player.y + player.height
-			) {
-			let impactPoint = ball.y - player.y;
-			let third = player.height / 25;
+      // P3 (bottom): L/Ñ
+      if (keys.l) p3.position.x = clampX(p3.position.x - paddleSpeed * dt);
+      if (keys.ñ) p3.position.x = clampX(p3.position.x + paddleSpeed * dt);
 
-			if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
-				ball.dx = -ball.dx;
-				ball.dy = -ball.dy;
-			} else {
-				ball.dx = -ball.dx;
-			}
-			}
-			ball.x = player.x + player.width + ball.radius;
-		}
+      // P4 (top): C/V
+      if (keys.c) p4.position.x = clampX(p4.position.x - paddleSpeed * dt);
+      if (keys.v) p4.position.x = clampX(p4.position.x + paddleSpeed * dt);
 
-		if (collision(ball, player2, "vertical")) {
-			ball.speed = Math.min(ball.speed + 0.05, 10);
-			lastPlayerHit = "player2";
-			if (
-			ball.x - ball.radius < player2.x + player2.width &&
-			ball.x + ball.radius > player2.x &&
-			ball.y + ball.radius > player2.y &&
-			ball.y - ball.radius < player2.y + player2.height
-			) {
-			let impactPoint = ball.y - player2.y;
-			let third = player2.height / 25;
+      // Ball movement
+      ball.position.x += ballVel.x * dt;
+      ball.position.z += ballVel.z * dt;
 
-			if ((impactPoint < third && ball.dy > 0)|| (impactPoint > 24 * third && ball.dy < 0)) {
-				ball.dx = -ball.dx;
-				ball.dy = -ball.dy;
-			} else {
-				ball.dx = -ball.dx;
-			}
-			}
-			ball.x = player2.x - ball.radius;
-		}
+      // ===== Rebotes en paredes / Detección de goles =====
+      const wallFriction = 0.98;
+      
+      // Lado IZQUIERDO (P1)
+      if (ball.position.x - ballR < bounds.left) {
+        if (lastPlayerHit) {
+          // Alguien golpeó la bola → ANOTAR GOL
+          scorePoint(lastPlayerHit);
+        } else {
+          // Nadie la tocó → REBOTE
+          ball.position.x = bounds.left + ballR;
+          ballVel.x *= -wallFriction;
+        }
+      }
+      
+      // Lado DERECHO (P2)
+      else if (ball.position.x + ballR > bounds.right) {
+        if (lastPlayerHit) {
+          scorePoint(lastPlayerHit);
+        } else {
+          ball.position.x = bounds.right - ballR;
+          ballVel.x *= -wallFriction;
+        }
+      }
+      
+      // Lado ARRIBA (P3)
+      if (ball.position.z - ballR < bounds.top) {
+        if (lastPlayerHit) {
+          scorePoint(lastPlayerHit);
+        } else {
+          ball.position.z = bounds.top + ballR;
+          ballVel.z *= -wallFriction;
+        }
+      }
+      
+      // Lado ABAJO (P4)
+      else if (ball.position.z + ballR > bounds.bottom) {
+        if (lastPlayerHit) {
+          scorePoint(lastPlayerHit);
+        } else {
+          ball.position.z = bounds.bottom - ballR;
+          ballVel.z *= -wallFriction;
+        }
+      }
 
-		if (collision(ball, player3, "horizontal")) {
-			ball.speed = Math.min(ball.speed + 0.05, 10);
-			lastPlayerHit = "player3";
-			if (
-				ball.y - ball.radius < player3.y + player3.height &&
-				ball.y + ball.radius > player3.y &&
-				ball.x + ball.radius > player3.x &&
-				ball.x - ball.radius < player3.x + player3.width
-			) {
-				let impactPoint = ball.x - player3.x;
-				let third = player3.width / 25;
+      // Paddle collisions (aquí se marca lastPlayerHit)
+      if (collideCooldown <= 0) {
+        checkPaddleCollision(p1, 'p1', true);
+        checkPaddleCollision(p2, 'p2', true);
+        checkPaddleCollision(p3, 'p3', false);
+        checkPaddleCollision(p4, 'p4', false);
+      }
+    }
 
-				if ((impactPoint < third && ball.dx > 0) || (impactPoint > 24 * third && ball.dx < 0)) {
-					ball.dy = -ball.dy;
-					ball.dx = -ball.dx;
-				} else {
-					ball.dy = -ball.dy;
-				}
-			}
-			ball.y = player3.y + player3.height + ball.radius;
-		}
+    scene.render();
+  });
 
-		if (collision(ball, player4, "horizontal")) {
-			ball.speed = Math.min(ball.speed + 0.05, 10);
-			lastPlayerHit = "player4";
-			if (
-				ball.y - ball.radius < player4.y + player4.height &&
-				ball.y + ball.radius > player4.y &&
-				ball.x + ball.radius > player4.x &&
-				ball.x - ball.radius < player4.x + player4.width
-			) {
-				let impactPoint = ball.x - player4.x;
-				let third = player4.width / 25;
-
-				if ((impactPoint < third && ball.dx > 0) || (impactPoint > 24 * third && ball.dx < 0)) {
-					ball.dy = -ball.dy;
-					ball.dx = -ball.dx;
-				} else {
-					ball.dy = -ball.dy;
-				}
-			}
-			ball.y = player4.y - ball.radius;
-		}
-
-		if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width ||
-			ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
-			if (lastPlayerHit) {
-				switch (lastPlayerHit) {
-					case "player":
-						player.score++;
-						break;
-					case "player2":
-						player2.score++;
-						break;
-					case "player3":
-						player3.score++;
-						break;
-					case "player4":
-						player4.score++;
-						break;
-				}
-			}
-			const players = [player, player2, player3, player4];
-			const winner = players.find(p => p.score === scorepoints);
-			if (winner) {
-				gameState.winnerMessage =
-					`Player ${
-					 winner === player
-					 ? player.user?.nick
-					 : winner === player2
-					 ? p2?.nick
-					 : winner === player3
-					 ? p3?.nick
-					 : p4?.nick
-					 } wins! 🥳`;
-				gameState.paused = true;
-                postResultIfNeeded(winner);
-				renderWinner();
-			}
-			resetBall();
-			lastPlayerHit = null;
-		}
-	}
-
-function renderInitialScreen() {
-	drawRect(0, 0, canvas.width, canvas.height, "black");
-
-	// Texto con controles y mensaje de inicio
-	const text = `CONTROLS
-Player 1: W / S
-Player 2: ↑ / ↓
-Player 3: C / V
-Player 4: L / Ñ
-
-[ PRESS TO START PONG 🎮 ]`;
-
-	const lines = text.split("\n");
-
-	ctx.save();
-	ctx.fillStyle = "white";
-	ctx.font = "16px 'Press Start 2P', sans-serif";
-	ctx.textAlign = "center";
-	ctx.textBaseline = "middle";
-
-	const startY = canvas.height / 2 - (lines.length / 2) * 22; // Centrar vertical
-	lines.forEach((line, i) => {
-		ctx.fillText(line, canvas.width / 2, startY + i * 22); // 22 = separación entre líneas
-	});
-
-	ctx.restore();
-}
-
-	function render() {
-		if (!gameStarted && !gameState.countdownActive) {
-			renderInitialScreen();
-			return;
-		}
-		if (gameState. winnerMessage !== "") {
-			renderWinner();
-			return;
-		}
-		drawRect(0, 0, canvas.width, canvas.height, "black", gameState.backgroundReady ? backgroundGame : undefined);
-
-		drawRect(player.x, player.y, player.width, player.height, player.color);
-		drawRect(player2.x, player2.y, player2.width, player2.height, player2.color);
-		drawRect(player3.x, player3.y, player3.width, player3.height, player3.color);
-		drawRect(player4.x, player4.y, player4.width, player4.height, player4.color);
-
-		drawCircle(ball.x, ball.y, ball.radius, ball.color, gameState.ballReady ? ballImg : undefined);
-
-
-		drawText(player.score.toString(), 50, canvas.height / 2);
-		drawText(player2.score.toString(), canvas.width - 50, canvas.height / 2);
-		drawText(player3.score.toString(), canvas.width / 2, 50);
-		drawText(player4.score.toString(), canvas.width / 2, canvas.height - 50);
-
-		if (gameState.paused && gameState.winnerMessage !== "") {
-			ctx.font = "40px Arial";
-		ctx.fillStyle = "yellow";
-		ctx.textAlign = "center";
-		ctx.fillText(gameState.winnerMessage, canvas.width / 2, canvas.height / 2);
-		}
-	}
-
-	function game() {
-		if (gameState.paused && gameStarted && gameState.winnerMessage == "") {
-			ctx.save();
-			ctx.drawImage(backgroundGame, 0, 0, canvas.width, canvas.height);
-			ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			ctx.font = "bold 60px 'Press Start 2P', 'Audiowide', sans-serif";
-			ctx.fillStyle = "orange";
-			ctx.textAlign = "center";
-			ctx.textBaseline = "middle";
-			ctx.shadowColor = "rgba(33, 34, 35, 0.6)";
-			ctx.fillText("⏸️ PAUSE", canvas.width / 2, canvas.height / 2 - 40);
-			ctx.font = "15px 'Press Start 2P', 'Audiowide', sans-serif";
-			ctx.fillStyle = "white";
-			ctx.shadowBlur = 0;
-			ctx.fillText("▶ CLICK THE SCREEN", canvas.width / 2, canvas.height / 2 + 70);
-			ctx.fillText("OR PRESS [SPACE] TO CONTINUE ◀", canvas.width / 2, canvas.height / 2 + 100);
-			ctx.restore();
-		}
-		if (gameState.paused && !gameStarted && !gameState.countdownActive)
-			render();
-		if (!gameState.paused) {
-		update();
-		render();
-		}
-		renderCountdown();
-	}
-
-	setInterval(game, 1000 / 60); // 60 el tiempo de ejecución será en milisegundos: un segundo tiene 1000 milisegundos y queremos qeu se actualice 60 veces por segundo
-
-	// ===== Resize =====
-	window.addEventListener('resize', () => resizeCanvasToDisplaySize());
+  // ===== Resize =====
+  window.addEventListener('resize', () => {
+    resizeCanvasToDisplaySize();
+    engine.resize();
+  });
 }
 

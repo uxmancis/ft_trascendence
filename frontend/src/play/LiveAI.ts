@@ -308,7 +308,6 @@ export function setupPong() {
 
     if (aiVelZ > AI_CTL.maxSpeed) aiVelZ = AI_CTL.maxSpeed;
     if (aiVelZ < -AI_CTL.maxSpeed) aiVelZ = -AI_CTL.maxSpeed;
-    console.log("aiVelz=", aiVelZ);
   }
 
   function reflect(v: BABYLON.Vector3, normal: BABYLON.Vector3) {
@@ -488,7 +487,6 @@ export function setupPong() {
 
   const aiKeyState = { up: false, down: false };
   function aiPressDirection(dir: number) {
-    console.log("dir=", dir);
     const thr = difficulty === 'hard' ? 0.05 : 0.2;
     if (dir > thr) {
       if (!aiKeyState.up) { dispatchKeyDown('ArrowUp'); aiKeyState.up = true; }

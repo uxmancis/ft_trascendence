@@ -427,6 +427,22 @@ export function setupLivePong3D() {
     setTimeout(() => countdown(3).then(() => { banner.text = ''; (gui.getControlByName('hint') as TextBlock).text = ''; state = 'PLAYING'; }), 300);
   }
 
+  // ===== Canvas resize =====
+  function resizeCanvasToDisplaySize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
+
+  resizeCanvasToDisplaySize();
+
   // ===== Bucle principal =====
   engine.runRenderLoop(() => {
     const dtMs = Math.min(engine.getDeltaTime(), 50);
@@ -476,5 +492,8 @@ export function setupLivePong3D() {
   });
 
   // ===== Resize =====
-  window.addEventListener('resize', () => engine.resize());
+  window.addEventListener('resize', () => {
+    resizeCanvasToDisplaySize();
+    engine.resize();
+  });
 }

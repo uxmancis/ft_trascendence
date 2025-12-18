@@ -4,6 +4,27 @@ import { getCurrentUser, getLocalP2, getLocalP3, getLocalP4 } from '../session';
 export function setupLive4v4()
 {
 	const canvas = document.getElementById("Play4v4") as HTMLCanvasElement;
+	if (!canvas) return;
+
+	if ((canvas as any)._pong4v4Bound) return;
+	(canvas as any)._pong4v4Bound = true;
+
+	// ===== Canvas resize =====
+	function resizeCanvasToDisplaySize() {
+		const rect = canvas.getBoundingClientRect();
+		const dpr = window.devicePixelRatio || 1;
+
+		const width = Math.round(rect.width * dpr);
+		const height = Math.round(rect.height * dpr);
+
+		if (canvas.width !== width || canvas.height !== height) {
+			canvas.width = width;
+			canvas.height = height;
+		}
+	}
+
+	resizeCanvasToDisplaySize();
+
 	const ctx = canvas.getContext("2d")!;
 
 	const paddleHeight = 80;
@@ -693,5 +714,8 @@ Player 4: L / Ñ
 	}
 
 	setInterval(game, 1000 / 60); // 60 el tiempo de ejecución será en milisegundos: un segundo tiene 1000 milisegundos y queremos qeu se actualice 60 veces por segundo
+
+	// ===== Resize =====
+	window.addEventListener('resize', () => resizeCanvasToDisplaySize());
 }
 

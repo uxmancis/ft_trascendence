@@ -7,7 +7,7 @@ import { setupLivePong3D } from '../play/Live1v1';
 type SessionUser = { id: number; nick: string; avatar?: string };
 
 const MIN_PLAYERS = 3;
-const MAX_PLAYERS = 20;
+const MAX_PLAYERS = 12;
 
 // claves compartidas con el engine
 const T_MODE_KEY = 'tournament:mode';
@@ -452,14 +452,18 @@ export async function renderTournament(root: HTMLElement) {
       }));
 
       root.innerHTML = `
-        <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
-          <div class="flex justify-between items-center mb-6 bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+        <section class="flex flex-col min-h-0 grow p-4 gap-4 text-white">
+          <div class="flex justify-between items-center bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
             <span class="font-semibold">${t('tour.title')} • Round ${s2.round} • Match ${idx}/${totalThisRound}</span>
             <span class="text-lg font-bold">🎮 ${next!.p1.nick} vs ${next!.p2!.nick}</span>
-            <button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">Salir</button>
+            <button id="backBtn" class="bg-red-500 hover:bg-red-600 px-4 py-1 rounded text-white transition-all">
+              ${t('common.exit')}
+            </button>
           </div>
-          <div class="flex flex-col items-center justify-center p-4">
-            <canvas id="live_pong" width="800" height="500" class="shadow-xl border-4 border-white rounded-2xl backdrop-blur-md"></canvas>
+          <div class="flex-1 min-h-0 flex items-center justify-center">
+            <div class="w-full h-full max-w-6xl max-h-[70vh]">
+              <canvas id="live_pong" class="w-full h-full block shadow-xl border-4 border-white rounded-2xl"></canvas>
+            </div>
           </div>
         </section>
       `;
@@ -483,12 +487,7 @@ export async function renderTournament(root: HTMLElement) {
       window.addEventListener('beforeunload', () => clearInterval(watch), { once: true });
 
       requestAnimationFrame(() => {
-        const c = document.getElementById('live_pong') as HTMLCanvasElement | null;
-        if (c) {
-          if (!c.style.width) c.style.width = `${c.width}px`;
-          if (!c.style.height) c.style.height = `${c.height}px`;
-          setupLivePong3D();
-        }
+        setupLivePong3D();
       });
     };
   }

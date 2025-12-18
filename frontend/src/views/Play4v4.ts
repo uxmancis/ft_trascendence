@@ -92,9 +92,9 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
         </button>
       </div>
 
-      <!-- Grid 2x2 -->
+      <!-- Grid 1 fila x 4 columnas -->
       <div class="rounded-2xl bg-white/10 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           ${me ? youCard(me.nick, me.id, me.avatar) : waitingCard('LOGIN')}
           ${seatCard(0, locals[0])}
           ${seatCard(1, locals[1])}
@@ -230,20 +230,20 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
 function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): void 
 {
   root.innerHTML = `
-    <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
+    <section class="flex flex-col min-h-0 grow p-4 gap-4 text-white">
 
       <div class="flex justify-between items-center
                   bg-white/10 px-6 py-3 rounded-2xl">
         <span class="font-semibold" data-i18n="game.4v4"></span>
-        <span class="text-lg font-bold">🏆 Pong 4</span>
+        <span class="text-lg font-bold">🏆 Pong 4v4</span>
         <button id="backBtn"
                 class="bg-red-500 hover:bg-red-600
                        px-4 py-1 rounded">
-          Salir
+          ${t('common.exit')}
         </button>
       </div>
 
-      <div class="flex flex-col items-center gap-3">
+      <div class="flex-1 min-h-0 flex flex-col items-center justify-center gap-3">
         <div class="text-sm opacity-90 text-center">
           <span class="font-semibold">${players[0].nick}</span> = W / S ·
           <span class="font-semibold">${players[1].nick}</span> = ↑ / ↓ ·
@@ -251,11 +251,13 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
           <span class="font-semibold">${players[3].nick}</span> = L / Ñ
         </div>
 
-        <canvas id="Play4v4"
-                width="550" height="550"
-                class="border-4 border-white
-                       rounded-2xl shadow-xl">
-        </canvas>
+        <div class="w-full h-full max-w-2xl max-h-[60vh]">
+          <canvas id="Play4v4"
+                  class="w-full h-full block
+                         border-4 border-white
+                         rounded-2xl shadow-xl">
+          </canvas>
+        </div>
       </div>
     </section>
   `;
@@ -274,9 +276,9 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
 function baseCard(inner: string): string 
 {
   return `
-    <div class="relative rounded-2xl bg-white/10 p-4 aspect-video
+    <div class="relative rounded-2xl bg-white/10 p-6
                 flex items-center justify-center text-center
-                hover:bg-white/20 transition">
+                hover:bg-white/20 transition min-h-[200px]">
       ${inner}
     </div>
   `;
@@ -286,15 +288,17 @@ function youCard(nick: string, id: number, avatar: string): string
 {
   return baseCard
   (`
-    <div>
-      <div class="text-5xl mb-2">✅</div>
-      <div class="flex items-center gap-3 justify-center">
-        <img src="${avatar}" class="w-10 h-10 rounded-full"/>
-        <div>
-          <div class="font-semibold">${nick}</div>
-          <div class="text-xs opacity-70">${t('common.id')} ${id}</div>
+    <div class="w-full flex flex-col items-center justify-center">
+      <div class="text-6xl mb-3">✅</div>
+      <div class="flex flex-col items-center gap-3">
+        <img src="${avatar}" class="w-16 h-16 rounded-full"/>
+        <div class="text-center">
+          <div class="font-semibold text-lg">${nick}</div>
+          <div class="text-sm opacity-70">${t('common.id')} ${id}</div>
         </div>
       </div>
+      <!-- Espacio invisible para alinear con las otras cartas -->
+      <div class="mt-4 h-[32px]"></div>
     </div>
   `);
 }
@@ -303,17 +307,17 @@ function readySeat(nick: string, id: number, avatar: string, index: number): str
 {
   return baseCard
   (`
-    <div>
-      <div class="text-5xl mb-2">✅</div>
-      <div class="flex items-center gap-3 justify-center">
-        <img src="${avatar}" class="w-10 h-10 rounded-full"/>
-        <div>
-          <div class="font-semibold">${nick}</div>
-          <div class="text-xs opacity-70">${t('common.id')} ${id}</div>
+    <div class="w-full flex flex-col items-center justify-center">
+      <div class="text-6xl mb-3">✅</div>
+      <div class="flex flex-col items-center gap-3">
+        <img src="${avatar}" class="w-16 h-16 rounded-full"/>
+        <div class="text-center">
+          <div class="font-semibold text-lg">${nick}</div>
+          <div class="text-sm opacity-70">${t('common.id')} ${id}</div>
         </div>
       </div>
       <button id="change-seat-${index}"
-              class="mt-3 text-xs px-2 py-1 rounded
+              class="mt-4 text-sm px-3 py-2 rounded
                      bg-black/40 hover:bg-black/60"
               data-i18n="pvp.changePlayer">
         ${t('pvp.changePlayer')}
@@ -326,26 +330,28 @@ function loginSeat(index: number): string
 {
   return baseCard
   (`
-    <form id="seat-form-${index}"
-          class="w-60 bg-white/90 rounded-xl p-4 shadow
-                 flex flex-col gap-2">
-      <div class="text-black font-semibold text-center"
-           data-i18n="login.title">
-        ${t('login.title')}
-      </div>
+    <div class="w-full flex flex-col items-center justify-center">
+      <form id="seat-form-${index}"
+            class="w-full max-w-[280px] bg-white/90 rounded-xl p-5 shadow
+                   flex flex-col gap-3">
+        <div class="text-black font-semibold text-center text-lg"
+             data-i18n="login.title">
+          ${t('login.title')}
+        </div>
 
-      <input class="nick px-3 py-2 rounded border text-black"
-             placeholder="${t('login.nick')}"
-             data-i18n-attr="placeholder:login.nick"
-             minlength="2" maxlength="20" required />
+        <input class="nick px-4 py-2 rounded border text-black"
+               placeholder="${t('login.nick')}"
+               data-i18n-attr="placeholder:login.nick"
+               minlength="2" maxlength="20" required />
 
-      <button class="px-3 py-2 rounded
-                     bg-black/80 hover:bg-black text-white">
-        ${t('login.submit')}
-      </button>
+        <button class="px-4 py-2 rounded
+                       bg-black/80 hover:bg-black text-white">
+          ${t('login.submit')}
+        </button>
 
-      <div class="err text-red-600 text-xs hidden"></div>
-    </form>
+        <div class="err text-red-600 text-xs hidden"></div>
+      </form>
+    </div>
   `);
 }
 
@@ -353,12 +359,14 @@ function waitingCard(text = 'LOGIN'): string
 {
   return baseCard
   (`
-    <div class="opacity-80">
-      <div class="text-4xl mb-2">⏳</div>
-      <div class="px-2 py-1 rounded
-                  bg-red-600/80 text-xs font-semibold">
+    <div class="opacity-80 w-full flex flex-col items-center justify-center">
+      <div class="text-6xl mb-3">⏳</div>
+      <div class="px-3 py-2 rounded
+                  bg-red-600/80 text-sm font-semibold inline-block">
         ${text}
       </div>
+      <!-- Espacio invisible para alinear con las otras cartas -->
+      <div class="mt-4 h-[32px]"></div>
     </div>
   `);
 }

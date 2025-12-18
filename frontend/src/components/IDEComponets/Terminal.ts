@@ -9,6 +9,53 @@ function now(): string {
 
 export function initTerminal(container: HTMLElement) {
   container.innerHTML = `
+    <style>
+      /* VS Code–like scrollbar (inline, scoped) */
+      #ide-terminal {
+        scrollbar-width: thin;               /* Firefox */
+        scrollbar-color: #555 transparent;
+      }
+
+      #ide-terminal::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      #ide-terminal::-webkit-scrollbar-button {
+        display: none;
+      }
+
+      #ide-terminal::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      #ide-terminal::-webkit-scrollbar-track-piece {
+        background: transparent;
+      }
+
+      #ide-terminal::-webkit-scrollbar-thumb {
+        background-color: transparent;
+        border-radius: 6px;
+        transition: background-color 0.15s ease;
+      }
+
+      #ide-terminal:hover::-webkit-scrollbar-thumb {
+        background-color: rgba(85, 85, 85, 0.6);
+      }
+
+      #ide-terminal::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(120, 120, 120, 0.8);
+      }
+
+      #ide-terminal::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      #ide-terminal::-webkit-resizer {
+        background: transparent;
+      }
+    </style>
+
     <div id="ide-terminal"
          class="h-full font-mono text-sm
                 bg-black/40 text-green-400

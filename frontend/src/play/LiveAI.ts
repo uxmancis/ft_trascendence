@@ -3,9 +3,9 @@ import type { Diff } from '../views/PlayAI';
 import { createMatch, type NewMatch } from '../api';
 import { getCurrentUser } from '../session';
 
-
 // @ts-ignore
 import * as BABYLON from '@babylonjs/core';
+// @ts-ignore
 import '@babylonjs/loaders';
 // @ts-ignore
 import { AdvancedDynamicTexture, TextBlock, Rectangle } from '@babylonjs/gui';
@@ -88,6 +88,24 @@ export function setupPong() {
   const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
   const scene = new BABYLON.Scene(engine);
   scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
+
+  engine.resize();
+
+  // ===== Canvas resize =====
+  function resizeCanvasToDisplaySize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
+
+  resizeCanvasToDisplaySize();
 
   const glow = new BABYLON.GlowLayer('glow', scene, { blurKernelSize: 24 });
   glow.intensity = 0.6;
@@ -566,5 +584,9 @@ export function setupPong() {
     scene.render();
   });
 
-  window.addEventListener('resize', () => engine.resize());
+  // ===== Resize =====
+  window.addEventListener('resize', () => {
+    resizeCanvasToDisplaySize();
+    engine.resize();
+  });
 }

@@ -4,6 +4,27 @@ import { getCurrentUser, getLocalP2 } from '../session';
 
 export function setupTournamentPong() {
   const canvas = document.getElementById("live_pong") as HTMLCanvasElement;
+  if (!canvas) return;
+
+  if ((canvas as any)._tournamentPongBound) return;
+  (canvas as any)._tournamentPongBound = true;
+
+  // ===== Canvas resize =====
+  function resizeCanvasToDisplaySize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
+
+  resizeCanvasToDisplaySize();
+
   const ctx = canvas.getContext("2d")!;
 
   const paddleHeight = 80;
@@ -302,4 +323,7 @@ export function setupTournamentPong() {
   }
 
   setInterval(game, 1000/60);
+
+  // ===== Resize =====
+  window.addEventListener('resize', () => resizeCanvasToDisplaySize());
 }

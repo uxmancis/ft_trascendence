@@ -13,8 +13,8 @@ export function renderInstructions(container: HTMLElement): void {
     <section
       class="w-full h-full
              flex items-center justify-center
-             font-mono text-sm text-neutral-200
-             bg-neutral-800">
+             font-mono text-sm
+             bg-ide-bg text-ide-fg">
 
       <div
         class="max-w-4xl w-full
@@ -23,7 +23,7 @@ export function renderInstructions(container: HTMLElement): void {
 
         <!-- LEFT -->
         <div class="space-y-4">
-          <h1 class="text-lg font-bold text-white">
+          <h1 class="text-lg font-bold text-ide-title">
             FT_TRANSCENDENCE
           </h1>
 

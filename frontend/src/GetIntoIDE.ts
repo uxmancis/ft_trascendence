@@ -37,11 +37,28 @@ export function getIntoIDE(): void {
         class="col-span-3 flex items-center px-3
                border-b border-gray-400/20"
         style="padding:5px">
-        <img
-          src="/assets/customization/VsCodeLogo.png"
-          class="h-full w-auto"
-          alt="FT_TRANSCENDENCE" />
+        <a href="#/" class="h-full cursor-pointer hover:opacity-80 transition">
+          <img
+            src="/assets/customization/VsCodeLogo.png"
+            class="h-full w-auto"
+            alt="FT_TRANSCENDENCE" />
+        </a>
       </header>
+
+      <!-- SEARCH MODAL -->
+      <div id="search-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
+        <div class="bg-[#1e1e1e] border border-gray-400/20 rounded-lg w-[600px] max-w-[90vw] overflow-hidden shadow-2xl">
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Search routes, games..."
+            data-i18n-placeholder="search.placeholder"
+            class="w-full px-4 py-3 bg-[#252526] text-white outline-none border-b border-gray-400/20"
+          />
+          <div id="search-results" class="max-h-[400px] overflow-y-auto">
+          </div>
+        </div>
+      </div>
 
       <!-- MAIN -->
       <div class="col-span-3 flex min-h-0">
@@ -53,8 +70,23 @@ export function getIntoIDE(): void {
 
           <button
             id="files-left-icon-btn"
-            class="mb-10 hover:brightness-150 transition">
-            <img src="/assets/customization/files_Icon.png" />
+            class="mb-2 hover:brightness-150 transition text-white/60 hover:text-white/90 text-2xl font-light"
+            title="Explorer">
+            ≡
+          </button>
+
+          <button
+            id="threeinrow-left-icon-btn"
+            class="mb-2 hover:brightness-150 transition text-white/60 hover:text-white/90 text-2xl font-light"
+            title="Three in Row">
+            #
+          </button>
+
+          <button
+            id="search-left-icon-btn"
+            class="mb-10 hover:brightness-150 transition text-white/60 hover:text-white/90 text-2xl font-light"
+            title="Search">
+            ⌕
           </button>
 
           <div class="flex-1"></div>
@@ -93,7 +125,7 @@ export function getIntoIDE(): void {
         <!-- FILE EXPLORER -->
         <aside
           id="mid-files-sidebar"
-          class="hidden w-[17rem] p-4
+          class="w-[17rem] p-4
                  border-r border-gray-400/20
                  text-white overflow-auto">
 
@@ -161,6 +193,92 @@ export function getIntoIDE(): void {
   const filesBtn = document.getElementById('files-left-icon-btn');
   const explorer = document.getElementById('mid-files-sidebar');
   filesBtn?.addEventListener('click', () => explorer?.classList.toggle('hidden'));
+
+  /* ================= THREE IN ROW BUTTON ================= */
+
+  const threeInRowBtn = document.getElementById('threeinrow-left-icon-btn');
+  threeInRowBtn?.addEventListener('click', () => {
+    location.hash = '#/play/threeinrow';
+  });
+
+  /* ================= SEARCH MODAL ================= */
+
+  const searchBtn = document.getElementById('search-left-icon-btn');
+  const searchModal = document.getElementById('search-modal');
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const searchResults = document.getElementById('search-results');
+
+  const routes = [
+    { name: 'Home', path: '#/', keywords: ['home', 'inicio', 'hasiera'] },
+    { name: '1v1', path: '#/play/1v1', keywords: ['1v1', 'pong', 'play', 'game'] },
+    { name: '4v4', path: '#/play/4v4', keywords: ['4v4', 'pong', 'team', 'play', 'game'] },
+    { name: 'AI', path: '#/play/ai', keywords: ['ai', 'bot', 'ia', 'computer', 'cpu', 'play', 'game'] },
+    { name: 'Tournament', path: '#/play/tournament', keywords: ['tournament', 'torneo', 'txapelketa', 'play', 'game'] },
+    { name: 'Three in Row', path: '#/play/threeinrow', keywords: ['three', 'row', 'tres', 'raya', 'hiru', 'lerro', 'tic', 'tac', 'toe', 'game'] },
+    { name: 'Stats', path: '#/stats', keywords: ['stats', 'statistics', 'estadisticas', 'estatistikak'] },
+  ];
+
+  const showSearch = () => {
+    searchModal?.classList.remove('hidden');
+    searchInput?.focus();
+    performSearch('');
+  };
+
+  const hideSearch = () => {
+    searchModal?.classList.add('hidden');
+    if (searchInput) searchInput.value = '';
+  };
+
+  const performSearch = (query: string) => {
+    if (!searchResults) return;
+    const lowerQuery = query.toLowerCase().trim();
+    
+    const filtered = lowerQuery
+      ? routes.filter(r => 
+          r.name.toLowerCase().includes(lowerQuery) ||
+          r.keywords.some(k => k.includes(lowerQuery))
+        )
+      : routes;
+
+    searchResults.innerHTML = filtered.length
+      ? filtered.map(r => `
+          <div class="search-item px-4 py-3 hover:bg-[#2a2d2e] cursor-pointer border-b border-gray-400/10 flex items-center gap-3"
+               data-path="${r.path}">
+            <span class="text-blue-400 text-sm">→</span>
+            <span class="text-white font-medium">${r.name}</span>
+            <span class="text-gray-500 text-sm ml-auto">${r.path}</span>
+          </div>
+        `).join('')
+      : '<div class="px-4 py-6 text-center text-gray-500">No results found</div>';
+
+    searchResults.querySelectorAll('.search-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const path = item.getAttribute('data-path');
+        if (path) {
+          location.hash = path;
+          hideSearch();
+        }
+      });
+    });
+  };
+
+  searchBtn?.addEventListener('click', showSearch);
+
+  searchInput?.addEventListener('input', (e) => {
+    performSearch((e.target as HTMLInputElement).value);
+  });
+
+  searchInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideSearch();
+    if (e.key === 'Enter') {
+      const firstResult = searchResults?.querySelector('.search-item') as HTMLElement;
+      firstResult?.click();
+    }
+  });
+
+  searchModal?.addEventListener('click', (e) => {
+    if (e.target === searchModal) hideSearch();
+  });
 
   /* ================= USER ================= */
 

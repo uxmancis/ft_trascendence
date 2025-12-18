@@ -79,6 +79,9 @@ export const dict: Record<Lang, Record<string, string>> = {
     'stats.bestStreak2': 'Mejor racha',
     'stats.streaks.tip': 'Mantén tu racha ganando partidos seguidos. Cada victoria suma +1; una derrota la reinicia. La mejor racha registra tu récord histórico.',
 
+    // Search
+    'search.placeholder': 'Buscar rutas, juegos...',
+
     // Paneles
     'panel.access': 'Accesibilidad:',
     'panel.theme': 'Tema:',
@@ -276,6 +279,9 @@ export const dict: Record<Lang, Record<string, string>> = {
     'nav.accessMenu': 'Irisgarritasuna eta ezarpenak',
     'nav.accessMenu.open': 'Irisgarritasun menua ireki',
     'nav.accessMenu.close': 'Irisgarritasun menua itxi',
+
+    // Search
+    'search.placeholder': 'Bilatu bideak, jokoak...',
 
     'login.title': 'Saioa hasi',
     'login.welcome': 'Ongi etorri 👋',
@@ -521,7 +527,8 @@ export const dict: Record<Lang, Record<string, string>> = {
     'nav.accessMenu': 'Accessibility & settings',
     'nav.accessMenu.open': 'Open accessibility menu',
     'nav.accessMenu.close': 'Close accessibility menu',
-
+    // Search
+    'search.placeholder': 'Search routes, games...',
     'login.title': 'Sign in',
     'login.welcome': 'Welcome 👋',
     'login.subtitle': 'Choose a nick to play and view your stats.',

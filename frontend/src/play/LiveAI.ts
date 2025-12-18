@@ -16,13 +16,11 @@ export function setupPong() {
   const canvas = document.getElementById('pong_AI') as HTMLCanvasElement;
   if (!canvas) return;
 
-  // --- Evitar doble inicialización ---
   if ((canvas as any)._pongAI3dBound) return;
   (canvas as any)._pongAI3dBound = true;
 
-  // ===== Config & session =====
   const BOT_USER_ID = 0;
-  const SCORE_TARGET = 5; // igual que 1v1
+  const SCORE_TARGET = 5;
 
   const rect = canvas.getBoundingClientRect();
   const initialSizePx = { width: Math.round(rect.width), height: Math.round(rect.height) };
@@ -34,28 +32,27 @@ export function setupPong() {
   const settings = JSON.parse(sessionStorage.getItem('ai:settings') || '{}');
   const difficulty: Diff = settings.difficulty || 'normal';
 
-  // IA ajustada (easy/normal ganables)
   const DIFF = {
     easy: {
-      ballBase: 8.0, ballMax: 13.5, paddle: 11.0,
-      aiMix: 0.88, thinkMs: 1000, reactErr: 14,
-      stepMul: 0.90,
-      unforcedMiss: 0.10,
-      missAfterHits: 7,
+      ballBase: 7.0, ballMax: 12, paddle: 10.0,
+      aiMix: 0.8, thinkMs: 1000, reactErr: 20,
+      stepMul: 0.85,
+      unforcedMiss: 0.2,
+      missAfterHits: 3,
     },
     normal: {
-      ballBase: 9.5, ballMax: 16.0, paddle: 13.0,
-      aiMix: 0.95, thinkMs: 1000, reactErr: 8,
+      ballBase: 9, ballMax: 16.0, paddle: 12.0,
+      aiMix: 0.95, thinkMs: 1000, reactErr: 15,
       stepMul: 1.0,
-      unforcedMiss: 0.04,
-      missAfterHits: 12,
+      unforcedMiss: 0.1,
+      missAfterHits: 5,
     },
     hard: {
-      ballBase: 11.0, ballMax: 20.0, paddle: 15.5,
-      aiMix: 1.00, thinkMs: 1000, reactErr: 0,
-      stepMul: 1.2,
-      unforcedMiss: 0.00,
-      missAfterHits: 99,
+      ballBase: 11.0, ballMax: 22.0, paddle: 14,
+      aiMix: 1.00, thinkMs: 1000, reactErr: 10,
+      stepMul: 1.15,
+      unforcedMiss: 0.05,
+      missAfterHits: 6,
     },
   }[difficulty];
 
@@ -161,7 +158,6 @@ export function setupPong() {
     bottom: fieldH / 2 - 0.6,
   };
 
-  // ===== HUD =====
   const gui = AdvancedDynamicTexture.CreateFullscreenUI('UI', true, scene);
   const me = getCurrentUser();
   const p1Nick = me?.nick ?? 'You';
@@ -188,7 +184,6 @@ export function setupPong() {
   helpText.color = 'white'; helpText.fontSize = 20; helpText.textWrapping = true; help.addControl(helpText);
   const hint = new TextBlock('hint', '[ CLICK TO START — ENTERS FULLSCREEN ]'); hint.color = 'white'; hint.fontSize = 22; hint.top = '40%'; gui.addControl(hint);
 
-  // ===== Estado & métricas =====
   let state: GameState = 'READY';
   let pScore = 0, aScore = 0;
   let postedResult = 0;
@@ -196,7 +191,6 @@ export function setupPong() {
 
   let playerHits = 0, aiHits = 0, rallyHits = 0;
 
-  // ===== Física =====
   const paddleSpeed = DIFF.paddle;
   const ballBaseSpeed = DIFF.ballBase;
   const ballMaxSpeed = DIFF.ballMax;
@@ -207,7 +201,7 @@ export function setupPong() {
   let ballVel = new BABYLON.Vector3(ballBaseSpeed, 0, ballBaseSpeed * 0.6);
   let collideCooldown = 0;
 
-  // ===== IA (PD + EMA + errores controlados) =====
+
   let aiVelZ = 1; //velocidad actual de la pala IA
   
   const AI_CTL = {

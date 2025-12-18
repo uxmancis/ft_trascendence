@@ -8,6 +8,54 @@ export const API_URL =
   (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, '') ||
   '/api';
 
+/* =========================
+ * CACHE SYSTEM - Reduce peticiones a BD
+ * ========================= */
+const CACHE_KEYS = {
+  USERS_ALL: () => 'users:all',
+  USER: (id: number) => `user:${id}`,
+  STATS_ALL: () => 'stats:all',
+  STATS_USER: (userId: number) => `stats:user:${userId}`,
+  MATCHES_ALL: () => 'matches:all',
+  MATCH: (id: number) => `match:${id}`,
+} as const;
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+function getCached<T>(key: string): T | null {
+  try {
+    const stored = localStorage.getItem(`cache:${key}`);
+    if (!stored) return null;
+    const entry: CacheEntry<T> = JSON.parse(stored);
+    if (Date.now() - entry.timestamp > CACHE_TTL) {
+      localStorage.removeItem(`cache:${key}`);
+      return null;
+    }
+    return entry.data;
+  } catch {
+    return null;
+  }
+}
+
+function setCached<T>(key: string, data: T): void {
+  const entry: CacheEntry<T> = { data, timestamp: Date.now() };
+  localStorage.setItem(`cache:${key}`, JSON.stringify(entry));
+}
+
+function invalidateCache(key: string): void {
+  localStorage.removeItem(`cache:${key}`);
+}
+
+function invalidateCachePattern(pattern: string): void {
+  const keys = Object.keys(localStorage).filter(k => k.includes(pattern));
+  keys.forEach(k => localStorage.removeItem(k));
+}
+
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
     super(message);
@@ -152,47 +200,170 @@ async function requestArray<T>(path: string, opts?: RequestOptions): Promise<T[]
 /* =========================
  * USERS
  * ========================= */
-export const getUsers = (signal?: AbortSignal) =>
-  requestArray<User>('/users', { signal });
+export const getUsers = async (signal?: AbortSignal): Promise<User[]> => {
+  const cached = getCached<User[]>(CACHE_KEYS.USERS_ALL());
+  if (cached) {
+    console.log('[Cache] Users obtenidos del caché');
+    return cached;
+  }
+  const users = await requestArray<User>('/users', { signal });
+  setCached(CACHE_KEYS.USERS_ALL(), users);
+  return users;
+};
 
-export const getUser = (id: number, signal?: AbortSignal) =>
-  request<User>(`/users/${id}`, { signal });
+export const getUser = async (id: number, signal?: AbortSignal): Promise<User> => {
+  const cached = getCached<User>(CACHE_KEYS.USER(id));
+  if (cached) {
+    console.log(`[Cache] User ${id} obtenido del caché`);
+    return cached;
+  }
+  const user = await request<User>(`/users/${id}`, { signal });
+  setCached(CACHE_KEYS.USER(id), user);
+  return user;
+};
 
-export const createUser = (payload: NewUser, signal?: AbortSignal) =>
-  request<User>('/users', { method: 'POST', body: payload, signal });
+export const createUser = async (payload: NewUser, signal?: AbortSignal): Promise<User> => {
+  const result = await request<User>('/users', { method: 'POST', body: payload, signal });
+  invalidateCachePattern('users:');
+  return result;
+};
 
-export const deleteUser = (id: number, signal?: AbortSignal) =>
-  request<{ deleted: number }>(`/users/${id}`, { method: 'DELETE', signal });
+export const deleteUser = async (id: number, signal?: AbortSignal): Promise<{ deleted: number }> => {
+  const result = await request<{ deleted: number }>(`/users/${id}`, { method: 'DELETE', signal });
+  invalidateCachePattern('users:');
+  return result;
+};
+
+/** Sanitiza y envía un usuario (solo id, nick, avatar). */
+export function sanitizeUser(user: any): NewUser {
+  if (!user || typeof user !== 'object') throw new Error('Invalid user object');
+  const nick = String(user.nick || '').trim();
+  const avatar = String(user.avatar || '').trim();
+  if (!nick || !avatar) throw new Error('User must have nick and avatar');
+  return { nick, avatar };
+}
 
 /* =========================
  * STATS
  * ========================= */
-export const getStats = (signal?: AbortSignal) =>
-  requestArray<UserStats>('/stats', { signal });
+export const getStats = async (signal?: AbortSignal): Promise<UserStats[]> => {
+  const cached = getCached<UserStats[]>(CACHE_KEYS.STATS_ALL());
+  if (cached) {
+    console.log('[Cache] All stats obtenidas del caché');
+    return cached;
+  }
+  const stats = await requestArray<UserStats>('/stats', { signal });
+  setCached(CACHE_KEYS.STATS_ALL(), stats);
+  return stats;
+};
 
-export const getStatsByUserId = (userId: number, signal?: AbortSignal) =>
-  request<UserStats>(`/stats/${userId}`, { signal });
+export const getStatsByUserId = async (userId: number, signal?: AbortSignal): Promise<UserStats> => {
+  const cached = getCached<UserStats>(CACHE_KEYS.STATS_USER(userId));
+  if (cached) {
+    console.log(`[Cache] Stats usuario ${userId} obtenidas del caché`);
+    return cached;
+  }
+  const stats = await request<UserStats>(`/stats/${userId}`, { signal });
+  setCached(CACHE_KEYS.STATS_USER(userId), stats);
+  return stats;
+};
 
-export const createStats = (payload: NewUserStats, signal?: AbortSignal) =>
-  request<{ id: number | string }>('/stats', { method: 'POST', body: payload, signal });
+export const createStats = async (payload: NewUserStats, signal?: AbortSignal): Promise<{ id: number | string }> => {
+  const result = await request<{ id: number | string }>('/stats', { method: 'POST', body: payload, signal });
+  invalidateCachePattern('stats:');
+  return result;
+};
 
-export const deleteStats = (userId: number, signal?: AbortSignal) =>
-  request<{ deleted: number }>(`/stats/${userId}`, { method: 'DELETE', signal });
+export const deleteStats = async (userId: number, signal?: AbortSignal): Promise<{ deleted: number }> => {
+  const result = await request<{ deleted: number }>(`/stats/${userId}`, { method: 'DELETE', signal });
+  invalidateCachePattern('stats:');
+  return result;
+};
 
 /* =========================
  * MATCHES
  * ========================= */
-export const getMatches = (signal?: AbortSignal) =>
-  requestArray<Match>('/matches', { signal });
+export const getMatches = async (signal?: AbortSignal): Promise<Match[]> => {
+  const cached = getCached<Match[]>(CACHE_KEYS.MATCHES_ALL());
+  if (cached) {
+    console.log('[Cache] Matches obtenidos del caché');
+    return cached;
+  }
+  const matches = await requestArray<Match>('/matches', { signal });
+  setCached(CACHE_KEYS.MATCHES_ALL(), matches);
+  return matches;
+};
 
-export const getMatch = (id: number, signal?: AbortSignal) =>
-  request<Match>(`/matches/${id}`, { signal });
+export const getMatch = async (id: number, signal?: AbortSignal): Promise<Match> => {
+  const cached = getCached<Match>(CACHE_KEYS.MATCH(id));
+  if (cached) {
+    console.log(`[Cache] Match ${id} obtenido del caché`);
+    return cached;
+  }
+  const match = await request<Match>(`/matches/${id}`, { signal });
+  setCached(CACHE_KEYS.MATCH(id), match);
+  return match;
+};
 
-export const createMatch = (payload: NewMatch, signal?: AbortSignal) =>
-  request<{ id: number }>('/matches', { method: 'POST', body: payload, signal });
+export const createMatch = async (payload: NewMatch, signal?: AbortSignal): Promise<{ id: number }> => {
+  const result = await request<{ id: number }>('/matches', { method: 'POST', body: payload, signal });
+  invalidateCachePattern('matches:');
+  invalidateCachePattern('stats:');
+  return result;
+};
 
-export const deleteMatch = (id: number, signal?: AbortSignal) =>
-  request<{ deleted: number }>(`/matches/${id}`, { method: 'DELETE', signal });
+export const deleteMatch = async (id: number, signal?: AbortSignal): Promise<{ deleted: number }> => {
+  const result = await request<{ deleted: number }>(`/matches/${id}`, { method: 'DELETE', signal });
+  invalidateCachePattern('matches:');
+  invalidateCachePattern('stats:');
+  return result;
+};
+
+/** Sanitiza y envía un match (valida IDs y scores). */
+export function sanitizeMatch(match: any): NewMatch {
+  if (!match || typeof match !== 'object') throw new Error('Invalid match object');
+  
+  const p1_id = Number(match.player1_id);
+  const p2_id = Number(match.player2_id);
+  const winner_id = Number(match.winner_id);
+  const s1 = Number(match.score_p1 || 0);
+  const s2 = Number(match.score_p2 || 0);
+  const duration = Number(match.duration_seconds || 0);
+  
+  // player1 y winner deben ser > 0 (usuarios reales)
+  // player2 puede ser 0 (para IA) o > 0
+  if (!p1_id || !winner_id) throw new Error('Match must have player1_id and winner_id');
+  if (typeof p2_id !== 'number') throw new Error('Match must have player2_id (can be 0 for AI)');
+  if (s1 < 0 || s2 < 0 || duration < 0) throw new Error('Scores and duration must be non-negative');
+  
+  // Winner debe ser player1 o player2 (o 0 si player2 es 0)
+  if (winner_id !== p1_id && winner_id !== p2_id) {
+    throw new Error('Winner must be one of the players');
+  }
+  
+  const sanitized: NewMatch = {
+    player1_id: p1_id,
+    player2_id: p2_id,
+    score_p1: s1,
+    score_p2: s2,
+    winner_id,
+    duration_seconds: duration > 0 ? duration : undefined,
+  };
+  
+  // Agrega details si existen
+  const details = match.details || match;
+  if (details.shots_on_target_p1 !== undefined || details.saves_p1 !== undefined ||
+      details.shots_on_target_p2 !== undefined || details.saves_p2 !== undefined) {
+    sanitized.details = {
+      shots_on_target_p1: Math.max(0, Number(details.shots_on_target_p1) || 0),
+      saves_p1: Math.max(0, Number(details.saves_p1) || 0),
+      shots_on_target_p2: Math.max(0, Number(details.shots_on_target_p2) || 0),
+      saves_p2: Math.max(0, Number(details.saves_p2) || 0),
+    };
+  }
+  
+  return sanitized;
+}
 
 /* =========================
  * Extra: timeout helper

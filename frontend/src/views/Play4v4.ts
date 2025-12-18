@@ -1,11 +1,12 @@
 // src/views/Play4v4.ts
 
-import { createUser, NewUser } from '../api';
-import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers } from '../session';
-import { t, bindI18n } from '../i18n/i18n';
+import { createUser, sanitizeUser, NewUser } from '../api';
+import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, setLocalP3, setLocalP4, clearLocalP3, clearLocalP4 } from '../session';
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { navigate } from '../router';
-import { logTerminal } from '../components/IDEComponets/Terminal';
 import { setupLive4v4 } from '../play/Live4v4';
+import { logTerminal } from '../components/IDEComponets/Terminal';
+
 
 const LIVE_ROUTE = '#/live/4v4';
 
@@ -70,8 +71,6 @@ function randomColorHex(): string
 
 export async function renderPlay4v4(root: HTMLElement): Promise<void> 
 {
-  logTerminal('View: Play 4v4');
-
   const me = getCurrentUser();
   const locals = getTournamentPlayers().slice(0, 3); // 3 jugadores locales
 
@@ -128,13 +127,12 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
     </section>
   `;
 
-  bindI18n(root);
-
+  bindI18n(root);  const offLang = onLangChange(() => bindI18n(root));
+  (root as any)._cleanup = () => offLang();
   /* ---------------- RESET ---------------- */
 
   root.querySelector<HTMLButtonElement>('#reset')?.addEventListener('click', () => 
   {
-    logTerminal('Tournament reset');
     clearTournamentPlayers();
     renderPlay4v4(root);
   });
@@ -165,7 +163,8 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
 
       try 
       {
-        const created = await createUser(payload);
+        const sanitized = sanitizeUser({ nick, avatar });
+        const created = await createUser(sanitized);
         const players = getTournamentPlayers();
 
         while (players.length < 3)
@@ -173,7 +172,6 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
         players[seat] = created;
 
         setTournamentPlayers(players.slice(0, 3));
-        logTerminal(`Tournament seat ${seat} set: ${created.nick}`);
         renderPlay4v4(root);
       } 
       catch (err: any) 
@@ -196,7 +194,6 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
       const players = getTournamentPlayers();
       players.splice(seat, 1); // compacta
       setTournamentPlayers(players);
-      logTerminal(`Tournament seat ${seat} cleared`);
       renderPlay4v4(root);
     };
   }
@@ -216,9 +213,8 @@ export async function renderPlay4v4(root: HTMLElement): Promise<void>
     if (!me || localsFinal.filter(Boolean).length !== 3) 
       return;
 
-    const players = [me, ...localsFinal]; sessionStorage.setItem('tournament:players', JSON.stringify(players));
-
-    logTerminal('Tournament started');
+    const players = [me, ...localsFinal];
+    logTerminal(`▶ ${t('log.match4v4Starting')}: ${players.map(p => p.nick).join(' vs ')}`);
     renderLiveTournament(root, players);
     navigate(LIVE_ROUTE);
   });
@@ -236,7 +232,7 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
       <div class="flex justify-between items-center
                   bg-white/10 px-6 py-3 rounded-2xl">
         <span class="font-semibold" data-i18n="game.4v4">4v4</span>
-        <span class="text-lg font-bold">🏆 Pong 4v4 3D</span>
+        <span class="text-lg font-bold">${t('game.4v4.live')}</span>
         <button id="backBtn"
                 class="bg-red-500 hover:bg-red-600
                        px-4 py-1 rounded">
@@ -265,7 +261,9 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
 
   document.getElementById('backBtn')?.addEventListener('click', () => 
   {
-    logTerminal('Exit tournament');
+    // Limpiar P3 y P4 cuando se salga de 4v4
+    clearLocalP3();
+    clearLocalP4();
     navigate('#');
   });
   

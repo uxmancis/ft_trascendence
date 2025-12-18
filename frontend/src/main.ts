@@ -1,6 +1,6 @@
 import './styles.css';
 
-import { register, startRouter } from './router';
+import { register, startRouter, getCurrentHandler } from './router';
 import { getCurrentUser } from './session';
 import { renderLogin } from './views/Login';
 import { getIntoIDE } from './GetIntoIDE';
@@ -94,7 +94,7 @@ if (!user) {
 
   renderLogin(loginContainer, () => {
     // tras login correcto → recargamos app
-    location.replace('#/');
+    location.replace('#/instructions');
     location.reload();
   });
 
@@ -112,10 +112,14 @@ if (!user) {
 }
 
 // ======================================================
-// 5️⃣ LANGUAGE CHANGE (re-bind content only)
+// 5️⃣ LANGUAGE CHANGE (re-render current view)
 // ======================================================
 onLangChange(() => {
-  if (page) {
-    bindI18n(page);
+  const handler = getCurrentHandler();
+  if (page && handler) {
+    // Re-render current view with new language
+    Promise.resolve(handler()).then(() => {
+      bindI18n(page);
+    }).catch((err: any) => console.error('Error re-rendering on language change:', err));
   }
 });

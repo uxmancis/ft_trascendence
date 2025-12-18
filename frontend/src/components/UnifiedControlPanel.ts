@@ -115,6 +115,14 @@ export function UnifiedControlPanel(mode: ControlPanelMode = 'ide') {
   const off = onLangChange(() => {
     panel.setAttribute('aria-label', t('panel.title'));
     if (header) header.textContent = t('panel.title');
+    // Update row labels with data-i18n attribute
+    const labels = panel.querySelectorAll('[data-i18n]');
+    labels.forEach((label: Element) => {
+      const key = label.getAttribute('data-i18n');
+      if (key) (label as HTMLElement).textContent = t(key);
+    });
+    // Update components' internal labels through their own listeners
+    // (they handle their own translations)
   });
 
   (panel as any)._cleanup = () => off();

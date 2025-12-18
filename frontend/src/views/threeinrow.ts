@@ -1,9 +1,9 @@
 // src/views/PlayThreeInRow.ts
-import { createMatch, type NewMatch } from '../api';
-import { createUser, type NewUser } from '../api';
+import { createMatch, sanitizeMatch } from '../api';
+import { createUser, sanitizeUser } from '../api';
 import { getCurrentUser, getLocalP2, setLocalP2, clearLocalP2 } from '../session';
 import { navigate } from '../router';
-import { t, bindI18n } from '../i18n/i18n';
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { logTerminal } from '../components/IDEComponets/Terminal';
 
 const LIVE_ROUTE = '#/live/threeinrow';
@@ -18,8 +18,7 @@ export function postThreeInRowResult( winner: 'X' | 'O' | 'draw', board: (string
   if (!p1 || !p2) 
     return;
 
-  const payload: NewMatch = 
-  {
+  const payload = {
     player1_id: p1.id,
     player2_id: p2.id,
     score_p1: winner === 'X' ? 1 : 0,
@@ -27,14 +26,25 @@ export function postThreeInRowResult( winner: 'X' | 'O' | 'draw', board: (string
     winner_id:
       winner === 'X' ? p1.id : winner === 'O' ? p2.id : 0,
     duration_seconds: 0,
-    details: {
-      mode: 'three-in-row',
-      board,
-      players: { p1: p1.nick, p2: p2.nick }
-    } as any
   };
 
-  createMatch(payload).catch(() => {});
+  console.log('[match] 3-in-row payload:', payload);
+  try {
+    const sanitized = sanitizeMatch(payload);
+    console.log('[match] Sanitized 3-in-row:', sanitized);
+    createMatch(sanitized)
+      .then(res => {
+        console.log('[match] 3-in-row match saved:', res);
+        logTerminal(`${t('log.matchSaved')}`);
+      })
+      .catch(err => {
+        console.error('[match] error 3-in-row', err);
+        logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
+      });
+  } catch (err) {
+    console.error('[match] validation error 3-in-row', err);
+    logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+  }
 }
 
 /* ============================================================
@@ -42,8 +52,6 @@ export function postThreeInRowResult( winner: 'X' | 'O' | 'draw', board: (string
 ** ============================================================ */
 export async function renderPlayThreeInRow(root: HTMLElement) 
 {
-  logTerminal('Rendered ThreeInRow view');
-
   const me = getCurrentUser();
   const p2 = getLocalP2();
 
@@ -86,6 +94,8 @@ export async function renderPlayThreeInRow(root: HTMLElement)
   `;
 
   bindI18n(root);
+  const offLang = onLangChange(() => bindI18n(root));
+  (root as any)._cleanup = () => offLang();
 
   const changeBtn = root.querySelector('#changeP2');
   if (changeBtn) 
@@ -109,11 +119,11 @@ export async function renderPlayThreeInRow(root: HTMLElement)
       const nick = (form.querySelector('#p2-nick') as HTMLInputElement).value.trim();
 
       const avatar = makeAvatar(nick);
-      const payload: NewUser = { nick, avatar };
 
       try 
       {
-        const u = await createUser(payload);
+        const sanitized = sanitizeUser({ nick, avatar });
+        const u = await createUser(sanitized);
         setLocalP2({ id: u.id, nick: u.nick, avatar: u.avatar });
         renderPlayThreeInRow(root);
       } 
@@ -130,6 +140,7 @@ export async function renderPlayThreeInRow(root: HTMLElement)
     if (!me || !getLocalP2()) 
       return;
 
+    logTerminal(`▶ ${t('log.threeInRowStarting')}: ${me.nick} ${t('log.vs')} ${getLocalP2()!.nick}`);
     root.innerHTML = gameHTML(me.nick, getLocalP2()!.nick);
 
     document.getElementById('backBtn')?.addEventListener('click', () => navigate('#'));
@@ -161,14 +172,16 @@ export function setupThreeInRow()
 
       if (checkWin(board, turn)) 
       {
-        msg.textContent = `${turn} gana! 🎉`;
+        msg.textContent = turn === 'X' ? t('threeinrow.xwins') : t('threeinrow.owins');
+        logTerminal(`🏆 ${turn} ${t('log.threeInRowWin')}!`);
         postThreeInRowResult(turn, board);
         return;
       }
 
       if (!board.includes(null)) 
       {
-        msg.textContent = 'Empate 😐';
+        msg.textContent = t('threeinrow.draw');
+        logTerminal(`🤗 ${t('log.threeInRowDraw')}!`);
         postThreeInRowResult('draw', board);
         return;
       }
@@ -186,7 +199,7 @@ function gameHTML(p1: string, p2: string)
   <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
     <div class="flex justify-between items-center bg-white/10 px-6 py-3 rounded-2xl">
       <span>${p1} = X · ${p2} = O</span>
-      <button id="backBtn" class="bg-red-500 px-4 py-1 rounded">Salir</button>
+      <button id="backBtn" class="bg-red-500 px-4 py-1 rounded hover:bg-red-600" data-i18n="common.exit">${t('common.exit')}</button>
     </div>
 
     <div class="flex justify-center">
@@ -257,8 +270,8 @@ function readyCard(n: string, id: number, a: string)
       <img src="${a}" class="w-10 h-10 rounded-full mx-auto mb-2">
       <div class="font-semibold">${n}</div>
       <div class="text-xs opacity-70">${id}</div>
-      <button id="changeP2" class="mt-2 text-xs underline">
-        Cambiar
+      <button id="changeP2" class="mt-2 text-xs underline" data-i18n="common.change">
+        ${t('common.change')}
       </button>
     </div>
   `);
@@ -266,7 +279,7 @@ function readyCard(n: string, id: number, a: string)
 
 function waitingCard() 
 {
-  return baseCard(`<div class="opacity-60">⏳ Esperando</div>`);
+  return baseCard(`<div class="opacity-60">⏳ ${t('common.waiting')}</div>`);
 }
 
 function loginCard() {
@@ -274,7 +287,7 @@ function loginCard() {
   (`
     <form id="p2-form" class="bg-white p-3 rounded text-black space-y-2">
       <input id="p2-nick" required minlength="2"
-        class="w-full border px-2 py-1 rounded" placeholder="Nick">
+        class="w-full border px-2 py-1 rounded" placeholder="${t('pvp.nickP2.placeholder')}" data-i18n-attr="placeholder:pvp.nickP2.placeholder">
       <button class="w-full bg-black text-white rounded py-1">
         Crear
       </button>

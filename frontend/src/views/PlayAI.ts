@@ -15,8 +15,6 @@ export type Diff = 'easy' | 'normal' | 'hard';
 
 export async function renderPlayAI(root: HTMLElement): Promise<void>
 {
-  logTerminal('View: Play AI');
-
   const difficulties: { id: Diff; label: string }[] = 
   [
     { id: 'easy',   label: t('ai.easy') },
@@ -106,7 +104,10 @@ export async function renderPlayAI(root: HTMLElement): Promise<void>
 
   cards.forEach(card => 
   {
-    card.addEventListener('click', () => setSelected(card.dataset.diff as Diff));
+    card.addEventListener('click', () => {
+      const diff = card.dataset.diff as Diff;
+      setSelected(diff);
+    });
 
     /* Keyboard accessibility */
     card.addEventListener('keydown', (e) => 
@@ -147,8 +148,8 @@ export async function renderPlayAI(root: HTMLElement): Promise<void>
     };
 
     sessionStorage.setItem('ai:settings', JSON.stringify(settings));
-    logTerminal(`AI start (${selected})`);
 
+    logTerminal(`▶ ${t('log.matchAIStarting')} (${selected} ${t('ai.difficulty')})`);
     renderLiveAI(root, selected);
     navigate(LIVE_ROUTE);
   };
@@ -188,7 +189,6 @@ function renderLiveAI(root: HTMLElement, diff: Diff): void
 
   document.getElementById('backBtn')?.addEventListener('click', () => 
   {
-    logTerminal('Exit AI match');
     navigate('#');
   });
 
@@ -229,9 +229,5 @@ function cardHTML(id: Diff, label: string): string
 
 function hintFor(id: Diff): string
 {
-  if (id === 'easy')
-    return 'Bot lento, ideal para empezar.';
-  if (id === 'hard')
-    return 'Reacción rápida y alta precisión.';
-  return 'Equilibrado para una partida estándar.';
+  return t(`ai.hint.${id}`);
 }

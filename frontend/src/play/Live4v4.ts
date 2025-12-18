@@ -1,5 +1,7 @@
-import { createMatch, type NewMatch } from '../api';
+import { createMatch, sanitizeMatch } from '../api';
 import { getCurrentUser, getLocalP2, getLocalP3, getLocalP4 } from '../session';
+import { logTerminal } from '../components/IDEComponets/Terminal';
+import { t, onLangChange } from '../i18n/i18n';
 
 // @ts-ignore
 import * as BABYLON from '@babylonjs/core';
@@ -216,12 +218,12 @@ export function setupLive4v4() {
     if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
     if (e.key === 'Escape') {
       if (isFullscreen()) exitFullscreen();
-      if (state === 'PLAYING') pauseGame('⏸️ PAUSE', 'Press Space to continue');
+      if (state === 'PLAYING') pauseGame(t('game.pause'), t('game.pressSpace'));
     }
     if (e.code === 'Space') {
       if (state === 'GAMEOVER') { startNewGame(); return; }
       if (state === 'PAUSED') { resumeAfterPause(); return; }
-      if (state === 'PLAYING') { pauseGame('⏸️ PAUSE', 'Press Space to continue'); return; }
+      if (state === 'PLAYING') { pauseGame(t('game.pause'), t('game.pressSpace')); return; }
       if (state === 'READY') { startNewGame(); return; }
     }
   }
@@ -232,14 +234,14 @@ export function setupLive4v4() {
   canvas.addEventListener('click', () => {
     if (!isFullscreen()) { enterFullscreen(canvas); applyCanvasFullscreenStyle(true); }
     if (state === 'READY' || state === 'GAMEOVER') { startNewGame(); return; }
-    if (state === 'PLAYING') { pauseGame('⏸️ PAUSE', 'Press Space to continue'); return; }
+    if (state === 'PLAYING') { pauseGame(t('game.pause'), t('game.pressSpace')); return; }
     if (state === 'PAUSED') { resumeAfterPause(); return; }
   });
 
   document.addEventListener('fullscreenchange', () => {
     const active = isFullscreen();
     applyCanvasFullscreenStyle(active);
-    if (!active && state === 'PLAYING') pauseGame('⏸️ PAUSE', 'Press Space to continue');
+    if (!active && state === 'PLAYING') pauseGame(t('game.pause'), t('game.pressSpace'));
   });
 
   // ===== UI helpers =====
@@ -318,6 +320,8 @@ export function setupLive4v4() {
 
     scores[scorer]++;
     (gui.getControlByName(`score${scorer.toUpperCase()}`) as TextBlock).text = String(scores[scorer]);
+    const names = { p1: p1Nick, p2: p2Nick, p3: p3Nick, p4: p4Nick };
+    logTerminal(`⚽ ${names[scorer]} ${t('log.scores')}! [${scores.p1}-${scores.p2}-${scores.p3}-${scores.p4}]`);
 
     const maxScore = Math.max(scores.p1, scores.p2, scores.p3, scores.p4);
     if (maxScore >= WIN_POINTS) {
@@ -326,20 +330,38 @@ export function setupLive4v4() {
       trail.emitRate = 80;
       banner.text = `🏆 ${winner.toUpperCase()} wins!`;
       hint.text = 'Click or Space for new match';
+      const names = { p1: p1Nick, p2: p2Nick, p3: p3Nick, p4: p4Nick };
+      logTerminal(`${t('log.victory')} ${names[winner]} - [${scores.p1}-${scores.p2}-${scores.p3}-${scores.p4}]`);
 
-      if (!postedResult && user) {
+      if (!postedResult && user && p2info) {
         postedResult = 1;
         const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
-        const payload: NewMatch = {
+        const payload = {
           player1_id: user.id,
-          player2_id: p2info?.id ?? 0,
+          player2_id: p2info.id,
           score_p1: scores.p1,
           score_p2: Math.max(scores.p2, scores.p3, scores.p4),
-          winner_id: winner === 'p1' ? user.id : 0,
+          winner_id: winner === 'p1' ? user.id : p2info.id,
           duration_seconds,
-          details: { mode: 'live-4v4-3d', scores } as any,
+          details: { scores },
         };
-        createMatch(payload).catch(err => console.error('[match] error 4v4 3D', err));
+        console.log('[match] 4v4 payload:', payload);
+        try {
+          const sanitized = sanitizeMatch(payload);
+          console.log('[match] Sanitized 4v4:', sanitized);
+          createMatch(sanitized)
+            .then(res => {
+              console.log('[match] 4v4 match saved:', res);
+              logTerminal(`${t('log.matchSaved')}`);
+            })
+            .catch(err => {
+              console.error('[match] error 4v4 3D', err);
+              logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
+            });
+        } catch (err) {
+          console.error('[match] validation error', err);
+          logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+        }
       }
       return;
     }
@@ -438,5 +460,14 @@ export function setupLive4v4() {
     resizeCanvasToDisplaySize();
     engine.resize();
   });
+
+  // ===== Language Change Reactivity =====
+  const updateUITexts = () => {
+    const helpText = gui.getControlByName('helpText') as TextBlock | null;
+    if (helpText) helpText.text = t('game.controls');
+  };
+  
+  const offLang = onLangChange(updateUITexts);
+  (canvas as any)._langCleanup = () => offLang();
 }
 

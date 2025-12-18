@@ -2,7 +2,7 @@
 import { renderFileExplorer } from './components/IDEComponets/FileExplorer';
 import { getCurrentUser, clearAppStorage } from './session';
 import { UnifiedControlPanel } from './components/UnifiedControlPanel';
-import { bindI18n } from './i18n/i18n';
+import { bindI18n, t } from './i18n/i18n';
 import { getTheme } from './custom/prefs';
 import { initTerminal, logTerminal } from './components/IDEComponets/Terminal';
 
@@ -151,7 +151,7 @@ export function getIntoIDE(): void {
   {
     initTerminal(terminalContainer);
   }
-  logTerminal('Entered IDE');
+  logTerminal(t('log.entered'));
 
   /* ================= FILE EXPLORER ================= */
 

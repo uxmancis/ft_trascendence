@@ -1,8 +1,9 @@
 // src/views/Tournament.ts
-import { createUser, type NewUser } from '../api';
-import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, } from '../session';
-import { t, bindI18n } from '../i18n/i18n';
+import { createUser, sanitizeUser } from '../api';
+import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, getTempState, setTempState, clearTempState } from '../session';
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { setupLivePong3D } from '../play/Live1v1';
+import { logTerminal } from '../components/IDEComponets/Terminal';
 
 type SessionUser = { id: number; nick: string; avatar?: string };
 
@@ -14,9 +15,8 @@ const T_MODE_KEY = 'tournament:mode';
 const T_MATCH_PLAYERS_KEY = 'tournament:matchPlayers';
 const T_LAST_RESULT_KEY = 'tournament:lastResult';
 
-// estado del torneo
+// estado del torneo (ahora en tempState)
 const STATE_KEY = 'tournament:state';
-const PLAYERS_KEY = 'tournament:players';
 
 type Pairing = { p1: SessionUser; p2: SessionUser | null };
 type TourState = {
@@ -28,20 +28,13 @@ type TourState = {
 };
 
 function saveState(s: TourState) {
-  sessionStorage.setItem(STATE_KEY, JSON.stringify(s));
+  setTempState(STATE_KEY, s, 60 * 60 * 1000); // 1 hora timeout
 }
 function loadState(): TourState | null {
-  try {
-    return JSON.parse(sessionStorage.getItem(STATE_KEY) || 'null');
-  } catch {
-    return null;
-  }
+  return getTempState(STATE_KEY) || null;
 }
 function clearState() {
-  sessionStorage.removeItem(STATE_KEY);
-  sessionStorage.removeItem(T_LAST_RESULT_KEY);
-  sessionStorage.removeItem(T_MODE_KEY);
-  sessionStorage.removeItem(T_MATCH_PLAYERS_KEY);
+  clearTempState();
 }
 
 // utils
@@ -129,7 +122,7 @@ function buildPreviewBracket(players: SessionUser[], currentUserId?: number) {
   const cols: Array<{ title: string; matches: Array<{ label: string }> }> = [];
 
   cols.push({
-    title: 'Round 1',
+    title: t('tour.round', { n: '1' }),
     matches: round1.map(() => ({ label: '' })), // el contenido real lo pintamos a medida
   });
 
@@ -137,7 +130,7 @@ function buildPreviewBracket(players: SessionUser[], currentUserId?: number) {
   let r = 2;
   while (next > 1) {
     cols.push({
-      title: `Round ${r}`,
+      title: t('tour.round', { n: String(r) }),
       matches: Array.from({ length: next }, (_, i) => ({
         label: `Winner M${i * 2 + 1} vs Winner M${i * 2 + 2}`,
       })),
@@ -145,7 +138,7 @@ function buildPreviewBracket(players: SessionUser[], currentUserId?: number) {
     next = Math.ceil(next / 2);
     r++;
   }
-  cols.push({ title: 'Champion', matches: [{ label: '🏆 Winner' }] });
+  cols.push({ title: t('tour.champion'), matches: [{ label: t('tour.winner') }] });
 
   return cols;
 }
@@ -158,7 +151,7 @@ function buildBracketColumns(s: TourState) {
   }> = [];
 
   cols.push({
-    title: `Round ${s.round}`,
+    title: t('tour.round', { n: String(s.round) }),
     matches: s.queue.map((m, i) => ({
       label: m.p2 ? `${m.p1.nick} vs ${m.p2.nick}` : `${m.p1.nick} (BYE)`,
       done: i < s.currentIndex,
@@ -169,14 +162,14 @@ function buildBracketColumns(s: TourState) {
   if (s.currentIndex < s.queue.length) {
     const expectedNext = Math.ceil(s.queue.length / 2);
     cols.push({
-      title: 'Next',
+      title: t('tour.next'),
       matches: Array.from({ length: expectedNext }, (_, i) => ({
         label: `Winner M${i * 2 + 1} vs Winner M${i * 2 + 2}`,
       })),
     });
   } else if (s.winners.length === 1) {
     cols.push({
-      title: 'Champion',
+      title: t('tour.champion'),
       matches: [{ label: `🏆 ${s.winners[0].nick}`, done: true }],
     });
   }
@@ -331,9 +324,9 @@ export async function renderTournament(root: HTMLElement) {
       if (!nick) return;
       const initial = encodeURIComponent((nick.charAt(0) || 'P').toUpperCase());
       const avatar = `https://dummyimage.com/96x96/0aa15c/ffffff&text=${initial}`;
-      const payload: NewUser = { nick, avatar };
       try {
-        const created = await createUser(payload);
+        const sanitized = sanitizeUser({ nick, avatar });
+        const created = await createUser(sanitized);
         const current = [me, ...getTournamentPlayers().filter(Boolean)] as SessionUser[];
         if (current.length >= MAX_PLAYERS) return;
         const localsNext = [...current.slice(1), { id: created.id, nick: created.nick, avatar: created.avatar }];
@@ -349,7 +342,6 @@ export async function renderTournament(root: HTMLElement) {
       const current = [me, ...getTournamentPlayers().filter(Boolean)] as SessionUser[];
       if (current.length < MIN_PLAYERS) return;
       startTournament(current);
-      sessionStorage.setItem(PLAYERS_KEY, JSON.stringify(current));
       renderTournament(root);
     };
 
@@ -428,6 +420,8 @@ export async function renderTournament(root: HTMLElement) {
   `;
 
   bindI18n(root);
+  const offLang = onLangChange(() => bindI18n(root));
+  (root as any)._cleanup = () => offLang();
 
   root.querySelector<HTMLButtonElement>('#reset')!.onclick = () => {
     clearTournamentPlayers();
@@ -445,6 +439,7 @@ export async function renderTournament(root: HTMLElement) {
 
   if (canStart) {
     root.querySelector<HTMLButtonElement>('#startMatch')!.onclick = () => {
+      logTerminal(`▶ ${t('log.matchTournamentStarting')}: ${next!.p1.nick} vs ${next!.p2!.nick} (Round ${s2.round})`);
       sessionStorage.setItem(T_MODE_KEY, '1');
       sessionStorage.setItem(T_MATCH_PLAYERS_KEY, JSON.stringify({
         p1: next!.p1,

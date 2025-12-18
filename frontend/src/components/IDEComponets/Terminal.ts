@@ -1,4 +1,5 @@
 // src/components/IDEComponets/Terminal.ts
+import { t, onLangChange } from '../../i18n/i18n';
 
 let terminalEl: HTMLElement | null = null;
 
@@ -64,7 +65,13 @@ export function initTerminal(container: HTMLElement) {
   `;
 
   terminalEl = container.querySelector('#ide-terminal');
-  logTerminal('FT_TERMINAL initialized');
+  logTerminal(t('terminal.initialized'));
+  
+  const off = onLangChange(() => {
+    // Terminal logs are translated at source
+  });
+  
+  (container as any)._cleanup = () => off();
 }
 
 export function logTerminal(message: string) {

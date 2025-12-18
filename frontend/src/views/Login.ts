@@ -1,9 +1,10 @@
 // src/views/Login.ts
 
-import { createUser, NewUser } from '../api';
+import { createUser, NewUser, sanitizeUser } from '../api';
 import { setCurrentUser } from '../session';
 import { t } from '../i18n/i18n';
 import { UnifiedControlPanel } from '../components/UnifiedControlPanel';
+import { logTerminal } from '../components/IDEComponets/Terminal';
 
 /* Prefs persistentes */
 import { applyThemeFromStorage } from '../custom/prefs';
@@ -156,8 +157,10 @@ export async function renderLogin(root: HTMLElement, onSuccess: () => void): Pro
 
     try 
     {
-      const user = await createUser(payload);
+      const sanitized = sanitizeUser({ nick, avatar });
+      const user = await createUser(sanitized);
       setCurrentUser(user);
+      logTerminal(`\u2713 ${t('log.userLoggedIn')}: ${user.nick}`);
       onSuccess();
     } 
     catch (err: any) 

@@ -1,6 +1,8 @@
 // src/game/setupLivePong3D.ts
-import { createMatch, type NewMatch } from '../api';
+import { createMatch, sanitizeMatch } from '../api';
 import { getCurrentUser, getLocalP2 } from '../session';
+import { logTerminal } from '../components/IDEComponets/Terminal';
+import { t, onLangChange } from '../i18n/i18n';
 
 // suppress missing type declarations in this environment
 // @ts-ignore
@@ -225,12 +227,12 @@ export function setupLivePong3D() {
     if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
     if (e.key === 'Escape') {
       if (isFullscreen()) exitFullscreen();
-      if (state === 'PLAYING') pauseGame('⏸️ PAUSE', 'Press Space to continue');
+      if (state === 'PLAYING') pauseGame(t('game.pause'), t('game.pressSpace'));
     }
     if (e.code === 'Space') {
       if (state === 'GAMEOVER') { startNewGame(); return; }
       if (state === 'PAUSED')   { resumeAfterPause(); return; }
-      if (state === 'PLAYING')  { pauseGame('⏸️ PAUSE', 'Press Space to continue'); return; }
+      if (state === 'PLAYING') { pauseGame(t('game.pause'), t('game.pressSpace')); return; }
       if (state === 'READY')    { startNewGame(); return; }
     }
   }
@@ -379,7 +381,7 @@ export function setupLivePong3D() {
     const p1Saves = Math.max(p2Hits - p1Score, 0);
     const p2Saves = Math.max(p1Hits - p2Score, 0);
 
-    const payload: NewMatch = {
+    const payload = {
       player1_id: p1Id,
       player2_id: p2Id,
       score_p1: p1Score,
@@ -387,15 +389,30 @@ export function setupLivePong3D() {
       winner_id: p1Won ? p1Id : p2Id,
       duration_seconds,
       details: {
-        mode: isTournament ? 'tournament-1v1-3d' : '1v1-3d',
         shots_on_target_p1: p1Hits,
         shots_on_target_p2: p2Hits,
         saves_p1: p1Saves,
         saves_p2: p2Saves,
-      } as any,
+      },
     };
 
-    createMatch(payload).catch(err => console.error('[match] error 3D 1v1', err));
+    console.log('[match] 1v1 payload:', payload);
+    try {
+      const sanitized = sanitizeMatch(payload);
+      console.log('[match] Sanitized 1v1:', sanitized);
+      createMatch(sanitized)
+        .then(res => {
+          console.log('[match] 1v1 match created:', res);
+          logTerminal(`${t('log.matchSaved')}`);
+        })
+        .catch(err => {
+          console.error('[match] error 3D 1v1', err);
+          logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
+        });
+    } catch (err) {
+      console.error('[match] validation error', err);
+      logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+    }
 
     if (isTournament) publishTournamentResult(p1Won);
   }
@@ -404,8 +421,16 @@ export function setupLivePong3D() {
     if (state !== 'PLAYING') return;
     state = 'SERVE'; // bloquear ya mismo (evita dobles goles)
 
-    if (byP1) { p1Score++; (gui.getControlByName('scoreP1') as TextBlock).text = String(p1Score); }
-    else      { p2Score++; (gui.getControlByName('scoreP2') as TextBlock).text = String(p2Score); }
+    if (byP1) { 
+      p1Score++; 
+      (gui.getControlByName('scoreP1') as TextBlock).text = String(p1Score); 
+      logTerminal(`⚽ ${p1Nick} ${t('log.scores')}! ${p1Score}-${p2Score}`);
+    }
+    else      { 
+      p2Score++; 
+      (gui.getControlByName('scoreP2') as TextBlock).text = String(p2Score); 
+      logTerminal(`⚽ ${p2Nick} ${t('log.scores')}! ${p1Score}-${p2Score}`);
+    }
 
     if (p1Score >= WIN_POINTS || p2Score >= WIN_POINTS) {
       const p1Won = p1Score > p2Score;
@@ -413,8 +438,9 @@ export function setupLivePong3D() {
       trail.emitRate = 80;
       const banner = gui.getControlByName('banner') as TextBlock;
       const hint = gui.getControlByName('hint') as TextBlock;
-      banner.text = p1Won ? `💫 ${p1Nick} wins! 🏆` : `🎉 ${p2Nick} wins!`;
-      hint.text = 'Click or Space for new match';
+      banner.text = p1Won ? t('game.playerWins', { nick: p1Nick }) : t('game.playerWins', { nick: p2Nick });
+      hint.text = t('game.newMatch');
+      logTerminal(`${t('log.victory')} ${p1Won ? p1Nick : p2Nick} - ${p1Score}-${p2Score}`);
 
       postMatchIfNeeded(p1Won);
       return;
@@ -422,7 +448,7 @@ export function setupLivePong3D() {
 
     // siguiente saque con cuenta atrás
     const banner = gui.getControlByName('banner') as TextBlock;
-    banner.text = 'GO!';
+    banner.text = t('game.go');
     centerAndServe(false);
     setTimeout(() => countdown(3).then(() => { banner.text = ''; (gui.getControlByName('hint') as TextBlock).text = ''; state = 'PLAYING'; }), 300);
   }
@@ -496,4 +522,16 @@ export function setupLivePong3D() {
     resizeCanvasToDisplaySize();
     engine.resize();
   });
+
+  // ===== Language Change Reactivity =====
+  const updateUITexts = () => {
+    // Update only if element exists and is visible
+    const helpText = gui.getControlByName('helpText') as TextBlock | null;
+    const hintEl = gui.getControlByName('hint') as TextBlock | null;
+    if (helpText) helpText.text = t('game.controls');
+    if (hintEl && hintEl.isVisible) hintEl.text = t('game.clickToStart');
+  };
+  
+  const offLang = onLangChange(updateUITexts);
+  (canvas as any)._langCleanup = () => offLang();
 }

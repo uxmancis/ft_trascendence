@@ -1,20 +1,23 @@
 // src/components/fileExplorer.ts
+import { t, onLangChange } from '../../i18n/i18n';
 
 export interface FileItem {
   label: string;
+  labelKey?: string;
   route?: string;
   children?: FileItem[];
 }
 
 /* ===== FILE TREE (IDE STYLE) ===== */
 const FILE_TREE: FileItem[] = [
-  { label: 'instructions.txt', route: '#/instructions' },
+  { label: 'instructions.txt', labelKey: 'explorer.instructions', route: '#/instructions' },
 
   { label: 'Home.tsx', route: '#/' },
   { label: 'Stats.tsx', route: '#/stats' },
 
   {
     label: 'Play',
+    labelKey: 'explorer.play',
     children: [
       { label: 'PlayAI.tsx', route: '#/play/ai' },
       { label: 'Play1v1.tsx', route: '#/play/1v1' },
@@ -73,7 +76,10 @@ export function renderFileExplorer(container: HTMLElement): void {
       /* LABEL */
       const label = document.createElement('span');
       label.className = 'truncate';
-      label.textContent = item.label;
+      if (item.labelKey) {
+        label.setAttribute('data-label-key', item.labelKey);
+      }
+      label.textContent = item.labelKey ? t(item.labelKey) : item.label;
 
       row.append(icon, label);
       container.appendChild(row);
@@ -102,6 +108,17 @@ export function renderFileExplorer(container: HTMLElement): void {
   };
 
   renderItems(FILE_TREE);
+  
+  const off = onLangChange(() => {
+    // Update labels that have translation keys
+    const labels = container.querySelectorAll('[data-label-key]');
+    labels.forEach((el: Element) => {
+      const key = el.getAttribute('data-label-key');
+      if (key) (el as HTMLElement).textContent = t(key);
+    });
+  });
+  
+  (container as any)._cleanup = () => off();
 }
 
 /* ===== UPDATE ACTIVE FILE ===== */

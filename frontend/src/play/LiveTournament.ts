@@ -1,6 +1,8 @@
 // src/game/setupLivePong.ts
-import { createMatch, type NewMatch } from '../api';
+import { createMatch, sanitizeMatch } from '../api';
 import { getCurrentUser, getLocalP2 } from '../session';
+import { logTerminal } from '../components/IDEComponets/Terminal';
+import { t, onLangChange } from '../i18n/i18n';
 
 export function setupTournamentPong() {
   const canvas = document.getElementById("live_pong") as HTMLCanvasElement;
@@ -130,6 +132,9 @@ export function setupTournamentPong() {
       gameStarted = true;
       gameState.winnerMessage = "";
       postedResult = false; matchStartedAt = Date.now(); p1Hits = 0; p2Hits = 0;
+      const user = getCurrentUser();
+      const p2 = getLocalP2?.();
+      logTerminal(`▶ ${t('log.matchTournamentStarting')}: ${user?.nick || 'P1'} vs ${p2?.nick || 'P2'}`);
       resetBall(true);
       startCountdown();
       player.score = 0; player2.score = 0;
@@ -170,7 +175,7 @@ export function setupTournamentPong() {
     ctx.fillText(`Player: ${player.score} - Player 2: ${player2.score}`, canvas.width/2, canvas.height/2 - canvas.height/4);
     ctx.fillText(gameState.winnerMessage, canvas.width/2, canvas.height/2);
     ctx.font=`bold 16px 'Entirely','Audiowide','Press Start 2P', sans-serif`;
-    ctx.fillText("Press Space or click to start a new game", canvas.width/2, canvas.height/2 + canvas.height/4);
+    ctx.fillText(t('game.newMatch'), canvas.width/2, canvas.height/2 + canvas.height/4);
     ctx.shadowBlur = 0;
   }
 
@@ -203,9 +208,13 @@ export function setupTournamentPong() {
 
     if (ball.x - ball.radius < 0){
       player2.score++; ball.speed = 5;
+      const p2 = getLocalP2?.();
+      logTerminal(`⚽ ${t('log.goal')}! ${p2?.nick || 'P2'} ${t('log.scores')} (${player.score}-${player2.score}`);
       if (player2.score === scorepoints){
-        gameState.winnerMessage = `Player2 has win!🎉`;
+        gameState.winnerMessage = `${t('game.playerWins', { nick: 'Player 2' })}`;
         gameState.paused = true;
+        const p2 = getLocalP2?.();
+        logTerminal(`${t('log.victory')} ${p2?.nick || 'P2'} ${t('log.won')}!`);
         renderWinner();
 
         // ───────── POST inline 1v1 (sin helpers nuevos) ─────────
@@ -222,18 +231,32 @@ export function setupTournamentPong() {
             const saves_p1 = Math.max(p2Hits - score_p2, 0);
             const saves_p2 = Math.max(p1Hits - score_p1, 0);
 
-            const payload: NewMatch = {
+            const payload = {
               player1_id: user.id,
               player2_id: p2.id,
               score_p1, score_p2,
               winner_id: p2.id,
               duration_seconds,
-              details: { shots_on_target_p1, saves_p1, shots_on_target_p2, saves_p2 } as any
+              details: { shots_on_target_p1, saves_p1, shots_on_target_p2, saves_p2 }
             };
 
-            createMatch(payload)
-              .then(({ id }) => console.log('[match] 1v1 creado:', id, payload))
-              .catch(err => console.error('[match] error 1v1', err));
+            console.log('[match] tournament payload (P2 wins):', payload);
+            try {
+              const sanitized = sanitizeMatch(payload);
+              console.log('[match] Sanitized tournament (P2 wins):', sanitized);
+              createMatch(sanitized)
+                .then(({ id }) => {
+                  console.log('[match] tournament match saved:', id);
+                  logTerminal(`${t('log.matchSaved')}`);
+                })
+                .catch(err => {
+                  console.error('[match] error tournament', err);
+                  logTerminal(`✗ Failed to save tournament match: ${(err as any)?.message || err}`);
+                });
+            } catch (err) {
+              console.error('[match] validation error', err);
+              logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+            }
           }
         }
         // ────────────────────────────────────────────────────────
@@ -246,9 +269,11 @@ export function setupTournamentPong() {
 
     if (ball.x + ball.radius > canvas.width){
       player.score++; ball.speed = 5;
+      logTerminal(`⚽ ${t('log.goal')}! ${user.nick} ${t('log.scores')} (${player.score}-${player2.score})`);
       if (player.score === scorepoints){
-        gameState.winnerMessage = `💫 ${user.nick} wins! 🏆`;
+        gameState.winnerMessage = t('game.playerWins', { nick: user.nick });
         gameState.paused = true;
+        logTerminal(`${t('log.victory')} ${user.nick} ${t('log.won')}!`);
         renderWinner();
 
         if (!postedResult) {
@@ -264,18 +289,32 @@ export function setupTournamentPong() {
             const saves_p1 = Math.max(p2Hits - score_p2, 0);
             const saves_p2 = Math.max(p1Hits - score_p1, 0);
 
-            const payload: NewMatch = {
+            const payload = {
               player1_id: user.id,
               player2_id: p2.id,
               score_p1, score_p2,
               winner_id: user.id,
               duration_seconds,
-              details: { shots_on_target_p1, saves_p1, shots_on_target_p2, saves_p2 } as any
+              details: { shots_on_target_p1, saves_p1, shots_on_target_p2, saves_p2 }
             };
 
-            createMatch(payload)
-              .then(({ id }) => console.log('[match] 1v1 creado:', id, payload))
-              .catch(err => console.error('[match] error 1v1', err));
+            console.log('[match] tournament payload:', payload);
+            try {
+              const sanitized = sanitizeMatch(payload);
+              console.log('[match] Sanitized tournament:', sanitized);
+              createMatch(sanitized)
+                .then(({ id }) => {
+                  console.log('[match] tournament match saved:', id);
+                  logTerminal(`${t('log.matchSaved')}`);
+                })
+                .catch(err => {
+                  console.error('[match] error tournament', err);
+                  logTerminal(`✗ Failed to save tournament match: ${(err as any)?.message || err}`);
+                });
+            } catch (err) {
+              console.error('[match] validation error', err);
+              logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+            }
           }
         }
 
@@ -289,7 +328,7 @@ export function setupTournamentPong() {
   function render(){
     if (!gameStarted && !gameState.countdownActive){
       drawRect(0,0,canvas.width,canvas.height,"black");
-      const text = "[ PRESS TO START PONG 🎮 ]";
+      const text = t('game.clickToStart');
       ctx.fillStyle="white"; ctx.font="30px 'Press Start 2P', sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
       const show = Math.floor(Date.now()/500)%2===0;
       if (show){ ctx.save(); ctx.translate(canvas.width/2, canvas.height/2); ctx.fillText(text,0,0); ctx.restore(); }
@@ -326,4 +365,11 @@ export function setupTournamentPong() {
 
   // ===== Resize =====
   window.addEventListener('resize', () => resizeCanvasToDisplaySize());
+
+  // ===== Language Change Reactivity =====
+  const offLang = onLangChange(() => {
+    // Actualizar textos que están visibles
+    // El renderWinner se ejecuta cada frame, así que se actualiza automáticamente
+  });
+  (canvas as any)._langCleanup = () => offLang();
 }

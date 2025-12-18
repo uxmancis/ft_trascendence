@@ -1,7 +1,9 @@
 // src/game/setupPong.ts
 import type { Diff } from '../views/PlayAI';
-import { createMatch, type NewMatch } from '../api';
+import { createMatch, sanitizeMatch } from '../api';
 import { getCurrentUser } from '../session';
+import { logTerminal } from '../components/IDEComponets/Terminal';
+import { t, onLangChange } from '../i18n/i18n';
 
 // @ts-ignore
 import * as BABYLON from '@babylonjs/core';
@@ -198,9 +200,9 @@ export function setupPong() {
   const help = new Rectangle('help');
   help.thickness = 0; help.background = 'rgba(0,0,0,0.35)'; help.width = '64%'; help.height = '22%'; help.top = '30%'; help.cornerRadius = 10; gui.addControl(help);
   const helpText = new TextBlock('helpText',
-    'Controls:\nPlayer: W (up) / S (down)  •  Start/Pause: Space  •  Fullscreen: Click');
+    t('game.controls'));
   helpText.color = 'white'; helpText.fontSize = 20; helpText.textWrapping = true; help.addControl(helpText);
-  const hint = new TextBlock('hint', '[ CLICK TO START — ENTERS FULLSCREEN ]'); hint.color = 'white'; hint.fontSize = 22; hint.top = '40%'; gui.addControl(hint);
+  const hint = new TextBlock('hint', t('game.clickToStart')); hint.color = 'white'; hint.fontSize = 22; hint.top = '40%'; gui.addControl(hint);
 
   let state: GameState = 'READY';
   let pScore = 0, aScore = 0;
@@ -363,7 +365,7 @@ export function setupPong() {
   }
 
   // ===== Flow helpers =====
-  function showPause(msg = '⏸️ PAUSE', sub = 'Press Space to continue') {
+  function showPause(msg = t('game.pause'), sub = t('game.pressSpace')) {
     banner.text = msg; hint.text = sub; help.isVisible = true; trail.emitRate = 80;
   }
   function hidePause() {
@@ -375,7 +377,7 @@ export function setupPong() {
       let v = n; banner.text = String(v); hint.text = '';
       const iv = setInterval(() => {
         v -= 1;
-        banner.text = v > 0 ? String(v) : 'GO!';
+        banner.text = v > 0 ? String(v) : t('game.go');
         if (v < 0) { clearInterval(iv); resolve(); }
       }, 1000);
     });
@@ -412,10 +414,14 @@ export function setupPong() {
 
   function postResultIfNeeded(playerWon: boolean) {
     if (postedResult) return; postedResult = 1;
-    const meNow = getCurrentUser(); if (!meNow) return;
+    const meNow = getCurrentUser(); 
+    if (!meNow) {
+      console.error('[match] No user logged in');
+      return;
+    }
 
     const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
-    const payload: NewMatch = {
+    const payload = {
       player1_id: meNow.id,
       player2_id: BOT_USER_ID,
       score_p1: pScore,
@@ -423,23 +429,38 @@ export function setupPong() {
       winner_id: playerWon ? meNow.id : BOT_USER_ID,
       duration_seconds,
       details: {
-        mode: 'ai-3d',
-        difficulty,
         shots_on_target_p1: playerHits,
         shots_on_target_p2: aiHits,
         saves_p1: Math.max(aiHits - aScore, 0),
         saves_p2: Math.max(playerHits - pScore, 0),
-      } as any,
+      },
     };
-    createMatch(payload).catch(err => console.error('[match] error AI 3D', err));
+    console.log('[match] AI payload:', payload);
+    try {
+      const sanitized = sanitizeMatch(payload);
+      console.log('[match] Sanitized:', sanitized);
+      createMatch(sanitized)
+        .then(res => {
+          console.log('[match] AI match created:', res);
+          logTerminal(`${t('log.matchSaved')} (${playerWon ? t('log.won') : t('log.lost')})`);
+        })
+        .catch(err => {
+          console.error('[match] error AI 3D', err);
+          logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
+        });
+    } catch (err) {
+      console.error('[match] validation error', err);
+      logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+    }
   }
 
   function checkVictory(): boolean {
     if (pScore >= SCORE_TARGET || aScore >= SCORE_TARGET) {
       const playerWon = pScore > aScore;
       state = 'GAMEOVER';
-      banner.text = playerWon ? '💫 You win! 🏆' : '💀 You lose ☠️';
-      hint.text = 'Click or Space to start a new game';
+      banner.text = playerWon ? t('game.wins') : t('game.loses');
+      hint.text = t('game.newMatch');
+      logTerminal(`${t('log.matchEnded')}! ${playerWon ? t('log.won') : t('log.lost')} ${pScore}-${aScore}`);
       help.isVisible = true;
       postResultIfNeeded(playerWon);
       return true;
@@ -463,12 +484,20 @@ export function setupPong() {
     if (state !== 'PLAYING') return;
     state = 'SERVE';
 
-    if (byPlayer) { pScore++; scoreP.text = String(pScore); }
-    else { aScore++; scoreAI.text = String(aScore); }
+    if (byPlayer) { 
+      pScore++; 
+      scoreP.text = String(pScore); 
+      logTerminal(`⚽ ${t('log.playerScores')}! ${pScore}-${aScore}`);
+    }
+    else { 
+      aScore++; 
+      scoreAI.text = String(aScore); 
+      logTerminal(`⚽ ${t('log.aiScores')}! ${pScore}-${aScore}`);
+    }
 
     if (checkVictory()) return;
 
-    banner.text = 'GO!'; centerBall(); serve(false);
+    banner.text = t('game.go'); centerBall(); serve(false);
     setTimeout(() => startCountdown(3).then(() => { banner.text = ''; state = 'PLAYING'; }), 200);
   }
 
@@ -587,4 +616,13 @@ export function setupPong() {
     resizeCanvasToDisplaySize();
     engine.resize();
   });
+
+  // ===== Language Change Reactivity =====
+  const updateUITexts = () => {
+    helpText.text = t('game.controls');
+    hint.text = hint.text ? t('game.clickToStart') : '';
+  };
+  
+  const offLang = onLangChange(updateUITexts);
+  (canvas as any)._langCleanup = () => offLang();
 }

@@ -1,11 +1,14 @@
 // src/session.ts
 export type SessionUser = { id: number; nick: string; avatar: string };
 
+// ========= Storage Keys ==========
 const KEY_ME = 'pong:user';
 const KEY_P2 = 'pong:local:p2';
 const KEY_P3 = 'pong:local:p3';
 const KEY_P4 = 'pong:local:p4';
-const KEY_TOURNAMENT = 'pong:local:tournament'; // array de 3 jugadores locales (más tú = 4)
+const KEY_TOURNAMENT = 'pong:local:tournament';
+const KEY_TEMP_STATE = 'pong:temp:state'; // Transient state (AI settings, etc.)
+const KEY_CLEANUP_TIMEOUT = 'pong:cleanup:ts'; // Timestamp para limpiar temp
 
 /* ========= State reactivo (store de sesión) ========= */
 type Listener = () => void;
@@ -26,13 +29,33 @@ let state: SessionState = {
   tournament: [],
 };
 
+// Validación de SessionUser
+function isValidUser(u: any): u is SessionUser {
+  return u && typeof u === 'object' && typeof u.id === 'number' && typeof u.nick === 'string' && typeof u.avatar === 'string';
+}
+
 // Carga inicial desde localStorage (una sola vez, al importar)
 (function bootstrapFromStorage() {
-  try { state.me = JSON.parse(localStorage.getItem(KEY_ME) || 'null'); } catch { state.me = null; }
-  try { state.p2 = JSON.parse(localStorage.getItem(KEY_P2) || 'null'); } catch { state.p2 = null; }
-  try { state.p3 = JSON.parse(localStorage.getItem(KEY_P3) || 'null'); } catch { state.p3 = null; }
-  try { state.p4 = JSON.parse(localStorage.getItem(KEY_P4) || 'null'); } catch { state.p4 = null; }
-  try { state.tournament = JSON.parse(localStorage.getItem(KEY_TOURNAMENT) || '[]'); } catch { state.tournament = []; }
+  try {
+    const me = JSON.parse(localStorage.getItem(KEY_ME) || 'null');
+    state.me = isValidUser(me) ? me : null;
+  } catch { state.me = null; }
+  try {
+    const p2 = JSON.parse(localStorage.getItem(KEY_P2) || 'null');
+    state.p2 = isValidUser(p2) ? p2 : null;
+  } catch { state.p2 = null; }
+  try {
+    const p3 = JSON.parse(localStorage.getItem(KEY_P3) || 'null');
+    state.p3 = isValidUser(p3) ? p3 : null;
+  } catch { state.p3 = null; }
+  try {
+    const p4 = JSON.parse(localStorage.getItem(KEY_P4) || 'null');
+    state.p4 = isValidUser(p4) ? p4 : null;
+  } catch { state.p4 = null; }
+  try {
+    const tournament = JSON.parse(localStorage.getItem(KEY_TOURNAMENT) || '[]');
+    state.tournament = Array.isArray(tournament) && tournament.every(isValidUser) ? tournament : [];
+  } catch { state.tournament = []; }
 })();
 
 let listeners: Listener[] = [];
@@ -139,6 +162,49 @@ export function clearAllLocalState() {
   //clearLocalP3();
   //clearLocalP4();
   //clearCurrentUser();
+}
+
+/* ============ Limpieza selectiva de temporales ============ */
+/** Limpia P2, P3, P4, Tournament y temp state (después de partidas). */
+export function clearTemporaryPlayers() {
+  clearLocalP2();
+  clearLocalP3();
+  clearLocalP4();
+  clearTournamentPlayers();
+  clearTempState();
+}
+
+/* ============ Temporal State Management (sin persistencia larga) ============ */
+/** Almacena state temporal en localStorage (con timeout automático). */
+export function setTempState(key: string, value: any, expiryMs: number = 30 * 60 * 1000) {
+  const obj = getTempState();
+  obj[key] = { value, expires: Date.now() + expiryMs };
+  localStorage.setItem(KEY_TEMP_STATE, JSON.stringify(obj));
+}
+
+/** Obtiene state temporal (auto-expira si pasó timeout). */
+export function getTempState(key?: string): any {
+  try {
+    const all = JSON.parse(localStorage.getItem(KEY_TEMP_STATE) || '{}');
+    
+    // Limpia expirados
+    const now = Date.now();
+    const cleaned: Record<string, any> = {};
+    for (const [k, v] of Object.entries(all)) {
+      if ((v as any)?.expires > now) {
+        cleaned[k] = (v as any).value;
+      }
+    }
+    localStorage.setItem(KEY_TEMP_STATE, JSON.stringify(cleaned));
+    
+    return key ? cleaned[key] : cleaned;
+  } catch {
+    return key ? null : {};
+  }
+}
+
+export function clearTempState() {
+  localStorage.removeItem(KEY_TEMP_STATE);
 }
 
 /* ============ Azúcar extra útil para el juego ============ */

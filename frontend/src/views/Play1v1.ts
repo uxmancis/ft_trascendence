@@ -1,9 +1,9 @@
 // src/views/Play1v1.ts
 
-import { createUser, NewUser } from '../api';
+import { createUser, sanitizeUser } from '../api';
 import { getCurrentUser, getLocalP2, setLocalP2, clearLocalP2 } from '../session';
 import { navigate } from '../router';
-import { t, bindI18n } from '../i18n/i18n';
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { setupLivePong3D } from '../play/Live1v1';
 import { logTerminal } from '../components/IDEComponets/Terminal';
 
@@ -48,8 +48,6 @@ function randomColorHex(): string {
 ** ============================================================ */
 
 export async function renderPlay1v1(root: HTMLElement): Promise<void> {
-  logTerminal('View: Play 1v1');
-
   const me = getCurrentUser();
   const p2 = getLocalP2();
 
@@ -90,12 +88,13 @@ export async function renderPlay1v1(root: HTMLElement): Promise<void> {
   `;
 
   bindI18n(root);
+  const offLang = onLangChange(() => bindI18n(root));
+  (root as any)._cleanup = () => offLang();
 
   const changeBtn = root.querySelector<HTMLButtonElement>('#changeP2');
   if (changeBtn) {
     changeBtn.onclick = () => {
       clearLocalP2();
-      logTerminal('P2 cleared');
       renderPlay1v1(root);
     };
   }
@@ -114,9 +113,10 @@ export async function renderPlay1v1(root: HTMLElement): Promise<void> {
       const avatar = `https://dummyimage.com/96x96/${bg}/ffffff&text=${initial}`;
 
       try {
-        const created = await createUser({ nick, avatar });
+        const payload = sanitizeUser({ nick, avatar });
+        const created = await createUser(payload);
         setLocalP2(created);
-        logTerminal(`P2 created: ${created.nick}`);
+        logTerminal(`✓ ${t('log.p2Joined')}: ${created.nick}`);
         renderPlay1v1(root);
       } catch (err: any) {
         errBox.textContent = err?.message || t('pvp.err.createP2');
@@ -128,7 +128,7 @@ export async function renderPlay1v1(root: HTMLElement): Promise<void> {
   root.querySelector('#startBtn')?.addEventListener('click', () => {
     if (!me || !getLocalP2()) return;
 
-    logTerminal('Starting 1v1 match');
+    logTerminal(`▶ ${t('log.match1v1Starting')}: ${me.nick} ${t('log.vs')} ${getLocalP2()!.nick}`);
     renderLiveMatch(root);
     navigate(LIVE_ROUTE);
   });
@@ -147,8 +147,9 @@ function renderLiveMatch(root: HTMLElement): void {
         <span class="text-lg font-bold">🎮 Pong 3D</span>
         <button id="backBtn"
                 class="bg-red-500 hover:bg-red-600
-                       px-4 py-1 rounded">
-          Salir
+                       px-4 py-1 rounded"
+                data-i18n="common.exit">
+          ${t('common.exit')}
         </button>
       </div>
 
@@ -166,7 +167,7 @@ function renderLiveMatch(root: HTMLElement): void {
   `;
 
   document.getElementById('backBtn')?.addEventListener('click', () => {
-    logTerminal('Exit live match');
+    logTerminal(t('log.matchExiting'));
     navigate('#');
   });
 
@@ -214,8 +215,9 @@ function readyCard(nick: string, id: number, avatar: string): string {
       </div>
       <button id="changeP2"
               class="mt-3 text-xs px-2 py-1 rounded
-                     bg-black/40 hover:bg-black/60">
-        Cambiar jugador
+                     bg-black/40 hover:bg-black/60"
+              data-i18n="pvp.changePlayer">
+        ${t('pvp.changePlayer')}
       </button>
     </div>
   `);
@@ -237,14 +239,15 @@ function loginCard(): string {
     <form id="p2-form"
           class="w-60 bg-white/90 rounded-xl p-4 shadow
                  flex flex-col gap-2">
-      <div class="text-black font-semibold text-center">Jugador 2</div>
+      <div class="text-black font-semibold text-center" data-i18n="pvp.player2">${t('pvp.player2')}</div>
       <input id="p2-nick"
              class="px-3 py-2 rounded border text-black"
-             placeholder="Nick"
+             placeholder="${t('pvp.nickP2.placeholder')}"
+             data-i18n-attr="placeholder:pvp.nickP2.placeholder"
              minlength="2" maxlength="20" required />
       <button class="px-3 py-2 rounded
-                     bg-black/80 hover:bg-black text-white">
-        Crear
+                     bg-black/80 hover:bg-black text-white" data-i18n="pvp.createAndContinue">
+        ${t('pvp.createAndContinue')}
       </button>
       <div id="err" class="text-red-600 text-xs hidden"></div>
     </form>

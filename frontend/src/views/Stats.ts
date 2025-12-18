@@ -6,7 +6,7 @@
 
 import { getStatsByUserId, getMatches, getUsers, Match, User } from '../api';
 import { getCurrentUser } from '../session';
-import { t } from '../i18n/i18n';
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { logTerminal } from '../components/IDEComponets/Terminal';
 
 /* ************************************************************************** */
@@ -181,11 +181,25 @@ function computeFromMatches(meId: number, matches: Match[])
 ** 4. Compute KPIs
 ** 5. Fill each card independently
 */
+
+/* Actualiza solo textos traducibles sin re-renderizar datos */
+function updateStatsI18n(root: HTMLElement)
+{
+  // Actualizar títulos y etiquetas estáticas
+  const titleEl = root.querySelector('h1');
+  if (titleEl) titleEl.textContent = t('stats.title') || 'Stats';
+  
+  // Actualizar todos los elementos con data-i18n
+  root.querySelectorAll('[data-i18n]').forEach((el: Element) => {
+    const key = el.getAttribute('data-i18n')!;
+    (el as HTMLElement).textContent = t(key);
+  });
+}
+
 export async function renderStats(root: HTMLElement)
 {
-  logTerminal('Rendered Stats view');
-
   const me = getCurrentUser();
+  logTerminal(`${t('log.statsViewing')}${me ? ` ${me.nick}` : ''}`);
   if (!me)
   {
     root.innerHTML = `
@@ -196,25 +210,29 @@ export async function renderStats(root: HTMLElement)
     return;
   }
 
-  /* Responsive donut sizes */
+  /* Responsive donut sizes - COMPACT */
   const narrow = root.clientWidth < 768;
-  const donutMain  = narrow ? 130 : 160;
-  const donutMinor = narrow ? 120 : 140;
+  const donutMain  = narrow ? 80 : 100;
+  const donutMinor = narrow ? 70 : 90;
 
-  /* Base layout */
+  /* Base layout - Compact viewport (like canvas) */
   root.innerHTML = `
-    <section class="mx-auto max-w-6xl p-6 grow">
-      <h1 class="text-2xl md:text-3xl font-bold mb-4">
-        ${t('stats.title')}
-      </h1>
+    <section class="w-full h-full flex items-center justify-center p-2 md:p-3 overflow-hidden">
+      <div class="w-full h-full max-w-6xl">
+        <div class="mb-2 md:mb-3 flex items-center justify-between">
+          <h1 class="text-lg md:text-2xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent truncate">
+            ${t('stats.title') || 'Stats'}
+          </h1>
+          <div class="text-xs opacity-40 hidden md:block">${new Date().toLocaleTimeString()}</div>
+        </div>
 
-      <div class="grid gap-4 md:grid-cols-2
-                  lg:grid-cols-[1.1fr_1.1fr_1.6fr]">
-        <article id="card-profile"  class="card"></article>
-        <article id="card-summary"  class="card"></article>
-        <article id="card-history"  class="card lg:row-span-3"></article>
-        <article id="card-accuracy" class="card"></article>
-        <article id="card-streaks"  class="card"></article>
+        <div class="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3 h-[calc(100%-2rem)] md:h-[calc(100%-2.5rem)]">
+          <article id="card-profile"  class="card bg-linear-to-br from-blue-500/5 to-cyan-500/5 border border-blue-500/20 h-full overflow-hidden"></article>
+          <article id="card-summary"  class="card bg-linear-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-500/20 h-full overflow-hidden"></article>
+          <article id="card-history"  class="card bg-linear-to-br from-purple-500/5 to-pink-500/5 border border-purple-500/20 h-full overflow-y-auto md:row-span-2"></article>
+          <article id="card-accuracy" class="card bg-linear-to-br from-yellow-500/5 to-orange-500/5 border border-yellow-500/20 h-full overflow-hidden"></article>
+          <article id="card-streaks"  class="card bg-linear-to-br from-red-500/5 to-pink-500/5 border border-red-500/20 h-full overflow-hidden"></article>
+        </div>
       </div>
     </section>
   `;
@@ -238,20 +256,47 @@ export async function renderStats(root: HTMLElement)
   /* ================= PROFILE ================= */
 
   elProfile.innerHTML = `
-    <div class="flex items-center gap-4">
-      <img src="${me.avatar}" class="w-16 h-16 rounded-xl object-cover" />
-      <div>
-        <div class="text-lg font-semibold">${me.nick}</div>
-        <div class="text-sm opacity-80">ID #${me.id}</div>
+    <div class="flex flex-col items-center text-center justify-center h-full">
+      <div class="relative mb-2">
+        <img src="${me.avatar}" class="w-12 h-12 rounded-lg object-cover border border-blue-500/50" />
+        <div class="absolute -bottom-0.5 -right-0.5 bg-emerald-500 rounded-full p-0.5 text-xs">✓</div>
       </div>
+      <div class="text-sm font-bold truncate max-w-[90%]">${me.nick}</div>
+      <div class="text-xs opacity-60 font-mono">ID #${me.id}</div>
     </div>
   `;
 
   /* ================= SUMMARY ================= */
 
+  const gf = d.gf;
+  const ga = d.ga;
+  const gd = gf - ga;
+  const avgPerGame = d.games > 0 ? (gf / d.games).toFixed(1) : '0';
+
   elSummary.innerHTML = `
-    <h2 class="font-semibold mb-3">${t('stats.summary')}</h2>
-    ${donut(winrate, { size: donutMain })}
+    <h2 class="font-semibold text-sm mb-2" data-i18n="stats.summary">${t('stats.summary')}</h2>
+    <div class="flex flex-col gap-2 h-[calc(100%-1.5rem)]">
+      <!-- Winrate Donut -->
+      <div class="flex-1 flex items-center justify-center min-h-0">
+        ${donut(winrate, { size: donutMain, color: '#10b981', label: fmtPct(winrate) })}
+      </div>
+      
+      <!-- KPIs under donut -->
+      <div class="grid grid-cols-3 gap-1 text-center text-xs">
+        <div class="bg-black/20 rounded p-1">
+          <div class="opacity-60 text-xs">W</div>
+          <div class="font-bold text-emerald-400">${d.wins}</div>
+        </div>
+        <div class="bg-black/20 rounded p-1">
+          <div class="opacity-60 text-xs">L</div>
+          <div class="font-bold text-rose-400">${d.losses}</div>
+        </div>
+        <div class="bg-black/20 rounded p-1">
+          <div class="opacity-60 text-xs">G</div>
+          <div class="font-bold text-blue-400">${d.games}</div>
+        </div>
+      </div>
+    </div>
   `;
 
   /* ================= HISTORY ================= */
@@ -259,45 +304,117 @@ export async function renderStats(root: HTMLElement)
   const userById = new Map<number, User>();
   users.forEach(u => userById.set(u.id, u));
 
-  const lastMatches = matches.filter(m => m.player1_id === me.id || m.player2_id === me.id).slice(-5).reverse();
+  const lastMatches = matches.filter(m => m.player1_id === me.id || m.player2_id === me.id).sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 6);
+
+  const scoreBadge = (me_id: number, m: Match): string => {
+    const myScore = m.player1_id === me_id ? m.score_p1 : m.score_p2;
+    const oppScore = m.player1_id === me_id ? m.score_p2 : m.score_p1;
+    const win = m.winner_id === me_id;
+    return `<span class="font-mono text-xs font-bold ${win ? 'text-emerald-400' : 'text-rose-400'}">${myScore}-${oppScore}</span>`;
+  };
 
   elHistory.innerHTML = `
-    <h2 class="font-semibold mb-3">${t('stats.history')}</h2>
-    <ul class="space-y-2">
+    <h2 class="font-semibold text-sm mb-1" data-i18n="stats.history">${t('stats.history')}</h2>
+    <div class="space-y-1 text-xs h-[calc(100%-1.5rem)] overflow-y-auto">
+      ${lastMatches.length === 0 ? `<p class="opacity-50">${t('stats.noMatches')}</p>` : ''}
       ${lastMatches.map(m => {
         const oppId = whoIsOpponent(me.id, m);
         const opp = userById.get(oppId);
+        const win = m.winner_id === me.id;
+        
         return `
-          <li class="rounded-lg bg-black/20 p-3 flex justify-between">
-            ${badgeWinLoss(me.id, m)}
-            <span>${t('stats.vs', { nick: opp?.nick ?? '#' + oppId })}</span>
-          </li>
+          <div class="rounded ${win ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-rose-500/10 border border-rose-500/30'} p-1.5 flex items-center gap-2 hover:bg-white/5 transition">
+            <img src="${opp?.avatar || 'https://dummyimage.com/30x30/111827/ffffff&text=?'}" 
+                 class="w-6 h-6 rounded shrink-0" 
+                 title="${opp?.nick || '?'}" />
+            <div class="flex-1 min-w-0">
+              <div class="truncate font-semibold">${opp?.nick ?? '#' + oppId}</div>
+            </div>
+            <div class="text-right">
+              ${scoreBadge(me.id, m)}
+            </div>
+          </div>
         `;
       }).join('')}
-    </ul>
+    </div>
   `;
 
   /* ================= ACCURACY ================= */
 
-  const shots = stats.goals_scored + stats.shots_on_target;
-  const goalAcc = shots ? stats.goals_scored / shots : 0;
+  const shots = stats.shots_on_target;
+  const goals = stats.goals_scored;
+  const accuracy = shots > 0 ? goals / shots : 0;
+  const saves = stats.saves;
+  const goalsAgainst = stats.goals_received;
+  const saveRate = (saves + goalsAgainst) > 0 ? saves / (saves + goalsAgainst) : 0;
 
   elAccuracy.innerHTML = `
-    <h2 class="font-semibold mb-3">${t('stats.precision')}</h2>
-    ${donut(goalAcc, {
-      size: donutMinor,
-      color: '#60a5fa',
-      sublabel: `${stats.goals_scored}/${shots}`
-    })}
+    <h2 class="font-semibold text-sm mb-2" data-i18n="stats.precision">${t('stats.precision') || 'Performance'}</h2>
+    <div class="space-y-3 text-xs h-[calc(100%-1.5rem)] flex flex-col justify-center">
+      
+      <!-- Shooting -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="opacity-80">${t('stats.shooting')}</span>
+          <span class="font-bold text-blue-400">${fmtPct(accuracy)}</span>
+        </div>
+        <div class="h-2 bg-black/30 rounded-full overflow-hidden">
+          <div class="h-full bg-blue-400 transition-all" style="width: ${accuracy * 100}%"></div>
+        </div>
+        <div class="text-xs opacity-60">${t('stats.goalsText', { goals, shots })}</div>
+      </div>
+
+      <!-- Defense -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="opacity-80">${t('stats.defense')}</span>
+          <span class="font-bold text-red-400">${fmtPct(saveRate)}</span>
+        </div>
+        <div class="h-2 bg-black/30 rounded-full overflow-hidden">
+          <div class="h-full bg-red-400 transition-all" style="width: ${saveRate * 100}%"></div>
+        </div>
+        <div class="text-xs opacity-60">${t('stats.savesText', { saves, attempts: saves + goalsAgainst })}</div>
+      </div>
+
+      <!-- Goals -->
+      <div class="flex items-center justify-between bg-black/20 rounded p-2">
+        <span class="opacity-80">${t('stats.goals')}</span>
+        <div class="flex gap-3">
+          <span class="text-emerald-400 font-bold">${stats.goals_scored}</span>
+          <span class="opacity-40">-</span>
+          <span class="text-rose-400 font-bold">${stats.goals_received}</span>
+        </div>
+      </div>
+
+    </div>
   `;
 
   /* ================= STREAKS ================= */
 
   elStreaks.innerHTML = `
-    <h2 class="font-semibold mb-3">${t('stats.streaks')}</h2>
-    <div class="text-3xl font-bold">${d.streak}</div>
-    <div class="text-sm opacity-80">
-      ${t('stats.bestStreak')}: ${d.best}
+    <h2 class="font-semibold text-sm mb-1" data-i18n="stats.streaks">${t('stats.streaks') || 'Streaks'}</h2>
+    <div class="space-y-1 h-[calc(100%-1.5rem)] flex flex-col">
+      <!-- Current Streak -->
+      <div class="flex-1 bg-linear-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/30 rounded p-2 flex flex-col items-center justify-center min-h-0">
+        <div class="text-xs opacity-70">🔥</div>
+        <div class="text-2xl font-bold text-amber-300">${d.streak}</div>
+        <div class="text-xs opacity-60">current</div>
+      </div>
+
+      <!-- Best Streak -->
+      <div class="flex-1 bg-linear-to-r from-emerald-500/10 to-emerald-600/10 border border-emerald-500/30 rounded p-2 flex flex-col items-center justify-center min-h-0">
+        <div class="text-xs opacity-70">🏆</div>
+        <div class="text-2xl font-bold text-emerald-300">${d.best}</div>
+        <div class="text-xs opacity-60">best</div>
+      </div>
     </div>
   `;
+
+  /* ================= I18N ================= */
+  bindI18n(root);
+  const offLang = onLangChange(() => {
+    // Solo actualizar textos, SIN re-renderizar datos
+    updateStatsI18n(root);
+  });
+  (root as any)._cleanup = () => offLang();
 }

@@ -66,6 +66,13 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 });
 
+// ====== Logging específico para matches ======
+fastify.addHook('preHandler', async (request, reply) => {
+  if (request.method === 'POST' && request.url === '/matches') {
+    request.log.info('[match] POST body:', JSON.stringify(request.body));
+  }
+});
+
 // ====== Access log conciso (saltando preflights) ======
 fastify.addHook('onResponse', (req, reply, done) => {
   if (req.method === 'OPTIONS') return done(); // no log para preflight

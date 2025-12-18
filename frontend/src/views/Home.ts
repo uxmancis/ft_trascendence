@@ -1,8 +1,7 @@
 // src/views/Home.ts
 
 import { navigate } from '../router';
-import { t } from '../i18n/i18n';
-import { logTerminal } from '../components/IDEComponets/Terminal';
+import { t, bindI18n, onLangChange } from '../i18n/i18n';
 
 /*
 ** createCard
@@ -69,24 +68,23 @@ export async function renderHome(root: HTMLElement): Promise<void>
     </section>
   `;
 
-  logTerminal('Home view loaded');
-
   /* Bind navigation buttons */
-  const bind = (id: string, route: string, msg: string) => 
+  const bind = (id: string, route: string) => 
   {
     const btn = root.querySelector<HTMLButtonElement>(`#${id}`);
     if (!btn) 
         return;
-    btn.onclick = () => 
-    {
-        logTerminal(msg);
-        navigate(route);
-    };
+    btn.onclick = () => navigate(route);
   };
 
-  bind('btn-ai', '#/play/ai', 'Selected: Play vs AI');
-  bind('btn-1v1', '#/play/1v1', 'Selected: Play 1v1');
-  bind('btn-tournament', '#/play/tournament', 'Selected: Tournament');
-  bind('btn-threeinrow', '#/play/threeinrow', 'Selected: Three in a row');
-  bind('btn-4v4', '#/play/4v4', 'Selected: Play 4v4');
+  bind('btn-ai', '#/play/ai');
+  bind('btn-1v1', '#/play/1v1');
+  bind('btn-tournament', '#/play/tournament');
+  bind('btn-threeinrow', '#/play/threeinrow');
+  bind('btn-4v4', '#/play/4v4');
+
+  /* i18n reactivity */
+  bindI18n(root);
+  const offLang = onLangChange(() => bindI18n(root));
+  (root as any)._cleanup = () => offLang();
 }

@@ -1,5 +1,5 @@
 // src/game/setupPong.ts
-import type { Diff } from './PlayAI';
+import type { Diff } from '../views/PlayAI';
 import { createMatch, type NewMatch } from '../api';
 import { getCurrentUser } from '../session';
 
@@ -220,50 +220,102 @@ export function setupPong() {
     return Math.min(bounds.bottom - paddleH / 2, Math.max(bounds.top + paddleH / 2, z));
   }
 
-  //Predicción del punto exacto donde la IA se coloca
+  // Predicción del punto exacto donde la IA se coloca (analítica con "mirror folding")
   function predictTargetZ(): number | null {
-     // Copia el estado actual
-    let px = ball.position.x;
-    let pz = ball.position.z;
-    let vx = ballVel.x;
-    let vz = ballVel.z;
-    if (vx <= 0) return(null);
-    const dt = 0.016;   // 60fps
-    const wallTop = fieldH/2;
-    const wallBottom = -fieldH/2;
+    const px = ball.position.x;
+    const pz = ball.position.z;
+    const vx = ballVel.x;
+    const vz = ballVel.z;
 
-    // Simulación hacia adelante
-    while (px <= ai.position.x) {
-        // Avanzas
-        px += vx * dt;
-        pz += vz * dt;
+    // Si la bola no va hacia la IA (vx <= 0) no predecimos
+    if (!isFinite(vx) || Math.abs(vx) < 1e-6 || vx <= 0) return null;
 
-        // Rebote en paredes
-        if (pz <= wallBottom) { pz = wallBottom; vz *= -1; }
-        if (pz >= wallTop)    { pz = wallTop;    vz *= -1; }
-    }
-    return pz;
+    const targetX = ai.position.x;
+    const timeToTarget = (targetX - px) / vx; // segundos
+    if (!isFinite(timeToTarget) || timeToTarget <= 0) return null;
+
+    // Posición Z sin rebotes
+    const rawZ = pz + vz * timeToTarget;
+
+    // Límites en Z
+    const wallTop = fieldH / 2;
+    const wallBottom = -fieldH / 2;
+    const range = wallTop - wallBottom;
+
+    // Mirror-folding: reflejar la coordenada rawZ en el intervalo [wallBottom, wallTop]
+    let rel = rawZ - wallBottom;
+    const period = 2 * range;
+    rel = ((rel % period) + period) % period; // módulo positivo
+    let finalZ: number;
+    if (rel <= range) finalZ = wallBottom + rel;
+    else finalZ = wallTop - (rel - range);
+
+    // Clamp por seguridad y devolver
+    return clampZ(finalZ);
   }
 
   let aiTargetZ = 0;
     
   function aiStep(dt: number) {
-
     const raw = predictTargetZ();
-    if (raw === null){
-        aiTargetZ = ai.position.z * 0.2 + AI_CTL.homeZ * 0.8;
-        aiVelZ *= 0.2;}
-    else{
+    if (raw === null) {
+      // no viene la bola: volver suavemente a home
+      aiTargetZ = ai.position.z * 0.2 + AI_CTL.homeZ * 0.8;
+      aiVelZ *= 0.2;
+    } else {
+      // calcular timeToTarget para estimar la velocidad necesaria
+      const vx = ballVel.x;
+      const px = ball.position.x;
+      const targetX = ai.position.x;
+      let timeToTarget = 0.0;
+      if (isFinite(vx) && Math.abs(vx) > 1e-6) timeToTarget = (targetX - px) / vx; // s
+
+      // seguridad
+      if (!isFinite(timeToTarget) || timeToTarget <= 0) {
         aiTargetZ = raw;
-        aiVelZ = AI_CTL.kP * (aiTargetZ - ai.position.z);}
-     let error = aiTargetZ - ai.position.z;
-    if (difficulty === 'easy') {
-      error += (Math.random() - 0.5) * DIFF.reactErr; 
+        // fallback PD
+        aiVelZ = AI_CTL.kP * (aiTargetZ - ai.position.z);
+      } else {
+        // velocidad necesaria para alcanzar el objetivo justo a tiempo
+        const requiredVel = (raw - ai.position.z) / Math.max(0.01, timeToTarget);
+
+        // ruido según dificultad (DIFF.reactErr en unidades Z)
+        // Easy/Normal: siempre tienen error. Hard: empieza sin error hasta missAfterHits.
+        let baseErr = (DIFF.reactErr || 0);
+        if (difficulty === 'hard') {
+          // aplicar error sólo si hemos superado el umbral de golpes o aciertos
+          if (!(rallyHits >= (DIFF.missAfterHits || 99) || aiHits >= (DIFF.missAfterHits || 99))) baseErr = 0;
+        }
+
+        // incrementar el error cuando la rally es más larga (la bola coge velocidad)
+        const speedFactor = 1 + Math.min(3, rallyHits * 0.08); // aumenta 8% por golpe, cap 3x
+        const effectiveErr = baseErr * speedFactor;
+
+        let noise = (Math.random() - 0.5) * effectiveErr;
+
+        // probabilidad de fallo inesperado (unforced miss) que magnifica el ruido
+        if (DIFF.unforcedMiss && Math.random() < DIFF.unforcedMiss) {
+          noise *= 3; // fallo mayor
+        }
+
+        const desiredVel = requiredVel + noise;
+
+        // mezclar con la componente existente para suavizar (aiMix cerca de 1 = más agresivo)
+        const mix = (DIFF.aiMix !== undefined) ? DIFF.aiMix : 1.0;
+        let newVel = aiVelZ * (1 - mix) + desiredVel * mix;
+
+        // limitar por velocidad máxima
+        newVel = Math.max(-AI_CTL.maxSpeed, Math.min(AI_CTL.maxSpeed, newVel));
+
+        aiTargetZ = raw;
+        aiVelZ = newVel;
+      }
     }
-     aiVelZ = AI_CTL.kP * error;
-     if (aiVelZ >  AI_CTL.maxSpeed) aiVelZ =  AI_CTL.maxSpeed;
-     if (aiVelZ < -AI_CTL.maxSpeed) aiVelZ = -AI_CTL.maxSpeed;
-    console.log("aiVelz=", aiVelZ);
+
+    // seguridad final
+    if (aiVelZ > AI_CTL.maxSpeed) aiVelZ = AI_CTL.maxSpeed;
+    if (aiVelZ < -AI_CTL.maxSpeed) aiVelZ = -AI_CTL.maxSpeed;
+    // console.log("aiVelz=", aiVelZ);
   }
 
   // ===== Colisiones (robustas) =====
@@ -344,10 +396,16 @@ export function setupPong() {
   }
   function centerBall() { ball.position.set(0, 0.6, 0); }
   function serve(initial = false) {
-    const dirX = Math.random() < 0.5 ? -1 : 1;
-    const dirZ = Math.random() < 0.5 ? -1 : 1;
+    // Force initial angle to be relatively shallow so the ball reaches the other side faster.
+    // Choose an angle in degrees within [0,60] or [300,360], then randomly flip 180° to send left/right.
+    const degRanges = [[0, 60], [300, 360]];
+    const chosenRange = degRanges[Math.floor(Math.random() * degRanges.length)];
+    let angleDeg = chosenRange[0] + Math.random() * (chosenRange[1] - chosenRange[0]);
+    // randomly flip to the opposite side (so sometimes goes left, sometimes right)
+    if (Math.random() < 0.5) angleDeg += 180;
+    const angle = angleDeg * Math.PI / 180;
     const speed = initial ? ballBaseSpeed : Math.min(ballBaseSpeed + 1.0, ballMaxSpeed);
-    ballVel.set(dirX * speed, 0, dirZ * speed * 0.75);
+    ballVel.set(Math.cos(angle) * speed, 0, Math.sin(angle) * speed);
     collideCooldown = 0;
     rallyHits = 0;
   }
@@ -505,10 +563,19 @@ export function setupPong() {
       if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
 
       const now = performance.now();
-      if (now - lastAIThink.t >= DIFF.thinkMs) {
-        aiStep(dt); 
+
+      // Si la bola está cerca del objetivo, forzamos un think inmediato
+      let shouldThink = false;
+      const vx = ballVel.x;
+      if (isFinite(vx) && Math.abs(vx) > 1e-6) {
+        const tTarget = (ai.position.x - ball.position.x) / vx; // s
+        if (tTarget > 0 && tTarget * 1000 < DIFF.thinkMs) shouldThink = true;
+      }
+
+      if (now - lastAIThink.t >= DIFF.thinkMs || shouldThink) {
+        aiStep(dt);
         lastAIThink.t = now;
-      } 
+      }
       aiPressDirection(aiVelZ);
 
       // MOVER la pala de la IA *solo* si las teclas ArrowUp/ArrowDown están activas
@@ -547,4 +614,3 @@ export function setupPong() {
 
   window.addEventListener('resize', () => engine.resize());
 }
-

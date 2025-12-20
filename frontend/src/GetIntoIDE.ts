@@ -46,7 +46,7 @@ export function getIntoIDE(): void {
       </header>
 
       <!-- SEARCH MODAL -->
-      <div id="search-modal" class="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
+      <div id="search-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-start justify-center pt-20">
         <div class="bg-[#1e1e1e] border border-gray-400/20 rounded-lg w-[600px] max-w-[90vw] overflow-hidden shadow-2xl">
           <input
             id="search-input"

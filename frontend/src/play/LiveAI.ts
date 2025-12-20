@@ -36,14 +36,14 @@ export function setupPong() {
 
   const DIFF = {
     easy: {
-      ballBase: 7.0, ballMax: 12, paddle: 10.0,
+      ballBase: 7.0, ballMax: 14, paddle: 10.0,
       aiMix: 0.8, thinkMs: 1000, reactErr: 20,
       stepMul: 0.85,
       unforcedMiss: 0.2,
       missAfterHits: 3,
     },
     normal: {
-      ballBase: 9, ballMax: 16.0, paddle: 12.0,
+      ballBase: 9, ballMax: 18.0, paddle: 12.0,
       aiMix: 0.95, thinkMs: 1000, reactErr: 15,
       stepMul: 1.0,
       unforcedMiss: 0.1,
@@ -219,14 +219,11 @@ export function setupPong() {
 
   let ballVel = new BABYLON.Vector3(ballBaseSpeed, 0, ballBaseSpeed * 0.6);
   let collideCooldown = 0;
-
-
-  let aiVelZ = 0; //velocidad actual de la pala IA
   
   const AI_CTL = {
     maxSpeed: paddleSpeed * DIFF.stepMul,
     homeZ: 0,
-    deadzone: 0.25,
+    deadzone: 0.2,
   };
 
   function clampZ(z: number) {
@@ -277,12 +274,12 @@ function aiStep() {
     return;
   }
 
-  const diff = (target - ai.position.z)*0.35;
-  if (target >= ai.position.z - paddleH/2 && target <= ai.position.z + paddleH/2)
+  const diff = (target - ai.position.z);
+  if (Math.abs(diff) < AI_CTL.deadzone)
     aiPressDirection(0);
-  else if (Math.abs(diff) < AI_CTL.deadzone) {
+  else if (target >= ai.position.z - paddleH/2 && target <= ai.position.z + paddleH/2)
     aiPressDirection(0);
-  } else if (diff > 0) {
+  else if (diff > 0) {
     aiPressDirection(1);
   } else {
     aiPressDirection(-1);
@@ -324,7 +321,6 @@ function aiStep() {
       ball.position.z = pz + (nz * (hz + ballR + 0.01));
     }
 
-    // Spin + influencia del movimiento de la pala (jugador o IA)
     const relZ = (ball.position.z - pz) / (paddleH / 2);
     const aimZ = Math.max(-1, Math.min(1, relZ)) * spinFactor;
 
@@ -333,9 +329,16 @@ function aiStep() {
 
     const n = new BABYLON.Vector3(nx, 0, nz).add(new BABYLON.Vector3(0, 0, aimZ + infZ)).normalize();
     ballVel = reflect(ballVel, n);
-    const minAfter = Math.max(ballVel.length(), ballBaseSpeed * 0.95);
-    const speed = Math.min(minAfter + 0.5, ballMaxSpeed);
-    ballVel = ballVel.normalize().scale(speed);
+
+
+    const speed = ballVel.length();
+    const MIN_Z = 0.4;
+    if (Math.abs(ballVel.z / speed) < MIN_Z) {
+        ballVel.z = MIN_Z * Math.sign(ballVel.z || 1);
+        ballVel.x = Math.sqrt(speed * speed - ballVel.z * ballVel.z) * Math.sign(ballVel.x);
+    }
+
+    ballVel = ballVel.normalize().scale(Math.min(speed + 0.5, ballMaxSpeed));
 
     collideCooldown = 0.05;
     rallyHits += 1;
@@ -368,6 +371,8 @@ function aiStep() {
     if (Math.random() < 0.5) angleDeg += 180;
     const angle = angleDeg * Math.PI / 180;
     const speed = initial ? ballBaseSpeed : Math.min(ballBaseSpeed + 1.0, ballMaxSpeed);
+    if (speed == ballMaxSpeed)
+      logTerminal(`🔥 BALL MAX SPEED!`);
     ballVel.set(Math.cos(angle) * speed, 0, Math.sin(angle) * speed);
     collideCooldown = 0;
     rallyHits = 0;
@@ -382,6 +387,7 @@ function aiStep() {
   }
 
   function startNewGame() {
+    ai.scaling.z = aiOriginalHeight;
     pScore = 0; aScore = 0; scoreP.text = '0'; scoreAI.text = '0';
     playerHits = 0; aiHits = 0; rallyHits = 0;
     postedResult = 0; matchStartedAt = Date.now();
@@ -458,6 +464,16 @@ function aiStep() {
     return false;
   }
 
+  let aiOriginalHeight = ai.scaling.z;
+  function activatePaddlePowerUp() {
+     const boostHeight = ai.scaling.z * 1.5;
+     ai.scaling.z = boostHeight;
+     logTerminal(`🤖 1min of AI POWER UP!`);
+     setTimeout(() => {
+        ai.scaling.z = aiOriginalHeight;
+     }, 600000);
+  }
+
   function scorePoint(byPlayer: boolean) {
     if (state !== 'PLAYING') return;
     state = 'SERVE';
@@ -466,6 +482,9 @@ function aiStep() {
       pScore++; 
       scoreP.text = String(pScore); 
       logTerminal(`⚽ ${t('log.playerScores')}! ${pScore}-${aScore}`);
+      if (pScore === SCORE_TARGET - 1) {
+        activatePaddlePowerUp();
+      }
     }
     else { 
       aScore++; 

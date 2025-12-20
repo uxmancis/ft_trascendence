@@ -216,18 +216,17 @@ export function setupPong() {
   const ballMaxSpeed = DIFF.ballMax;
   const spinFactor = 0.55;
   const paddleVelInfluence = 0.35;
-  const wallFriction = 0.98;
 
   let ballVel = new BABYLON.Vector3(ballBaseSpeed, 0, ballBaseSpeed * 0.6);
   let collideCooldown = 0;
 
 
-  let aiVelZ = 1; //velocidad actual de la pala IA
+  let aiVelZ = 0; //velocidad actual de la pala IA
   
   const AI_CTL = {
-    kP: 6.0, kD: 2.0, emaAlpha: 0.3, //cuanto suavizado hay emaAlpha
     maxSpeed: paddleSpeed * DIFF.stepMul,
     homeZ: 0,
+    deadzone: 0.25,
   };
 
   function clampZ(z: number) {
@@ -240,10 +239,10 @@ export function setupPong() {
     const vx = ballVel.x;
     const vz = ballVel.z;
 
-    if (!isFinite(vx) || Math.abs(vx) < 1e-6 || vx <= 0) return null;
+    if (vx <= 0) return null;
 
     const targetX = ai.position.x;
-    const timeToTarget = (targetX - px) / vx; // segundos
+    const timeToTarget = (targetX - px) / vx;
     if (!isFinite(timeToTarget) || timeToTarget <= 0) return null;
 
     const rawZ = pz + vz * timeToTarget;
@@ -254,7 +253,7 @@ export function setupPong() {
 
     let rel = rawZ - wallBottom;
     const period = 2 * range;
-    rel = ((rel % period) + period) % period; // módulo positivo
+    rel = ((rel % period) + period) % period;
     let finalZ: number;
     if (rel <= range) finalZ = wallBottom + rel;
     else finalZ = wallTop - (rel - range);
@@ -262,55 +261,34 @@ export function setupPong() {
     return clampZ(finalZ);
   }
 
-  let aiTargetZ = 0;
-    
-  function aiStep(dt: number) {
-    const raw = predictTargetZ();
-    if (raw === null) {
-      aiTargetZ = ai.position.z * 0.2 + AI_CTL.homeZ * 0.8;
-      aiVelZ *= 0.2;
-    } else {
-      const vx = ballVel.x;
-      const px = ball.position.x;
-      const targetX = ai.position.x;
-      let timeToTarget = 0.0;
-      if (isFinite(vx) && Math.abs(vx) > 1e-6) timeToTarget = (targetX - px) / vx; // s
+function pickRandomIdleDir() {
+  const r = Math.random();
 
-      if (!isFinite(timeToTarget) || timeToTarget <= 0) {
-        aiTargetZ = raw;
-        aiVelZ = AI_CTL.kP * (aiTargetZ - ai.position.z);
-      } else {
-        const requiredVel = (raw - ai.position.z) / Math.max(0.01, timeToTarget);
-        let baseErr = (DIFF.reactErr || 0);
-        if (difficulty === 'hard') {
-          if (!(rallyHits >= (DIFF.missAfterHits || 99) || aiHits >= (DIFF.missAfterHits || 99))) baseErr = 0;
-        }
+  if (r < 0.33) return 0;
+  if (r < 0.66) return 1;
+  return -1;
+}
 
-        const speedFactor = 1 + Math.min(3, rallyHits * 0.08); // aumenta 8% por golpe, cap 3x
-        const effectiveErr = baseErr * speedFactor;
+function aiStep() {
+  const target = predictTargetZ();
 
-        let noise = (Math.random() - 0.5) * effectiveErr;
-
-        // probabilidad de fallo inesperado (unforced miss) que magnifica el ruido
-        if (DIFF.unforcedMiss && Math.random() < DIFF.unforcedMiss) {
-          noise *= 3; // fallo mayor
-        }
-
-        const desiredVel = requiredVel + noise;
-
-        const mix = (DIFF.aiMix !== undefined) ? DIFF.aiMix : 1.0;
-        let newVel = aiVelZ * (1 - mix) + desiredVel * mix;
-
-        newVel = Math.max(-AI_CTL.maxSpeed, Math.min(AI_CTL.maxSpeed, newVel));
-
-        aiTargetZ = raw;
-        aiVelZ = newVel;
-      }
-    }
-
-    if (aiVelZ > AI_CTL.maxSpeed) aiVelZ = AI_CTL.maxSpeed;
-    if (aiVelZ < -AI_CTL.maxSpeed) aiVelZ = -AI_CTL.maxSpeed;
+  if (target === null) {
+    aiPressDirection(pickRandomIdleDir());
+    return;
   }
+
+  const diff = (target - ai.position.z)*0.35;
+  if (target >= ai.position.z - paddleH/2 && target <= ai.position.z + paddleH/2)
+    aiPressDirection(0);
+  else if (Math.abs(diff) < AI_CTL.deadzone) {
+    aiPressDirection(0);
+  } else if (diff > 0) {
+    aiPressDirection(1);
+  } else {
+    aiPressDirection(-1);
+  }
+}
+
 
   function reflect(v: BABYLON.Vector3, normal: BABYLON.Vector3) {
     const dot = BABYLON.Vector3.Dot(v, normal);
@@ -577,13 +555,16 @@ export function setupPong() {
       // }
 
       if (now - lastAIThink.t >= DIFF.thinkMs) {
-        aiStep(dt);
+        aiStep();
         lastAIThink.t = now;
       }
-      aiPressDirection(aiVelZ);
 
-      if (aiKeyState.up)   ai.position.z = clampZ(ai.position.z + aiVelZ * dt);
-      if (aiKeyState.down) ai.position.z = clampZ(ai.position.z + aiVelZ * dt);
+if (aiKeyState.up) {
+  ai.position.z = clampZ(ai.position.z + paddleSpeed * dt);
+}
+if (aiKeyState.down) {
+  ai.position.z = clampZ(ai.position.z - paddleSpeed * dt);
+}
 
       const speed = ballVel.length();
       const steps = Math.min(6, Math.max(1, Math.ceil(speed / 8)));
@@ -594,9 +575,9 @@ export function setupPong() {
         ball.position.z += ballVel.z * subDt;
 
         if (ball.position.z < bounds.top + ballR) {
-          ball.position.z = bounds.top + ballR; ballVel.z *= -1; ballVel.z *= wallFriction;
+          ball.position.z = bounds.top + ballR; ballVel.z *= -1;
         } else if (ball.position.z > bounds.bottom - ballR) {
-          ball.position.z = bounds.bottom - ballR; ballVel.z *= -1; ballVel.z *= wallFriction;
+          ball.position.z = bounds.bottom - ballR; ballVel.z *= -1;
         }
 
         if (collideCooldown <= 0) {

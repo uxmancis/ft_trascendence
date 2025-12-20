@@ -47,14 +47,14 @@ export function setupPong() {
       aiMix: 0.95, thinkMs: 1000, reactErr: 15,
       stepMul: 1.0,
       unforcedMiss: 0.1,
-      missAfterHits: 5,
+      missAfterHits: 10,
     },
     hard: {
       ballBase: 11.0, ballMax: 22.0, paddle: 14,
       aiMix: 1.00, thinkMs: 1000, reactErr: 10,
       stepMul: 1.15,
       unforcedMiss: 0.05,
-      missAfterHits: 6,
+      missAfterHits: 99,
     },
   }[difficulty];
 
@@ -86,14 +86,26 @@ export function setupPong() {
     engine.resize();
   }
 
-  // ===== Engine & scene (Matrix look) =====
   const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
   const scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
-  engine.resize();
+  const COLOR_A = new BABYLON.Color4(0, 0, 0, 1);
+  const COLOR_B = new BABYLON.Color4(47/255, 47/255, 74/255, 1);
 
-  // ===== Canvas resize =====
+  // scene.clearColor = COLOR_A;
+  // scene._currentClearColor = COLOR_A;
+
+  function toggleClearColor() {
+     const cur = scene._currentClearColor === COLOR_A ? 'A' : 'B';
+     const next = cur === 'A' ? COLOR_B : COLOR_A;
+     scene.clearColor = next;
+     scene._currentClearColor = next;
+     scene.render();
+  }
+
+  const colorBtn = document.getElementById('map-color-btn');
+  if (colorBtn) colorBtn.addEventListener('click', toggleClearColor);
+
   function resizeCanvasToDisplaySize() {
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;

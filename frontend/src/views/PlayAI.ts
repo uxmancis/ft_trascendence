@@ -164,16 +164,35 @@ function renderLiveAI(root: HTMLElement, diff: Diff): void
   root.innerHTML = `
     <section class="flex flex-col min-h-0 grow p-4 gap-4 text-white">
 
-      <div class="flex justify-between items-center
-                  bg-white/10 px-6 py-3 rounded-2xl">
-        <span class="font-semibold">${t('ai.difficulty')}: ${diff.toUpperCase()}</span>
-        <span class="text-lg font-bold">🤖 Pong AI</span>
-        <button id="backBtn"
-                class="bg-red-500 hover:bg-red-600
-                       px-4 py-1 rounded">
-          ${t('common.exit')}
-        </button>
-      </div>
+<div class="flex justify-between items-center
+            bg-white/10 px-6 py-3 rounded-2xl">
+
+  <span class="font-semibold">
+    ${t('ai.difficulty')}: ${diff.toUpperCase()}
+  </span>
+
+  <span class="text-lg font-bold">🤖 Pong AI</span>
+
+  <div class="flex items-center gap-2">
+    <button
+      id="map-color-btn"
+      class="bg-green-600 hover:bg-green-700
+             px-3 py-1 rounded text-white"
+      title="Cambiar mapa"
+    >
+      🎨
+    </button>
+
+    <button
+      id="backBtn"
+      class="bg-red-500 hover:bg-red-600
+             px-4 py-1 rounded"
+    >
+      ${t('common.exit')}
+    </button>
+  </div>
+</div>
+
 
       <div class="flex-1 min-h-0 flex items-center justify-center">
         <div class="w-full h-full max-w-6xl max-h-[70vh]">

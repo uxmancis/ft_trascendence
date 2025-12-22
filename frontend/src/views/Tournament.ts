@@ -2,7 +2,7 @@
 import { createUser, sanitizeUser } from '../api';
 import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, getTempState, setTempState, clearTempState } from '../session';
 import { t, bindI18n, onLangChange } from '../i18n/i18n';
-import { setupLivePong3D } from '../play/Live1v1';
+import { setupTournamentPong } from '../play/LiveTournament';
 import { logTerminal } from '../components/IDEComponets/Terminal';
 
 type SessionUser = { id: number; nick: string; avatar?: string };
@@ -212,29 +212,20 @@ export async function renderTournament(root: HTMLElement) {
   const locals = getTournamentPlayers().filter(Boolean);
 
   // resultado pendiente
+  // resultado pendiente (solo importa el winner_id)
+  let s = loadState();
   const pending = sessionStorage.getItem(T_LAST_RESULT_KEY);
   if (pending) {
     const res = JSON.parse(pending);
-    const s = loadState();
-    if (s && s.started) {
-      const pair = getNextPairing(s);
-      if (pair && pair.p2) {
-        const expected = [pair.p1.id, pair.p2.id];
-        const got = [res?.p1?.id, res?.p2?.id];
-        const same =
-          expected.length === got.length &&
-          expected.every(id => got.includes(id));
-        if (same && typeof res?.winner_id === 'number') {
-          applyMatchResult(s, res.winner_id);
-        }
-      }
+    if (s && s.started && typeof res?.winner_id === 'number') {
+      applyMatchResult(s, res.winner_id);
+      s = loadState();
     }
     sessionStorage.removeItem(T_LAST_RESULT_KEY);
     sessionStorage.removeItem(T_MODE_KEY);
     sessionStorage.removeItem(T_MATCH_PLAYERS_KEY);
   }
 
-  const s = loadState();
 
   // ======= FASE 1: no empezado =======
   if (!s || !s.started) {
@@ -469,21 +460,22 @@ export async function renderTournament(root: HTMLElement) {
         renderTournament(root);
       };
       document.getElementById('backBtn')?.addEventListener('click', back);
-
-      const watch = setInterval(() => {
-        if (sessionStorage.getItem(T_LAST_RESULT_KEY)) {
-          clearInterval(watch);
-          sessionStorage.removeItem(T_MODE_KEY);
-          sessionStorage.removeItem(T_MATCH_PLAYERS_KEY);
-          renderTournament(root);
-        }
-      }, 250);
-
-      window.addEventListener('beforeunload', () => clearInterval(watch), { once: true });
-
       requestAnimationFrame(() => {
-        setupLivePong3D();
+        setupTournamentPong();
+
+        const onEnd = () => {
+          // 💥 FORZAMOS SALIDA DEL MATCH
+          renderTournament(root);
+        };
+
+        const stopWatch = setInterval(() => {
+          if (sessionStorage.getItem(T_LAST_RESULT_KEY)) {
+            clearInterval(stopWatch);
+            onEnd();
+          }
+        }, 100);
       });
+
     };
   }
 }

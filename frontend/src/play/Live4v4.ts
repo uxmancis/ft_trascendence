@@ -314,8 +314,8 @@ export function setupLive4v4() {
     return true;
   }
 
-  function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
-    if (state !== 'PLAYING') return;
+function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
+  if (state !== 'PLAYING') return; // ✅ BLINDAJE CRÍTICO
     state = 'SERVE';
 
     scores[scorer]++;
@@ -333,17 +333,18 @@ export function setupLive4v4() {
       const names = { p1: p1Nick, p2: p2Nick, p3: p3Nick, p4: p4Nick };
       logTerminal(`${t('log.victory')} ${names[winner]} - [${scores.p1}-${scores.p2}-${scores.p3}-${scores.p4}]`);
 
+      const didUserWin = winner === 'p1';
+
       if (!postedResult && user && p2info) {
         postedResult = 1;
         const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
         const payload = {
           player1_id: user.id,
-          player2_id: p2info.id,
+          player2_id: 1,
           score_p1: scores.p1,
           score_p2: Math.max(scores.p2, scores.p3, scores.p4),
-          winner_id: winner === 'p1' ? user.id : p2info.id,
+          winner_id: didUserWin ? user.id : 1,
           duration_seconds,
-          details: { scores },
         };
         console.log('[match] 4v4 payload:', payload);
         try {
@@ -379,12 +380,12 @@ export function setupLive4v4() {
 
     if (state === 'PLAYING') {
       // P1 (left): W/S
-      if (keys.w) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
-      if (keys.s) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
+      if (keys.s) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
+      if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
 
       // P2 (right): I/K
-      if (keys.i) p2.position.z = clampZ(p2.position.z - paddleSpeed * dt);
-      if (keys.k) p2.position.z = clampZ(p2.position.z + paddleSpeed * dt);
+      if (keys.k) p2.position.z = clampZ(p2.position.z - paddleSpeed * dt);
+      if (keys.i) p2.position.z = clampZ(p2.position.z + paddleSpeed * dt);
 
       // P3 (bottom): L/Ñ
       if (keys.l) p3.position.x = clampX(p3.position.x - paddleSpeed * dt);

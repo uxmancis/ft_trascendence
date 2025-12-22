@@ -78,6 +78,7 @@ export function renderFileExplorer(container: HTMLElement): void {
       label.className = 'truncate';
       if (item.labelKey) {
         label.setAttribute('data-label-key', item.labelKey);
+        label.setAttribute('file', item.labelKey);
       }
       label.textContent = item.labelKey ? t(item.labelKey) : item.label;
 

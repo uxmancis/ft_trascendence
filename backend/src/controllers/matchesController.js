@@ -1,35 +1,49 @@
 // src/controllers/matchesController.js
 import db from '../db/database.js';
 
-// Validación de IDs de usuarios
-async function userExists(userId) {
-  try {
-    const row = await db.getAsync("SELECT id FROM users WHERE id = ?", [userId]);
-    return !!row;
-  } catch {
-    return false;
-  }
+// ================================
+// Helpers
+// ================================
+async function userExists(id) {
+  const row = await db.getAsync(
+    'SELECT 1 FROM users WHERE id = ?',
+    [id]
+  );
+  return !!row;
 }
 
-export const getAllMatches = async (req, reply) => {
+// ================================
+// GETs
+// ================================
+export const getAllMatches = async (_, reply) => {
   try {
-    const rows = await db.allAsync("SELECT * FROM matches");
-    return reply.send(rows);
+    const rows = await db.allAsync(
+      'SELECT * FROM matches ORDER BY created_at DESC'
+    );
+    reply.send(rows);
   } catch (err) {
-    return reply.status(500).send({ error: err.message });
+    reply.status(500).send({ error: err.message });
   }
 };
 
 export const getMatchById = async (req, reply) => {
   try {
-    const row = await db.getAsync("SELECT * FROM matches WHERE id = ?", [req.params.id]);
-    if (!row) return reply.status(404).send({ error: "Partida no encontrada" });
-    return reply.send(row);
+    const row = await db.getAsync(
+      'SELECT * FROM matches WHERE id = ?',
+      [req.params.id]
+    );
+    if (!row) {
+      return reply.status(404).send({ error: 'Match not found' });
+    }
+    reply.send(row);
   } catch (err) {
-    return reply.status(500).send({ error: err.message });
+    reply.status(500).send({ error: err.message });
   }
 };
 
+// ================================
+// POST
+// ================================
 export const createMatch = async (req, reply) => {
   const {
     player1_id,
@@ -37,108 +51,125 @@ export const createMatch = async (req, reply) => {
     score_p1,
     score_p2,
     winner_id,
-    duration_seconds
-  } = req.body || {};
+    duration_seconds = 0
+  } = req.body;
 
-  // Validación de campos requeridos
-  if (typeof player1_id !== 'number' || typeof winner_id !== 'number' || 
-      typeof score_p1 !== 'number' || typeof score_p2 !== 'number') {
-    return reply.status(400).send({ 
-      error: "Missing or invalid required fields: player1_id, score_p1, score_p2, winner_id" 
+  // ----------------------------
+  // Validaciones básicas
+  // ----------------------------
+  if (score_p1 < 0 || score_p2 < 0 || duration_seconds < 0) {
+    return reply.status(400).send({ error: 'Values must be non-negative' });
+  }
+
+  if (winner_id !== player1_id && winner_id !== player2_id) {
+    return reply.status(400).send({
+      error: 'Winner must be one of the two players'
     });
   }
 
-  // player2_id puede ser 0 (para matches vs IA) o un número válido
-  if (typeof player2_id !== 'number') {
-    return reply.status(400).send({ error: "player2_id must be a number" });
+  // ----------------------------
+  // Validación de usuarios
+  // ----------------------------
+  if (!(await userExists(player1_id))) {
+    return reply.status(400).send({ error: 'Player 1 does not exist' });
   }
 
-  // Validación de valores
-  if (score_p1 < 0 || score_p2 < 0) {
-    return reply.status(400).send({ error: "Scores must be non-negative" });
-  }
-  
-  if (duration_seconds && duration_seconds < 0) {
-    return reply.status(400).send({ error: "Duration must be non-negative" });
+  if (!(await userExists(player2_id))) {
+    return reply.status(400).send({ error: 'Player 2 does not exist' });
   }
 
-  // player1 siempre debe existir
-  // player2 puede ser 0 (IA) o debe existir
-  // winner debe ser player1 o player2 (o 0 para IA si player2 es 0)
-  if (winner_id !== player1_id && winner_id !== player2_id) {
-    return reply.status(400).send({ error: "Winner must be one of the two players" });
+  if (!(await userExists(winner_id))) {
+    return reply.status(400).send({ error: 'Winner does not exist' });
   }
 
+  // ----------------------------
+  // Insertar match
+  // ----------------------------
   try {
-    // Verificar que player1 existe
-    const p1Exists = await userExists(player1_id);
-    if (!p1Exists) {
-      return reply.status(400).send({ error: "Player 1 does not exist in the database" });
-    }
-
-    // Verificar player2 solo si no es 0 (IA)
-    if (player2_id !== 0) {
-      const p2Exists = await userExists(player2_id);
-      if (!p2Exists) {
-        return reply.status(400).send({ error: "Player 2 does not exist in the database" });
-      }
-    }
-
-    // Verificar winner (si es 0, solo válido si player2 es 0)
-    if (winner_id !== 0) {
-      const winnerExists = await userExists(winner_id);
-      if (!winnerExists) {
-        return reply.status(400).send({ error: "Winner does not exist in the database" });
-      }
-    } else if (player2_id !== 0) {
-      // winner_id = 0 solo es válido para matches de IA
-      return reply.status(400).send({ error: "Winner cannot be 0 unless player2 is AI (0)" });
-    }
-
-    // Permitir detalles tanto planos como anidados en `details`
-    const d = req.body?.details || req.body || {};
-    const shots_on_target_p1 = Number(d.shots_on_target_p1) || 0;
-    const saves_p1           = Number(d.saves_p1)           || 0;
-    const shots_on_target_p2 = Number(d.shots_on_target_p2) || 0;
-    const saves_p2           = Number(d.saves_p2)           || 0;
-
-    // ¿hay algún detalle real?
-    const hasDetails =
-      shots_on_target_p1 !== 0 ||
-      saves_p1 !== 0 ||
-      shots_on_target_p2 !== 0 ||
-      saves_p2 !== 0;
-
-    // Transacción: match + (opcional) match_details
-    await db.runAsync('BEGIN');
-
-    const { lastID: matchId } = await db.runAsync(
-      `INSERT INTO matches (player1_id, player2_id, score_p1, score_p2, winner_id, duration_seconds)
+    const { lastID } = await db.runAsync(
+      `INSERT INTO matches
+       (player1_id, player2_id, score_p1, score_p2, winner_id, duration_seconds)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [player1_id, player2_id, score_p1, score_p2, winner_id, duration_seconds || 0]
+      [
+        player1_id,
+        player2_id,
+        score_p1,
+        score_p2,
+        winner_id,
+        duration_seconds
+      ]
     );
 
-    if (hasDetails) {
-      await db.runAsync(
-        `INSERT INTO match_details (match_id, shots_on_target_p1, saves_p1, shots_on_target_p2, saves_p2)
-         VALUES (?, ?, ?, ?, ?)`,
-        [matchId, shots_on_target_p1, saves_p1, shots_on_target_p2, saves_p2]
-      );
-    }
-
-    await db.runAsync('COMMIT');
-    return reply.status(201).send({ id: matchId });
+    // 🔥 LOS TRIGGERS HACEN TODO LO DEMÁS
+    reply.status(201).send({ id: lastID });
   } catch (err) {
-    try { await db.runAsync('ROLLBACK'); } catch {}
-    return reply.status(500).send({ error: err.message });
+    reply.status(500).send({ error: err.message });
   }
 };
 
+// ================================
+// DELETE
+// ================================
 export const deleteMatch = async (req, reply) => {
+  const matchId = Number(req.params.id);
+
   try {
-    const { changes } = await db.runAsync("DELETE FROM matches WHERE id = ?", [req.params.id]);
-    return reply.send({ deleted: changes });
+    await db.runAsync('BEGIN');
+
+    // 1️⃣ obtener match (necesario para recalcular stats)
+    const match = await db.getAsync(
+      'SELECT * FROM matches WHERE id = ?',
+      [matchId]
+    );
+
+    if (!match) {
+      await db.runAsync('ROLLBACK');
+      return reply.status(404).send({ error: 'Match not found' });
+    }
+
+    // 2️⃣ borrar match
+    await db.runAsync(
+      'DELETE FROM matches WHERE id = ?',
+      [matchId]
+    );
+
+    // 3️⃣ recalcular stats de ambos jugadores (simple y seguro)
+    await db.runAsync(
+      `
+      UPDATE user_stats
+      SET
+        games_played   = 0,
+        wins           = 0,
+        losses         = 0,
+        goals_scored   = 0,
+        goals_received = 0,
+        win_streak     = 0,
+        best_streak    = 0
+      WHERE user_id IN (?, ?)
+      `,
+      [match.player1_id, match.player2_id]
+    );
+
+    await db.runAsync(
+      `
+      INSERT INTO matches (player1_id, player2_id, score_p1, score_p2, winner_id, duration_seconds)
+      SELECT player1_id, player2_id, score_p1, score_p2, winner_id, duration_seconds
+      FROM matches
+      WHERE player1_id IN (?, ?) OR player2_id IN (?, ?)
+      ORDER BY created_at
+      `,
+      [
+        match.player1_id,
+        match.player2_id,
+        match.player1_id,
+        match.player2_id
+      ]
+    );
+
+    await db.runAsync('COMMIT');
+    reply.send({ deleted: 1 });
   } catch (err) {
-    return reply.status(500).send({ error: err.message });
+    try { await db.runAsync('ROLLBACK'); } catch {}
+    reply.status(500).send({ error: err.message });
   }
 };

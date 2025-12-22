@@ -14,11 +14,6 @@ import { AdvancedDynamicTexture, TextBlock, Rectangle } from '@babylonjs/gui';
 
 type GameState = 'READY' | 'COUNTDOWN' | 'SERVE' | 'PLAYING' | 'PAUSED' | 'GAMEOVER';
 
-// ===== Claves de torneo (sólo sesión, no se toca el usuario principal) =====
-const T_MODE_KEY = 'tournament:mode';                  // '1' si el partido pertenece al torneo
-const T_MATCH_PLAYERS_KEY = 'tournament:matchPlayers'; // { p1: {id,nick,avatar?}, p2: {...} }
-const T_LAST_RESULT_KEY = 'tournament:lastResult';     // payload mínimo que recoje el organizador
-
 export function setupLivePong3D() {
   const canvas = document.getElementById('live_pong') as HTMLCanvasElement;
   if (!canvas) return;
@@ -36,44 +31,14 @@ export function setupLivePong3D() {
   };
 
   // ===== Players (modo normal vs modo torneo) =====
-  const isTournament = sessionStorage.getItem(T_MODE_KEY) === '1';
   let p1Id: number, p2Id: number, p1Nick: string, p2Nick: string;
 
-  if (isTournament) {
-    // Leer jugadores del match actual SIN tocar tu usuario principal
-    const raw = sessionStorage.getItem(T_MATCH_PLAYERS_KEY);
-    if (raw) {
-      try {
-        const mp = JSON.parse(raw);
-        p1Id = Number(mp?.p1?.id ?? 1);
-        p2Id = Number(mp?.p2?.id ?? 2);
-        p1Nick = String(mp?.p1?.nick ?? 'Player 1');
-        p2Nick = String(mp?.p2?.nick ?? 'Player 2');
-      } catch {
-        const me = getCurrentUser();
-        const p2info = getLocalP2();
-        p1Id = Number(me?.id ?? 1);
-        p2Id = Number(p2info?.id ?? 2);
-        p1Nick = String(me?.nick ?? 'Player 1');
-        p2Nick = String(p2info?.nick ?? 'Player 2');
-      }
-    } else {
-      const me = getCurrentUser();
-      const p2info = getLocalP2();
-      p1Id = Number(me?.id ?? 1);
-      p2Id = Number(p2info?.id ?? 2);
-      p1Nick = String(me?.nick ?? 'Player 1');
-      p2Nick = String(p2info?.nick ?? 'Player 2');
-    }
-  } else {
-    // Modo normal 1v1 (local)
     const me = getCurrentUser();
     const p2info = getLocalP2();
     p1Id = Number(me?.id ?? 1);
     p2Id = Number(p2info?.id ?? 2);
     p1Nick = String(me?.nick ?? 'Player 1');
     p2Nick = String(p2info?.nick ?? 'Player 2');
-  }
 
   // ===== Fullscreen helpers =====
   function enterFullscreen(el: HTMLElement) {
@@ -361,61 +326,44 @@ export function setupLivePong3D() {
     if (dirPositive) return prevX <= planeX && currX > planeX;
     return prevX >= planeX && currX < planeX;
   }
+      function postMatchIfNeeded(p1Won: boolean) {
+      if (postedResult) return;
+      postedResult = 1;
 
-  function publishTournamentResult(p1Won: boolean) {
-    const result = {
-      finished_at: Date.now(),
-      p1: { id: p1Id, nick: p1Nick, score: p1Score, hits: p1Hits },
-      p2: { id: p2Id, nick: p2Nick, score: p2Score, hits: p2Hits },
-      winner_id: p1Won ? p1Id : p2Id,
-    };
-    sessionStorage.setItem(T_LAST_RESULT_KEY, JSON.stringify(result));
-  }
+      const duration_seconds = Math.max(
+        1,
+        Math.round((Date.now() - matchStartedAt) / 1000)
+      );
 
-  function postMatchIfNeeded(p1Won: boolean) {
-    if (postedResult) return;
-    postedResult = 1;
+      const payload = {
+        player1_id: p1Id,
+        player2_id: p2Id,
+        score_p1: p1Score,
+        score_p2: p2Score,
+        winner_id: p1Won ? p1Id : p2Id,
+        duration_seconds,
+      };
 
-    const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
+      console.log('[match] payload:', payload);
 
-    const p1Saves = Math.max(p2Hits - p1Score, 0);
-    const p2Saves = Math.max(p1Hits - p2Score, 0);
+      try {
+        const sanitized = sanitizeMatch(payload);
+        console.log('[match] sanitized:', sanitized);
 
-    const payload = {
-      player1_id: p1Id,
-      player2_id: p2Id,
-      score_p1: p1Score,
-      score_p2: p2Score,
-      winner_id: p1Won ? p1Id : p2Id,
-      duration_seconds,
-      details: {
-        shots_on_target_p1: p1Hits,
-        shots_on_target_p2: p2Hits,
-        saves_p1: p1Saves,
-        saves_p2: p2Saves,
-      },
-    };
-
-    console.log('[match] 1v1 payload:', payload);
-    try {
-      const sanitized = sanitizeMatch(payload);
-      console.log('[match] Sanitized 1v1:', sanitized);
-      createMatch(sanitized)
-        .then(res => {
-          console.log('[match] 1v1 match created:', res);
-          logTerminal(`${t('log.matchSaved')}`);
-        })
-        .catch(err => {
-          console.error('[match] error 3D 1v1', err);
-          logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
-        });
-    } catch (err) {
-      console.error('[match] validation error', err);
-      logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+        createMatch(sanitized)
+          .then(res => {
+            console.log('[match] created:', res);
+            logTerminal(`${t('log.matchSaved')}`);
+          })
+          .catch(err => {
+            console.error('[match] backend error', err);
+            logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
+          });
+      } catch (err) {
+        console.error('[match] validation error', err);
+        logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
+      }
     }
-
-    if (isTournament) publishTournamentResult(p1Won);
-  }
 
   function scorePoint(byP1: boolean) {
     if (state !== 'PLAYING') return;

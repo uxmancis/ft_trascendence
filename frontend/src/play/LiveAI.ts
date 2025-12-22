@@ -22,7 +22,7 @@ export function setupPong() {
   (canvas as any)._pongAI3dBound = true;
 
   const BOT_USER_ID = 0;
-  const SCORE_TARGET = 5;
+  const SCORE_TARGET = 3;
 
   const rect = canvas.getBoundingClientRect();
   const initialSizePx = { width: Math.round(rect.width), height: Math.round(rect.height) };
@@ -408,47 +408,55 @@ function aiStep() {
     startRally(true, true);
   }
 
-  function postResultIfNeeded(playerWon: boolean) {
-    if (postedResult) return; postedResult = 1;
-    const meNow = getCurrentUser(); 
-    if (!meNow) {
-      console.error('[match] No user logged in');
-      return;
+
+    function postResultIfNeeded(playerWon: boolean) {
+      if (postedResult) return;
+      postedResult = 1;
+
+      const meNow = getCurrentUser();
+      if (!meNow) return;
+
+      const duration_seconds = Math.max(
+        1,
+        Math.round((Date.now() - matchStartedAt) / 1000)
+      );
+
+      const payload = {
+        player1_id: meNow.id,
+        player2_id: BOT_USER_ID,
+
+        score_p1: pScore,
+        score_p2: aScore,
+
+        winner_id: playerWon ? meNow.id : BOT_USER_ID,
+
+        duration_seconds,
+
+        details: {
+          shots_on_target_p1: playerHits,
+          shots_on_target_p2: aiHits,
+          saves_p1: Math.max(aiHits - aScore, 0),
+          saves_p2: Math.max(playerHits - pScore, 0),
+          ai_difficulty: difficulty,
+        },
+      };
+
+      try {
+        const sanitized = sanitizeMatch(payload);
+        createMatch(sanitized)
+          .then(() => {
+            logTerminal(
+              `${t('log.matchSaved')} (${playerWon ? t('log.won') : t('log.lost')})`
+            );
+          })
+          .catch(err => {
+            logTerminal(`${t('log.failedToSave')} ${err?.message ?? err}`);
+          });
+      } catch (err: any) {
+        logTerminal(`${t('log.validationError')} ${err?.message ?? err}`);
+      }
     }
 
-    const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
-    const payload = {
-      player1_id: meNow.id,
-      player2_id: BOT_USER_ID,
-      score_p1: pScore,
-      score_p2: aScore,
-      winner_id: playerWon ? meNow.id : BOT_USER_ID,
-      duration_seconds,
-      details: {
-        shots_on_target_p1: playerHits,
-        shots_on_target_p2: aiHits,
-        saves_p1: Math.max(aiHits - aScore, 0),
-        saves_p2: Math.max(playerHits - pScore, 0),
-      },
-    };
-    console.log('[match] AI payload:', payload);
-    try {
-      const sanitized = sanitizeMatch(payload);
-      console.log('[match] Sanitized:', sanitized);
-      createMatch(sanitized)
-        .then(res => {
-          console.log('[match] AI match created:', res);
-          logTerminal(`${t('log.matchSaved')} (${playerWon ? t('log.won') : t('log.lost')})`);
-        })
-        .catch(err => {
-          console.error('[match] error AI 3D', err);
-          logTerminal(`${t('log.failedToSave')} ${(err as any)?.message || err}`);
-        });
-    } catch (err) {
-      console.error('[match] validation error', err);
-      logTerminal(`${t('log.validationError')} ${(err as any)?.message || err}`);
-    }
-  }
 
   function checkVictory(): boolean {
     if (pScore >= SCORE_TARGET || aScore >= SCORE_TARGET) {

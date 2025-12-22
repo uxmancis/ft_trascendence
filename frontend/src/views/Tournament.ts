@@ -454,26 +454,71 @@ export async function renderTournament(root: HTMLElement) {
         </section>
       `;
 
+      // cleanup handle that will remove listeners/intervals when leaving match
+      let cleanup = () => {};
       const back = () => {
+        // ensure we cleanup listeners/intervals before leaving
+        cleanup();
+        // if user aborts, remove any pending last-result to avoid accidental application
+        try { sessionStorage.removeItem(T_LAST_RESULT_KEY); } catch (err) {}
         sessionStorage.removeItem(T_MODE_KEY);
         sessionStorage.removeItem(T_MATCH_PLAYERS_KEY);
         renderTournament(root);
       };
       document.getElementById('backBtn')?.addEventListener('click', back);
+
       requestAnimationFrame(() => {
         setupTournamentPong();
 
+        // When the match ends we must apply the result to the current TourState (s2)
+        // BEFORE re-rendering so the view continues the bracket (next match/round).
         const onEnd = () => {
-          // 💥 FORZAMOS SALIDA DEL MATCH
-          renderTournament(root);
+          cleanup();
+
+          // Try to read the result and apply directly to the current state (s2).
+          try {
+            const pending = sessionStorage.getItem(T_LAST_RESULT_KEY);
+            if (pending) {
+              const res = JSON.parse(pending);
+              if (s2 && s2.started && typeof res?.winner_id === 'number') {
+                applyMatchResult(s2, res.winner_id);
+              }
+            }
+          } catch (err) {
+            console.error('[Tournament] error applying match result', err);
+          } finally {
+            // remove match keys and render updated bracket
+            try { sessionStorage.removeItem(T_LAST_RESULT_KEY); } catch (e) {}
+            try { sessionStorage.removeItem(T_MODE_KEY); } catch (e) {}
+            try { sessionStorage.removeItem(T_MATCH_PLAYERS_KEY); } catch (e) {}
+            renderTournament(root);
+          }
         };
 
+        // event listener (preferred)
+        const evtHandler = () => onEnd();
+        window.addEventListener('tournament:match:end', evtHandler);
+
+        // polling fallback (in case event missed)
         const stopWatch = setInterval(() => {
           if (sessionStorage.getItem(T_LAST_RESULT_KEY)) {
             clearInterval(stopWatch);
             onEnd();
           }
         }, 100);
+
+        // immediate check (in case result was already stored)
+        if (sessionStorage.getItem(T_LAST_RESULT_KEY)) {
+          clearInterval(stopWatch);
+          onEnd();
+        }
+
+        cleanup = () => {
+          clearInterval(stopWatch);
+          try {
+            window.removeEventListener('tournament:match:end', evtHandler);
+          } catch (err) {}
+        };
       });
 
     };

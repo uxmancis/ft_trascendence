@@ -13,9 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- ======================================
 -- Semillas de usuarios base
 -- ======================================
-INSERT OR IGNORE INTO users (id, nick, avatar) VALUES
-  (0, 'AI Bot', 'https://dummyimage.com/96x96/111827/ffffff&text=AI'),
-  (1, '4v4',    'https://dummyimage.com/96x96/111827/ffffff&text=4v4'),
+INSERT OR IGNORE INTO users (id, nick, avatar) 
+VALUES (0, 'AI Bot', 'https://dummyimage.com/96x96/111827/ffffff&text=AI'), (1, '4v4',    'https://dummyimage.com/96x96/111827/ffffff&text=4v4');
 
 -- ======================================
 -- Tabla: user_stats (SIMPLIFICADA)

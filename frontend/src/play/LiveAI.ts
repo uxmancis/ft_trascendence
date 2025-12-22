@@ -36,21 +36,21 @@ export function setupPong() {
 
   const DIFF = {
     easy: {
-      ballBase: 7.0, ballMax: 14, paddle: 10.0,
+      ballBase: 8.0, ballMax: 14, paddle: 10.0,
       aiMix: 0.8, thinkMs: 1000, reactErr: 20,
       stepMul: 0.85,
       unforcedMiss: 0.2,
       missAfterHits: 3,
     },
     normal: {
-      ballBase: 9, ballMax: 18.0, paddle: 12.0,
+      ballBase: 10, ballMax: 18.0, paddle: 12.0,
       aiMix: 0.95, thinkMs: 1000, reactErr: 15,
       stepMul: 1.0,
       unforcedMiss: 0.1,
       missAfterHits: 10,
     },
     hard: {
-      ballBase: 11.0, ballMax: 22.0, paddle: 14,
+      ballBase: 12.0, ballMax: 22.0, paddle: 14,
       aiMix: 1.00, thinkMs: 1000, reactErr: 10,
       stepMul: 1.15,
       unforcedMiss: 0.05,
@@ -629,6 +629,10 @@ if (aiKeyState.down) {
     }
 
     scene.render();
+    if (location.hash != "#/live/ai") {
+      logTerminal(t('log.matchExiting') +  ' ai 🤖');
+      engine.stopRenderLoop();
+    }
   });
 
   // ===== Resize =====

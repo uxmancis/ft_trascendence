@@ -463,6 +463,10 @@ export function setupLivePong3D() {
     }
 
     scene.render();
+    if (location.hash != "#/live/1v1") {
+    logTerminal(t('log.matchExiting') + ' 1v1');
+    engine.stopRenderLoop();
+  }
   });
 
   // ===== Resize =====
@@ -482,4 +486,17 @@ export function setupLivePong3D() {
   
   const offLang = onLangChange(updateUITexts);
   (canvas as any)._langCleanup = () => offLang();
+
+  /* 'Salir' botón: */
+  document.getElementById('backBtn')?.addEventListener('click', () => {
+      logTerminal(t('log.matchExiting'));
+      engine.stopRenderLoop();
+    });
+
+  /* Explorer > Other games */
+  document.getElementById('threeinrow-left-icon-btn')?.addEventListener('click', () => {
+      logTerminal(t('log.matchExiting'));
+      engine.stopRenderLoop();
+    });
+
 }

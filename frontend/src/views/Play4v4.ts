@@ -1,7 +1,7 @@
 // src/views/Play4v4.ts
 
 import { createUser, sanitizeUser, NewUser } from '../api';
-import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, setLocalP3, setLocalP4, clearLocalP3, clearLocalP4 } from '../session';
+import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, setLocalP3, setLocalP4, clearLocalP2, clearLocalP3, clearLocalP4 } from '../session';
 import { t, bindI18n, onLangChange } from '../i18n/i18n';
 import { navigate } from '../router';
 import { setupLive4v4 } from '../play/Live4v4';
@@ -242,10 +242,10 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
 
       <div class="flex-1 min-h-0 flex flex-col items-center justify-center gap-3">
         <div class="text-sm opacity-90 text-center">
-          <span class="font-semibold">${players[0].nick}</span> = W / S ·
-          <span class="font-semibold">${players[1].nick}</span> = I / K ·
-          <span class="font-semibold">${players[2].nick}</span> = C / V ·
-          <span class="font-semibold">${players[3].nick}</span> = L / Ñ
+          <span class="font-semibold"> P1: ${players[0].nick}</span> = W / S ·
+          <span class="font-semibold"> P2: ${players[1].nick}</span> = I / K ·
+          <span class="font-semibold"> P3: ${players[2].nick}</span> = C / V ·
+          <span class="font-semibold"> P4: ${players[3].nick}</span> = L / Ñ
         </div>
 
         <div class="w-full h-full max-w-6xl max-h-[70vh]">
@@ -262,6 +262,8 @@ function renderLiveTournament(root: HTMLElement, players: { nick: string }[]): v
   document.getElementById('backBtn')?.addEventListener('click', () => 
   {
     // Limpiar P3 y P4 cuando se salga de 4v4
+    logTerminal(t('log.matchExiting'));
+    clearLocalP2();
     clearLocalP3();
     clearLocalP4();
     navigate('#');
@@ -288,6 +290,9 @@ function baseCard(inner: string): string
 
 function youCard(nick: string, id: number, avatar: string): string 
 {
+  clearLocalP3();
+  clearLocalP2();
+  clearLocalP4();
   return baseCard
   (`
     <div class="w-full flex flex-col items-center justify-center">

@@ -167,7 +167,6 @@ function renderLiveMatch(root: HTMLElement): void {
   `;
 
   document.getElementById('backBtn')?.addEventListener('click', () => {
-    logTerminal(t('log.matchExiting'));
     navigate('#');
   });
 
@@ -236,9 +235,10 @@ function waitingCard(): string {
 
 function loginCard(): string {
   return baseCard(`
+    <div class="w-full flex flex-col items-center justify-center">
     <form id="p2-form"
-          class="w-60 bg-white/90 rounded-xl p-4 shadow
-                 flex flex-col gap-2">
+          class="w-full max-w-[280px] bg-white/90 rounded-xl p-5 shadow
+                 flex flex-col gap-3">
       <div class="text-black font-semibold text-center" data-i18n="pvp.player2">${t('pvp.player2')}</div>
       <input id="p2-nick"
              class="px-3 py-2 rounded border text-black"
@@ -251,5 +251,6 @@ function loginCard(): string {
       </button>
       <div id="err" class="text-red-600 text-xs hidden"></div>
     </form>
+        </div>
   `);
 }

@@ -453,6 +453,10 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
     }
 
     scene.render();
+    if (location.hash != "#/live/4v4") {
+    logTerminal(t('log.matchExiting') +  ' 4v4');
+    engine.stopRenderLoop();
+    }
   });
 
   // ===== Resize =====

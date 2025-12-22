@@ -160,7 +160,14 @@ export function setupThreeInRow()
 
   const msg = document.getElementById('message')!;
   const cells = Array.from(document.querySelectorAll<HTMLDivElement>('.cell'));
-
+  function reset() {
+    board.fill(null);
+    cells.forEach(c => c.textContent = '');
+    msg.textContent = '';
+    turn = 'X';
+  }
+  let clickCount = 0;
+  const boardEl = document.getElementById('tic-tac-toe')!;
   cells.forEach((cell, i) => 
   {
     cell.onclick = () => 
@@ -172,7 +179,7 @@ export function setupThreeInRow()
 
       if (checkWin(board, turn)) 
       {
-        msg.textContent = turn === 'X' ? t('threeinrow.xwins') : t('threeinrow.owins');
+        msg.textContent = (turn === 'X' ? t('threeinrow.xwins') : t('threeinrow.owins')) + ' ' +t('threeinrow.clickToReset');
         logTerminal(`🏆 ${turn} ${t('log.threeInRowWin')}!`);
         postThreeInRowResult(turn, board);
         return;
@@ -180,7 +187,7 @@ export function setupThreeInRow()
 
       if (!board.includes(null)) 
       {
-        msg.textContent = t('threeinrow.draw');
+        msg.textContent = t('threeinrow.draw') + ' ' + t('threeinrow.clickToReset');
         logTerminal(`🤗 ${t('log.threeInRowDraw')}!`);
         postThreeInRowResult('draw', board);
         return;
@@ -188,7 +195,17 @@ export function setupThreeInRow()
       turn = turn === 'X' ? 'O' : 'X';
     };
   });
-}
+  boardEl.onclick = () => {
+    if (msg.textContent) {
+      clickCount++;
+      if (clickCount >= 2){
+        clickCount = 0;
+        reset();
+      }
+    }
+  };
+};
+
 
 /* ============================================================
 **  HTML del juego (layout rígido)
@@ -199,6 +216,7 @@ function gameHTML(p1: string, p2: string)
   <section class="mx-auto max-w-6xl p-6 grow space-y-6 text-white">
     <div class="flex justify-between items-center bg-white/10 px-6 py-3 rounded-2xl">
       <span>${p1} = X · ${p2} = O</span>
+      <span class="text-lg font-bold">🕹️ 3x3</span>
       <button id="backBtn" class="bg-red-500 px-4 py-1 rounded hover:bg-red-600" data-i18n="common.exit">${t('common.exit')}</button>
     </div>
 

@@ -134,10 +134,10 @@ export function getIntoIDE(): void {
         </aside>
 
         <!-- MAIN VIEW -->
-        <section class="flex-1 grid grid-rows-[minmax(0,1fr)_200px] min-h-0">
+        <section class="flex-1 grid grid-rows-[minmax(0,1fr)_200px] min-h-0 ">
 
           <!-- EDITOR -->
-          <div class="flex flex-col min-h-0">
+          <div class="overflow-auto flex flex-col min-h-0"> 
 
             <div class="flex h-9 border-b border-gray-400/20">
               <div id="opened-file"
@@ -147,11 +147,7 @@ export function getIntoIDE(): void {
               <div class="flex-1"></div>
             </div>
 
-                  <div
-        id="router-view"
-        class="flex-1 min-h-0 overflow-hidden
-              flex">
-      </div>
+                  <div id="router-view"class="flex-1 min-h-0 overflow-auto flex"></div>
 
           </div>
 

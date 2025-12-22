@@ -51,7 +51,7 @@ export function setupPong() {
     },
     hard: {
       ballBase: 12.0, ballMax: 22.0, paddle: 14,
-      aiMix: 1.00, thinkMs: 1000, reactErr: 10,
+      aiMix: 1.00, thinkMs: 500, reactErr: 10,
       stepMul: 1.15,
       unforcedMiss: 0.05,
       missAfterHits: 99,

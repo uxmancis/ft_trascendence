@@ -2,7 +2,7 @@
 import { createUser, sanitizeUser } from '../api';
 import { getCurrentUser, getTournamentPlayers, setTournamentPlayers, clearTournamentPlayers, getTempState, setTempState, clearTempState } from '../session';
 import { t, bindI18n, onLangChange } from '../i18n/i18n';
-import { setupTournamentPong } from '../play/LiveTournament';
+import { setupTournamentPong3D } from '../play/LiveTournament';
 import { logTerminal } from '../components/IDEComponets/Terminal';
 
 type SessionUser = { id: number; nick: string; avatar?: string };
@@ -25,7 +25,10 @@ type TourState = {
   currentIndex: number;
   winners: SessionUser[];
   started: boolean;
+  finished?: boolean;   // 👈 NUEVO
+  champion?: SessionUser; // 👈 NUEVO
 };
+
 
 function saveState(s: TourState) {
   setTempState(STATE_KEY, s, 60 * 60 * 1000); // 1 hora timeout
@@ -75,8 +78,10 @@ function applyByeAdvance(s: TourState, byeWinner: SessionUser) {
   s.winners.push(byeWinner);
   s.currentIndex++;
   if (s.currentIndex >= s.queue.length) {
-    if (s.winners.length <= 1) {
-      s.started = false;
+    if (s.winners.length === 1) {
+        s.finished = true;
+        s.champion = s.winners[0];
+        s.started = false;
     } else {
       s.round++;
       s.queue = makeRound(s.winners);
@@ -101,9 +106,11 @@ function applyMatchResult(s: TourState, winnerId: number) {
   s.currentIndex++;
 
   if (s.currentIndex >= s.queue.length) {
-    if (s.winners.length <= 1) {
+    if (s.winners.length === 1) {
+        s.finished = true;
+        s.champion = s.winners[0];
       s.started = false;
-    } else {
+  } else {
       s.round++;
       s.queue = makeRound(s.winners);
       s.currentIndex = 0;
@@ -468,7 +475,7 @@ export async function renderTournament(root: HTMLElement) {
       document.getElementById('backBtn')?.addEventListener('click', back);
 
       requestAnimationFrame(() => {
-        setupTournamentPong();
+        setupTournamentPong3D();
 
         // When the match ends we must apply the result to the current TourState (s2)
         // BEFORE re-rendering so the view continues the bracket (next match/round).

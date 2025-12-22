@@ -333,9 +333,9 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       const names = { p1: p1Nick, p2: p2Nick, p3: p3Nick, p4: p4Nick };
       logTerminal(`${t('log.victory')} ${names[winner]} - [${scores.p1}-${scores.p2}-${scores.p3}-${scores.p4}]`);
 
-      const didUserWin = winner === 'p1';
-
-      if (!postedResult && user && p2info) {
+      
+      if (!postedResult && user) {
+        const winnerUserId = winner === 'p1' ? user.id : 1;
         postedResult = 1;
         const duration_seconds = Math.max(1, Math.round((Date.now() - matchStartedAt) / 1000));
         const payload = {
@@ -343,7 +343,7 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
           player2_id: 1,
           score_p1: scores.p1,
           score_p2: Math.max(scores.p2, scores.p3, scores.p4),
-          winner_id: didUserWin ? user.id : 1,
+          winner_id: winnerUserId,
           duration_seconds,
         };
         console.log('[match] 4v4 payload:', payload);
@@ -404,10 +404,10 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       
       // Lado IZQUIERDO (P1)
       if (ball.position.x - ballR < bounds.left) {
-        if (lastPlayerHit) {
-          // Alguien golpeó la bola → ANOTAR GOL
-          scorePoint(lastPlayerHit);
-        } else {
+         if (lastPlayerHit && lastPlayerHit !== 'p1') {
+            scorePoint(lastPlayerHit);
+        } 
+        else {
           // Nadie la tocó → REBOTE
           ball.position.x = bounds.left + ballR;
           ballVel.x *= -wallFriction;
@@ -416,19 +416,18 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       
       // Lado DERECHO (P2)
       else if (ball.position.x + ballR > bounds.right) {
-        if (lastPlayerHit) {
+         if (lastPlayerHit && lastPlayerHit !== 'p2') {
           scorePoint(lastPlayerHit);
         } else {
           ball.position.x = bounds.right - ballR;
           ballVel.x *= -wallFriction;
         }
       }
-      
       // Lado ARRIBA (P3)
       if (ball.position.z - ballR < bounds.top) {
-        if (lastPlayerHit) {
-          scorePoint(lastPlayerHit);
-        } else {
+         if (lastPlayerHit && lastPlayerHit !== 'p3') {
+            scorePoint(lastPlayerHit);
+          } else {
           ball.position.z = bounds.top + ballR;
           ballVel.z *= -wallFriction;
         }
@@ -436,8 +435,8 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       
       // Lado ABAJO (P4)
       else if (ball.position.z + ballR > bounds.bottom) {
-        if (lastPlayerHit) {
-          scorePoint(lastPlayerHit);
+        if (lastPlayerHit && lastPlayerHit !== 'p4') {
+            scorePoint(lastPlayerHit);
         } else {
           ball.position.z = bounds.bottom - ballR;
           ballVel.z *= -wallFriction;

@@ -167,7 +167,7 @@ export function setupLivePong3D() {
   const hint = new TextBlock('hint', '[ CLICK TO START — ENTERS FULLSCREEN ]'); hint.color = 'white'; hint.fontSize = 22; hint.top = '40%'; gui.addControl(hint);
 
   // ===== Game state & stats =====
-  const WIN_POINTS = 5;
+  const WIN_POINTS = 3;
   let state: GameState = 'READY';
   let p1Score = 0, p2Score = 0;
   let matchStartedAt = 0;

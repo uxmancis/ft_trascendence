@@ -13,7 +13,7 @@ import { renderPlay1v1 } from './views/Play1v1';
 import { setupLivePong3D } from './play//Live1v1';
 import { setupPong } from './play/LiveAI';
 import { renderTournament } from './views/Tournament';
-import { setupTournamentPong } from './play/LiveTournament';
+import { setupTournamentPong3D } from './play/LiveTournament';
 import { setupThreeInRow, renderPlayThreeInRow } from './views/threeinrow';
 import { renderPlay4v4 } from './views/Play4v4';
 import { setupLive4v4 } from './play/Live4v4';
@@ -65,7 +65,7 @@ function bootRoutes() {
   register('#/live/threeinrow', wrap(setupThreeInRow));
   register('#/play/threeinrow', wrap(renderPlayThreeInRow));
   register('#/play/tournament', wrap(renderTournament));
-  register('#/game/live',       wrap(setupTournamentPong));
+  register('#/game/live',       wrap(setupTournamentPong3D));
   register('#/play/4v4',        wrap(renderPlay4v4));
   register('#/live/4v4',        wrap(setupLive4v4));
 

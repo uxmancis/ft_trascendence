@@ -339,55 +339,40 @@ export async function renderStats(root: HTMLElement)
     </div>
   `;
 
-  /* ================= ACCURACY ================= */
+    /* ================= ACCURACY (SIMPLIFIED) ================= */
 
-  const shots = stats.shots_on_target;
-  const goals = stats.goals_scored;
-  const accuracy = shots > 0 ? goals / shots : 0;
-  const saves = stats.saves;
-  const goalsAgainst = stats.goals_received;
-  const saveRate = (saves + goalsAgainst) > 0 ? saves / (saves + goalsAgainst) : 0;
+  const goalsFor = d.gf;
+  const goalsAgainst = d.ga;
+  const totalGoals = goalsFor + goalsAgainst;
+  const precision = totalGoals > 0 ? goalsFor / totalGoals : 0;
 
   elAccuracy.innerHTML = `
-    <h2 class="font-semibold text-sm mb-2" data-i18n="stats.precision">${t('stats.precision') || 'Performance'}</h2>
-    <div class="space-y-3 text-xs h-[calc(100%-1.5rem)] flex flex-col justify-center">
+    <h2 class="font-semibold text-sm mb-2" data-i18n="stats.precision">
+      ${t('stats.precision')}
+    </h2>
+
+    <div class="space-y-2 text-xs h-[calc(100%-1.5rem)] flex flex-col justify-center">
       
-      <!-- Shooting -->
-      <div class="space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="opacity-80">${t('stats.shooting')}</span>
-          <span class="font-bold text-blue-400">${fmtPct(accuracy)}</span>
-        </div>
-        <div class="h-2 bg-black/30 rounded-full overflow-hidden">
-          <div class="h-full bg-blue-400 transition-all" style="width: ${accuracy * 100}%"></div>
-        </div>
-        <div class="text-xs opacity-60">${t('stats.goalsText', { goals, shots })}</div>
-      </div>
-
-      <!-- Defense -->
-      <div class="space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="opacity-80">${t('stats.defense')}</span>
-          <span class="font-bold text-red-400">${fmtPct(saveRate)}</span>
-        </div>
-        <div class="h-2 bg-black/30 rounded-full overflow-hidden">
-          <div class="h-full bg-red-400 transition-all" style="width: ${saveRate * 100}%"></div>
-        </div>
-        <div class="text-xs opacity-60">${t('stats.savesText', { saves, attempts: saves + goalsAgainst })}</div>
-      </div>
-
-      <!-- Goals -->
-      <div class="flex items-center justify-between bg-black/20 rounded p-2">
+      <div class="flex items-center justify-between">
         <span class="opacity-80">${t('stats.goals')}</span>
-        <div class="flex gap-3">
-          <span class="text-emerald-400 font-bold">${stats.goals_scored}</span>
-          <span class="opacity-40">-</span>
-          <span class="text-rose-400 font-bold">${stats.goals_received}</span>
+        <span class="font-mono font-bold text-yellow-300">
+          ${goalsFor} / ${goalsAgainst}
+        </span>
+      </div>
+
+      <div class="h-2 bg-black/30 rounded-full overflow-hidden">
+        <div
+          class="h-full bg-yellow-400 transition-all"
+          style="width: ${precision * 100}%">
         </div>
       </div>
 
+      <div class="text-right text-xs opacity-60">
+        ${fmtPct(precision)}
+      </div>
     </div>
   `;
+
 
   /* ================= STREAKS ================= */
 

@@ -1,9 +1,143 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
+/* ================= FONT ================= */
+:root {
+  --font-inter: 'Inter', ui-sans-serif, system-ui;
+}
+.font-inter {
+  font-family: var(--font-inter);
+}
 
-.nombre{
-    
+/* ================= A11Y BASE ================= */
+@layer base {
+  /* Escala global (1 = 16px) */
+  html {
+    font-size: calc(16px * var(--ts, 1));
+  }
 
+  /* ================= HIGH CONTRAST (SAFE) ================= */
+  /* NO pisa el fondo del tema */
+  html.hc body {
+    color: #ffffff;
+  }
+
+  /* Refuerzos visuales */
+  html.hc {
+    filter: contrast(1.25) saturate(1.15);
+  }
+
+  /* Bordes y overlays más visibles */
+  html.hc .border-white\/10 {
+    border-color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  html.hc .ring-white\/10 {
+    --tw-ring-color: rgba(255, 255, 255, 0.55) !important;
+  }
+
+  html.hc .bg-white\/10 {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
+
+  html.hc .text-white\/80 {
+    color: rgba(255, 255, 255, 0.98) !important;
+  }
+
+  /* Oscurece paneles SIN matar el theme */
+  html.hc .bg-neutral-900 {
+    background-color: rgba(0, 0, 0, 0.85) !important;
+  }
+
+  html.hc .bg-neutral-800 {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+  }
+
+  /* Focus claro y consistente */
+  :focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+  }
+
+  html.hc :focus-visible {
+    outline-color: #ffffff;
+  }
+}
+
+/* ================= UTILITIES ================= */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ================= THEMES ================= */
+@layer base {
+  /* CLASSIC */
+  html[data-theme="classic"] body {
+    background: radial-gradient(
+      1200px 800px at 20% -10%,
+      #1e293b 0%,
+      #0b1220 60%,
+      #0a0f19 100%
+    );
+  }
+
+  /* NEON */
+  html[data-theme="neon"] body {
+    background:
+      radial-gradient(1200px 800px at 20% -10%, #0f172a 0%, #0a0f19 50%),
+      linear-gradient(135deg, #22c55e55, #06b6d455);
+    background-blend-mode: overlay;
+  }
+
+  /* NEON + HC (NO BLACKOUT) */
+  html.hc[data-theme="neon"] body {
+    filter: saturate(1.15) contrast(1.2);
+  }
+
+  /* VAPOR */
+  html[data-theme="vapor"] body {
+    background:
+      linear-gradient(135deg, #ff7ab633, #8b5cf633),
+      radial-gradient(1000px 700px at 80% 10%, #0b1220 0%, #090f1a 60%);
+    background-blend-mode: screen;
+  }
+
+  /* EARTH */
+  html[data-theme="earth"] body {
+    background: linear-gradient(160deg, #14532d 0%, #0b2816 60%, #08130b 100%);
+  }
+
+  /* SPACE */
+  html[data-theme="space"] body {
+    background:
+      radial-gradient(1000px 700px at 70% -10%, #0ea5e944, transparent 70%),
+      radial-gradient(800px 600px at 20% 120%, #312e8180, transparent 60%),
+      #0a0f19;
+  }
+
+  /* MATRIX */
+  html[data-theme="matrix"] body {
+    background: linear-gradient(180deg, #052e16, #0a0f19 70%);
+  }
+
+  /* VS CODE DARK (NUEVO) */
+  html[data-theme="vscode"] body {
+    background: linear-gradient(
+      180deg,
+      #1e1e1e 0%,
+      #181818 100%
+    );
+  }
+}
+
+/* ================= COMPONENTS ================= */
+@layer components {
+  #unified-control-panel {
+    backdrop-filter: blur(10px);
+  }
 }

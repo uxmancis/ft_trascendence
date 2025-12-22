@@ -1,27 +1,48 @@
 services:
+  # =========================
+  # 🧱 SQLite (one-shot init)
+  # =========================
   database:
     build: ./database
-    user: "1000:1000"     # run rootless
     volumes:
-      - db_data:/data
-    restart: unless-stopped
+      - ./database/data:/data
 
+  # =========================
+  # ⚙️ Backend API
+  # =========================
   backend:
     build: ./backend
-    user: "1000:1000"
     depends_on:
-      - database
+      database:
+        condition: service_completed_successfully
     volumes:
-      - db_data:/data
+      - ./backend:/app
+      - /app/node_modules
+      - ./database/data:/data
     ports:
       - "3000:3000"
 
+  # =========================
+  # 🎨 Frontend (Vite dev)
+  # =========================
   frontend:
     build: ./frontend
-    ports:
-      - "8080:80"
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    expose:
+      - "5173"
 
-volumes:
-  db_data:
+  # =========================
+  # 🌐 Nginx (HTTPS + HMR)
+  # =========================
+  nginx:
+    build: ./nginx
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "8080:80"
+      - "8443:443"

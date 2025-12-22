@@ -1,77 +1,40 @@
-<!DOCTYPE html> <!-- This line should always be included. Thanks to it, 100% browsers will understand this is HTML5.-->
-<html lang="en">
-
-  <!-- HEAD: Settings: title, styles, scripts, etc. -->
+<!doctype html>
+<html lang="es">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pong</title>
-    <link rel="stylesheet" href="/src/styles.css" />
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0f19" />
+    <meta name="description" content="FT_TRANSCENDENCE • PONG Game SPA" />
+    <meta name="robots" content="noindex,nofollow" />
+
+    <title>PONG • FT_TRANSCENDENCE</title>
+    <!-- Favicons (opcional: coloca tus iconos en /public) -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Audiowide&display=swap" rel="stylesheet">
+    <link rel="icon" href="/favicon.ico" />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Tailwind se inyecta vía src/styles.css -->
   </head>
-
-
-  <!-- BODY: everything user sees in screen goes here 
-   
-            · Text: <p>, <h1>, <h2>, ... E.g.: <h1>Hola!</h1>
-            · Images: <img>
-            · Buttons: <button>
-            · Container boxes: <div> DIV: Short for division = empty box, a container element.
-            · Scripts (code): <script>
-            · Links: <a href= "...">
-            (...)
-  -->
-  <body class="bg-gray-100 text-gray-800">
-    <!--DIV: 
-      id: "app" displays our web
-      class="" is Tailwind CSS 
-      -->
-    <div 
-      id="app"
-      class="min-h-screen flex flex-col">
+  <body class="min-h-screen bg-slate-900 text-slate-100 antialiased">
+    <!-- Contenedor de la SPA -->
+    <div id="app" class="min-h-screen flex flex-col">
+      <!-- Splash mínimo mientras carga JS -->
+      <div class="flex-1 grid place-items-center p-6">
+        <div class="animate-pulse text-center">
+          <div class="text-2xl font-bold mb-2">Cargando PONG…</div>
+          <div class="h-1 w-40 bg-white/20 rounded overflow-hidden">
+            <div class="h-full w-1/3 bg-white/60 animate-[pulse_1.2s_ease-in-out_infinite]"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-
-    <!-- SCRIPT: The code we want to execute
-      type="module": modules, so that we can use IMPORT and EXPORT to call functions from other files - this is modern JavaScript.
-      src: PATH to the TypeScript (.ts) file code we want to execute.
-      -->
-    <script 
-      type="module" 
-      src="/src/main.ts"> 
-    </script> 
-
-
+    <noscript>
+      Habilita JavaScript para usar esta aplicación.
+    </noscript>
+    <!-- Punto de entrada Vite -->
+    <script type="module" src="/src/main.ts"></script>
   </body>
-
 </html>
-
-
-
-<!-- SPA: 
-      Our web app is SPA (Single Page Application), which means there is only this .html page
-      In traditional HTML each page has their own .html file.
-      -->
-
-
-<!-- WEB Evolution:
-      1990s: first webs were born with HTML (Hyper Text Markup Language).
-            Webs were static documents (text, images, links). No colors, no logic, no interactivity.
-            
-      Mid-1990s: CSS (Cascading Style Sheets) and Javascript (added behaviour: animations, logic, clicks) came.
-                Thanks to <div> and <script> in HTML.
-
-      Modern web development:
-                · Today modern websites still need HTML, but it's used only the essential part.
-                · HTML is now mostly a small "container" where JavaScript builds and updates everything dinamically.
-      
-                Today:
-                  > HTML = 🦴Skeleton : Structure & meaning of content
-                  > CSS = 🎨Skin & clothes: Appearance
-                  > JavaScript = 🧠Brain: Behavior & logic
-
-      🌟 W3C (World Wide Web Consortium) organization defines web standards:
-                  > HTML is the universal protocol for web's content.
-                  > Every page, no matter if it's build with React, Angular, Python, or PHP, in the end,
-                  turns into HTML before reaching your browser.
-                -->
-

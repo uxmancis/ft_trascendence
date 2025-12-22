@@ -1,35 +1,37 @@
-/* router.ts decides which is the page that is shown */
+import { logTerminal } from './components/IDEComponets/Terminal';
+import { t } from './i18n/i18n';
 
-import { renderHomePage } from "./pages/home";
-import { setupPong } from "./pages/pong";
-import { ChooseGamePage } from "./pages/choose_game";
+export type RouteHandler = () => Promise<void> | void;
 
-export function routeTo(path: string) 
-{
-  /* Finds <div id = "app>" */
-  const root = document.getElementById("app")!;
-  root.innerHTML = "";
+const routes: Record<string, RouteHandler> = {};
+let currentHandler: RouteHandler | null = null;
 
-  switch (path) 
-  {
-    case "/": /* Home */
-      renderHomePage(root);
-      break;
-    case "/pong":
-      root.innerHTML = `<canvas id="pong-canvas" width="800" height="500"></canvas>`;
-      setupPong();
-      break;
-    case "/choose_game":
-      ChooseGamePage(root);
-      break;
-    default:
-      root.innerHTML = `<h1 class="text-center text-red-500 mt-20">404 Not Found</h1>`;
-  }
+export function register(path: string, handler: RouteHandler){ routes[path] = handler; }
+
+export function getPath() {
+  const h = location.hash || '#/';
+  const [path] = h.split('?');
+  return path;
 }
 
-/* About routeTo:
-*
-*   - Parameter (path: string)
-*       Home page: "/"
-*   
-* */
+export function getCurrentHandler(): RouteHandler | null {
+  return currentHandler;
+}
+
+export function navigate(path: string){ 
+  if (getPath() !== path){ 
+    location.hash = path; 
+  } 
+}
+
+export function startRouter() {
+  const run = async () => {
+    const path = getPath();
+    const handler = routes[path] || routes['#/404'];
+    currentHandler = handler;
+    logTerminal(`${t('log.route')}: ${path}`);
+    await handler?.();
+  };
+  addEventListener('hashchange', run);
+  run();
+}

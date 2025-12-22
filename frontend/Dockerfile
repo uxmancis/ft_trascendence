@@ -1,12 +1,21 @@
-FROM node:20-alpine as build
+# ======================================
+# Frontend (Vite + TS + Tailwind)
+# Hot reload permanente
+# Build disponible para corrección
+# ======================================
+FROM node:20-alpine
 
 WORKDIR /app
-COPY package*.json ./
+
+# Dependencias (cache-friendly)
+COPY package.json package-lock.json* ./
 RUN npm install
-COPY . .
-RUN npm run build
 
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
+# Código fuente (fallback, el volume manda)
+COPY tsconfig.json vite.config.ts tailwind.config.cjs postcss.config.cjs index.html ./
+COPY src ./src
 
+EXPOSE 5173
+
+# Hot reload siempre activo
+CMD ["npm", "run", "dev"]

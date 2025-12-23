@@ -243,7 +243,7 @@ export const dict: Record<Lang, Record<string, string>> = {
     'terminal.initialized': 'Terminal inicializado',
     'explorer.instructions': 'instrucciones.txt',
     'explorer.play': 'Jugar',
-    'instructions.subtitle': 'IDE virtual inspirado en VSCode.<br>Múltiples modos de juego Pong en una sola interfaz.',
+    'instructions.subtitle': 'IDE virtual inspirado en VSCode. Múltiples modos de juego Pong en una sola interfaz.',
     'instructions.aiGame': '• Juego vs IA',
     'instructions.oneVsOne': '• 1 vs 1 local',
     'instructions.tournament': '• Modo torneo',

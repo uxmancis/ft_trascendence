@@ -37,21 +37,21 @@ export function setupPong() {
   const DIFF = {
     easy: {
       ballBase: 8.0, ballMax: 14, paddle: 10.0,
-      aiMix: 0.8, thinkMs: 1000, reactErr: 20,
+      aiMix: 0.8, thinkMs: 1000,
       stepMul: 0.85,
       unforcedMiss: 0.2,
-      missAfterHits: 3,
+      missAfterHits: 15,
     },
     normal: {
       ballBase: 10, ballMax: 18.0, paddle: 12.0,
-      aiMix: 0.95, thinkMs: 1000, reactErr: 15,
+      aiMix: 0.95, thinkMs: 700,
       stepMul: 1.0,
       unforcedMiss: 0.1,
-      missAfterHits: 10,
+      missAfterHits: 25,
     },
     hard: {
       ballBase: 12.0, ballMax: 22.0, paddle: 14,
-      aiMix: 1.00, thinkMs: 500, reactErr: 10,
+      aiMix: 1.00, thinkMs: 400,
       stepMul: 1.15,
       unforcedMiss: 0.05,
       missAfterHits: 99,
@@ -100,6 +100,7 @@ export function setupPong() {
      const next = cur === 'A' ? COLOR_B : COLOR_A;
      scene.clearColor = next;
      scene._currentClearColor = next;
+     logTerminal(`Map color changed to ${cur === 'A' ? "BACK" : "DARK VIOLET"}`);
      scene.render();
   }
 
@@ -238,8 +239,9 @@ export function setupPong() {
     deadzone: 0.2,
   };
 
-  function clampZ(z: number) {
-    return Math.min(bounds.bottom - paddleH / 2, Math.max(bounds.top + paddleH / 2, z));
+  function clampZ(z: number, paddle: BABYLON.Mesh) {
+    const hz = (paddleH * paddle.scaling.z) / 2;
+    return Math.min(bounds.bottom - hz, Math.max(bounds.top + hz, z));
   }
 
   function predictTargetZ(): number | null {
@@ -267,7 +269,7 @@ export function setupPong() {
     if (rel <= range) finalZ = wallBottom + rel;
     else finalZ = wallTop - (rel - range);
 
-    return clampZ(finalZ);
+    return clampZ(finalZ, ai);
   }
 
 function pickRandomIdleDir() {
@@ -309,7 +311,10 @@ function aiStep() {
     if (!leftSide && ballVel.x <= 0) return false;
 
     const px = paddle.position.x, pz = paddle.position.z;
-    const hx = paddleW / 2, hz = paddleH / 2;
+    const hx = paddleW / 2;
+    let hz = paddleH / 2;
+    if (paddle === ai)
+      hz = (paddleH * paddle.scaling.z) / 2;
     const targetX = px + (leftSide ? (hx + ballR) : -(hx + ballR));
     if (leftSide && ball.position.x > targetX + 0.2) return false;
     if (!leftSide && ball.position.x < targetX - 0.2) return false;
@@ -327,10 +332,10 @@ function aiStep() {
 
     if (penX <= penZ) {
       nx = (ball.position.x < px) ? -1 : 1; nz = 0;
-      ball.position.x = px + (nx * (hx + ballR + 0.01));
+      ball.position.x = px + (nx * (hx + ballR));
     } else {
       nz = (ball.position.z < pz) ? -1 : 1; nx = 0;
-      ball.position.z = pz + (nz * (hz + ballR + 0.01));
+      ball.position.z = pz + (nz * (hz + ballR));
     }
 
     const relZ = (ball.position.z - pz) / (paddleH / 2);
@@ -342,16 +347,17 @@ function aiStep() {
     const n = new BABYLON.Vector3(nx, 0, nz).add(new BABYLON.Vector3(0, 0, aimZ + infZ)).normalize();
     ballVel = reflect(ballVel, n);
 
-
+    // Force a maximum lateral component so hits are more horizontal and avoid long multi-rebound scenarios.
     const speed = ballVel.length();
-    const MIN_Z = 0.4;
-    if (Math.abs(ballVel.z / speed) < MIN_Z) {
-        ballVel.z = MIN_Z * Math.sign(ballVel.z || 1);
-        ballVel.x = Math.sqrt(speed * speed - ballVel.z * ballVel.z) * Math.sign(ballVel.x);
+    const MAX_Z_RATIO = 0.45; // 0..1, lower => more horizontal. Ajusta según prefieras.
+    const maxZ = MAX_Z_RATIO * speed;
+    if (Math.abs(ballVel.z) > maxZ) {
+      ballVel.z = Math.sign(ballVel.z) * maxZ;
+      ballVel.x = Math.sign(ballVel.x) * Math.sqrt(Math.max(0, speed * speed - ballVel.z * ballVel.z));
     }
 
-    ballVel = ballVel.normalize().scale(Math.min(speed + 0.5, ballMaxSpeed));
-
+    ballVel = ballVel.normalize().scale(Math.min(speed + 1, ballMaxSpeed));
+    
     collideCooldown = 0.05;
     rallyHits += 1;
     return true;
@@ -414,7 +420,9 @@ function aiStep() {
       postedResult = 1;
 
       const meNow = getCurrentUser();
-      if (!meNow) return;
+      if (!meNow){
+        console.error('[match] No user logged in');        
+        return;}
 
       const duration_seconds = Math.max(
         1,
@@ -440,7 +448,7 @@ function aiStep() {
           ai_difficulty: difficulty,
         },
       };
-
+      console.log('[match] AI payload:', payload);
       try {
         const sanitized = sanitizeMatch(payload);
         createMatch(sanitized)
@@ -580,8 +588,8 @@ function aiStep() {
     if (collideCooldown > 0) collideCooldown = Math.max(0, collideCooldown - dt);
 
     if (state === 'PLAYING') {
-      if (keys.s) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt);
-      if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt);
+      if (keys.s) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt, p1);
+      if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt, p1);
 
       const now = performance.now();
 
@@ -599,10 +607,10 @@ function aiStep() {
       }
 
 if (aiKeyState.up) {
-  ai.position.z = clampZ(ai.position.z + paddleSpeed * dt);
+  ai.position.z = clampZ(ai.position.z + paddleSpeed * dt, ai);
 }
 if (aiKeyState.down) {
-  ai.position.z = clampZ(ai.position.z - paddleSpeed * dt);
+  ai.position.z = clampZ(ai.position.z - paddleSpeed * dt, ai);
 }
 
       const speed = ballVel.length();

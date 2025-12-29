@@ -36,25 +36,22 @@ export function setupPong() {
 
   const DIFF = {
     easy: {
-      ballBase: 8.0, ballMax: 14, paddle: 10.0,
-      aiMix: 0.8, thinkMs: 1000,
-      stepMul: 0.85,
-      unforcedMiss: 0.2,
-      missAfterHits: 15,
+      ballBase: 8.0, 
+      ballMax: 14, 
+      paddle: 10.0,
+      thinkMs: 1000,
     },
     normal: {
-      ballBase: 10, ballMax: 18.0, paddle: 12.0,
-      aiMix: 0.95, thinkMs: 700,
-      stepMul: 1.0,
-      unforcedMiss: 0.1,
-      missAfterHits: 25,
+      ballBase: 10, 
+      ballMax: 20.0, 
+      paddle: 12.0,
+      thinkMs: 750,
     },
     hard: {
-      ballBase: 12.0, ballMax: 22.0, paddle: 14,
-      aiMix: 1.00, thinkMs: 400,
-      stepMul: 1.15,
-      unforcedMiss: 0.05,
-      missAfterHits: 99,
+      ballBase: 12.0, 
+      ballMax: 30.0, 
+      paddle: 14,
+      thinkMs: 500,
     },
   }[difficulty];
 
@@ -100,7 +97,7 @@ export function setupPong() {
      const next = cur === 'A' ? COLOR_B : COLOR_A;
      scene.clearColor = next;
      scene._currentClearColor = next;
-     logTerminal(`Map color changed to ${cur === 'A' ? "BACK" : "DARK VIOLET"}`);
+     logTerminal(`Map color changed to ${cur === 'A' ? "DARK VIOLET" : "BLACK"}`);
      scene.render();
   }
 
@@ -234,7 +231,7 @@ export function setupPong() {
   let collideCooldown = 0;
   
   const AI_CTL = {
-    maxSpeed: paddleSpeed * DIFF.stepMul,
+    maxSpeed: paddleSpeed,
     homeZ: 0,
     deadzone: 0.2,
   };
@@ -348,15 +345,21 @@ function aiStep() {
     ballVel = reflect(ballVel, n);
 
     // Force a maximum lateral component so hits are more horizontal and avoid long multi-rebound scenarios.
-    const speed = ballVel.length();
+    let speed = ballVel.length();
     const MAX_Z_RATIO = 0.45; // 0..1, lower => more horizontal. Ajusta según prefieras.
     const maxZ = MAX_Z_RATIO * speed;
     if (Math.abs(ballVel.z) > maxZ) {
       ballVel.z = Math.sign(ballVel.z) * maxZ;
       ballVel.x = Math.sign(ballVel.x) * Math.sqrt(Math.max(0, speed * speed - ballVel.z * ballVel.z));
     }
-
-    ballVel = ballVel.normalize().scale(Math.min(speed + 1, ballMaxSpeed));
+    speed = speed + 1.0;
+    if (speed >= ballMaxSpeed) {
+      if (speed === ballMaxSpeed) {
+        logTerminal(`🔥 BALL MAX SPEED!`);
+      }
+      speed = ballMaxSpeed;
+    }
+    ballVel = ballVel.normalize().scale(Math.min(speed, ballMaxSpeed));
     
     collideCooldown = 0.05;
     rallyHits += 1;
@@ -389,8 +392,6 @@ function aiStep() {
     if (Math.random() < 0.5) angleDeg += 180;
     const angle = angleDeg * Math.PI / 180;
     const speed = initial ? ballBaseSpeed : Math.min(ballBaseSpeed + 1.0, ballMaxSpeed);
-    if (speed == ballMaxSpeed)
-      logTerminal(`🔥 BALL MAX SPEED!`);
     ballVel.set(Math.cos(angle) * speed, 0, Math.sin(angle) * speed);
     collideCooldown = 0;
     rallyHits = 0;
@@ -499,7 +500,7 @@ function aiStep() {
      logTerminal(`🤖 1min of AI POWER UP!`);
      setTimeout(() => {
         ai.scaling.z = aiOriginalHeight;
-     }, 600000);
+     }, 60000);
   }
 
   function scorePoint(byPlayer: boolean) {
@@ -527,7 +528,7 @@ function aiStep() {
   }
 
   // ===== Input =====
-  const keys: Record<string, boolean> = { w: false, s: false, ArrowUp: false, ArrowDown: false };
+  const keys: Record<string, boolean> = { w: false, s: false, W: false, S: false, ArrowUp: false, ArrowDown: false };
   
     // === AI keyboard simulation helpers ===
   function dispatchKeyDown(key: string) {
@@ -589,7 +590,9 @@ function aiStep() {
 
     if (state === 'PLAYING') {
       if (keys.s) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt, p1);
+      if (keys.S) p1.position.z = clampZ(p1.position.z - paddleSpeed * dt, p1);
       if (keys.w) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt, p1);
+      if (keys.W) p1.position.z = clampZ(p1.position.z + paddleSpeed * dt, p1);
 
       const now = performance.now();
 

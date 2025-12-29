@@ -85,7 +85,7 @@ export function getIntoIDE(): void {
           <button
             id="search-left-icon-btn"
             class="mb-10 hover:brightness-150 transition text-white/60 hover:text-white/90 text-2xl font-light"
-            title="Search">
+            title="h">
             ⌕
           </button>
 

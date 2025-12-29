@@ -71,7 +71,7 @@ export const createMatch = async (req, reply) => {
   // Validación de usuarios
   // ----------------------------
   if (!(await userExists(player1_id))) {
-    return reply.status(400).send({ error: 'Player 1 does not exist' });
+    return reply.status(400).send({ error: 'Pslayer 1 does not exist, log out and then log back in.' });
   }
 
   if (!(await userExists(player2_id))) {

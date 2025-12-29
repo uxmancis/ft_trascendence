@@ -177,7 +177,7 @@ export function setupLivePong3D() {
   // ===== Física =====
   const paddleSpeed = 13;
   const ballBaseSpeed = 10.0;
-  const ballMaxSpeed = 16.5;
+  const ballMaxSpeed = 30;
   const wallFriction = 0.98;
 
   let ballVel = new BABYLON.Vector3(ballBaseSpeed, 0, ballBaseSpeed * 0.6);
@@ -241,7 +241,13 @@ export function setupLivePong3D() {
     ball.position.set(0, 0.6, 0);
     const dirX = Math.random() < 0.5 ? -1 : 1;
     const dirZ = Math.random() < 0.5 ? 1 : -1;
-    const speed = initial ? ballBaseSpeed : Math.min(ballBaseSpeed + 1.2, ballMaxSpeed);
+    let speed = initial ? ballBaseSpeed : Math.min(ballBaseSpeed + 1, ballMaxSpeed);
+    speed = speed + 1;
+    if (speed >= ballMaxSpeed){
+      if (speed == ballMaxSpeed)
+        logTerminal(`🔥 BALL MAX SPEED!`);
+      speed = ballMaxSpeed;
+    }
     ballVel.set(dirX * speed, 0, dirZ * speed * 0.7);
     collideCooldown = 0;
   }
@@ -313,6 +319,15 @@ export function setupLivePong3D() {
 
     const n = new BABYLON.Vector3(nx, 0, nz).add(new BABYLON.Vector3(0, 0, aimZ + infZ)).normalize();
     ballVel = reflect(ballVel, n);
+
+    const beforeSpeed = ballVel.length();
+    const MAX_Z_RATIO = 0.45; // ajustar si quieres más o menos horizontalidad
+    const maxZ = MAX_Z_RATIO * beforeSpeed;
+    if (Math.abs(ballVel.z) > maxZ) {
+      ballVel.z = Math.sign(ballVel.z) * maxZ;
+      ballVel.x = Math.sign(ballVel.x) * Math.sqrt(Math.max(0, beforeSpeed * beforeSpeed - ballVel.z * ballVel.z));
+    }
+
     const minAfter = Math.max(ballVel.length(), ballBaseSpeed * 0.95);
     const speed = Math.min(minAfter + 0.5, ballMaxSpeed);
     ballVel = ballVel.normalize().scale(speed);

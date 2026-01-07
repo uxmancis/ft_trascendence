@@ -1,6 +1,6 @@
 // src/routes/matchesRoutes.js
 import { getAllMatches, getMatchById, createMatch, deleteMatch } from '../controllers/matchesController.js';
-
+import {fastify} from '../app.js';
 const nonNegInt = { type: 'integer', minimum: 0 };
 
 const matchSchema = {
@@ -20,8 +20,8 @@ const matchSchema = {
 };
 
 export default async function routes(fastify) {
-  fastify.get('/', getAllMatches);
+  fastify.get('/', { preHandler: [fastify.authenticate] }, getAllMatches);
   fastify.get('/:id', getMatchById);
-  fastify.post('/', { schema: matchSchema }, createMatch);
-  fastify.delete('/:id', deleteMatch);
+  fastify.post('/', { preHandler: [fastify.authenticate], schema: matchSchema }, createMatch);
+  fastify.delete('/:id', { preHandler: [fastify.authenticate] }, deleteMatch);
 }

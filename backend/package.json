@@ -8,14 +8,15 @@
     "dev": "nodemon --legacy-watch src/app.js"
   },
   "dependencies": {
-    "fastify": "^4.24.0",
-    "@fastify/cors": "^8.2.0",
-    "dotenv": "^16.1.0",
-    "sqlite3": "^5.1.6",
-    "sqlite": "^4.1.1",
-    "pino-pretty": "^10.2.0"
+    "fastify": "",
+    "@fastify/cors": "",
+    "fastify-jwt": "",
+    "dotenv": "",
+    "sqlite3": "",
+    "sqlite": "",
+    "pino-pretty": ""
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": ""
   }
 }

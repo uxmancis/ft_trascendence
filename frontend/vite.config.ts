@@ -1,3 +1,4 @@
+// @ts-ignore
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -20,7 +21,6 @@ export default defineConfig({
 
     hmr: {
       protocol: 'wss',
-      host: 'localhost',
       clientPort: 8443,
     },
   },

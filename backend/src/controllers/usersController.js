@@ -1,4 +1,5 @@
 import db from '../db/database.js';
+import {fastify} from '../app.js';
 
 // Validación de usuario
 function isValidUser(u) {
@@ -39,17 +40,22 @@ export const createUser = async (req, reply) => {
       "INSERT INTO users (nick, avatar) VALUES (?, ?)",
       [nick.trim(), avatar.trim()]
     );
-    return reply.status(201).send({ id: lastID, nick: nick.trim(), avatar: avatar.trim() });
+    const tri = nick.trim();
+    const token = fastify.jwt.sign({
+  id: lastID,
+  nick: tri
+});
+    return reply.status(201).send({ id: lastID, nick: tri, avatar: avatar.trim(), token });
   } catch (err) {
-    return reply.status(500).send({ error: err.message });
+    return reply.status(500).send({ error: err });
   }
 };
 
-export const deleteUser = async (req, reply) => {
-  try {
-    const { changes } = await db.runAsync("DELETE FROM users WHERE id = ?", [req.params.id]);
-    return reply.send({ deleted: changes });
-  } catch (err) {
-    return reply.status(500).send({ error: err.message });
-  }
-};
+// export const = async (req, reply) => {
+//   try {
+//     const { changes } = await db.runAsync("DELETE FROM users WHERE id = ?", [req.params.id]);
+//     return reply.send({ deleted: changes });
+//   } catch (err) {
+//     return reply.status(500).send({ error: err.message });
+//   }
+// };

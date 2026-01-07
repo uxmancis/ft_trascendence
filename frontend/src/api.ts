@@ -1,5 +1,4 @@
 // src/api.ts
-
 export const API_URL =
   (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, '') ||
   '/api';
@@ -171,17 +170,29 @@ async function requestArray<T>(path: string, opts?: RequestOptions): Promise<T[]
  * USERS
  * ========================= */
 export const getUsers = async (): Promise<User[]> => {
+  const raw = localStorage.getItem("pong:user");
+  const us = raw ? JSON.parse(raw) : null;
+  const token = us?.token;
   const cached = getCached<User[]>(CACHE_KEYS.USERS_ALL());
   if (cached) return cached;
-  const users = await requestArray<User>('/users');
+  const users = await requestArray<User>('/users', { headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    } });
   setCached(CACHE_KEYS.USERS_ALL(), users);
   return users;
 };
 
 export const getUser = async (id: number): Promise<User> => {
+  const raw = localStorage.getItem("pong:user");
+  const us = raw ? JSON.parse(raw) : null;
+  const token = us?.token;
   const cached = getCached<User>(CACHE_KEYS.USER(id));
   if (cached) return cached;
-  const user = await request<User>(`/users/${id}`);
+  const user = await request<User>(`/users/${id}`, { headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    } });
   setCached(CACHE_KEYS.USER(id), user);
   return user;
 };
@@ -193,7 +204,13 @@ export const createUser = async (payload: NewUser): Promise<User> => {
 };
 
 export const deleteUser = async (id: number): Promise<{ deleted: number }> => {
-  const res = await request<{ deleted: number }>(`/users/${id}`, { method: 'DELETE' });
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
+  const res = await request<{ deleted: number }>(`/users/${id}`, { method: 'DELETE',     headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    } });
   invalidateCachePattern('users:');
   return res;
 };
@@ -211,7 +228,16 @@ export function sanitizeUser(user: any): NewUser {
 export const getStats = async (): Promise<UserStats[]> => {
   const cached = getCached<UserStats[]>(CACHE_KEYS.STATS_ALL());
   if (cached) return cached;
-  const stats = await requestArray<UserStats>('/stats');
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
+  const stats = await requestArray<UserStats>('/stats', {
+    method: 'POST',
+    headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
+  });
   setCached(CACHE_KEYS.STATS_ALL(), stats);
   return stats;
 };
@@ -219,7 +245,15 @@ export const getStats = async (): Promise<UserStats[]> => {
 export const getStatsByUserId = async (userId: number): Promise<UserStats> => {
   const cached = getCached<UserStats>(CACHE_KEYS.STATS_USER(userId));
   if (cached) return cached;
-  const stats = await request<UserStats>(`/stats/${userId}`);
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
+  console.log("TOKEN ", token);
+  const stats = await request<UserStats>(`/stats/${userId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
   setCached(CACHE_KEYS.STATS_USER(userId), stats);
   return stats;
 };
@@ -230,7 +264,14 @@ export const getStatsByUserId = async (userId: number): Promise<UserStats> => {
 export const getMatches = async (): Promise<Match[]> => {
   const cached = getCached<Match[]>(CACHE_KEYS.MATCHES_ALL());
   if (cached) return cached;
-  const matches = await requestArray<Match>('/matches');
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
+  const matches = await requestArray<Match>('/matches', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
   setCached(CACHE_KEYS.MATCHES_ALL(), matches);
   return matches;
 };
@@ -238,14 +279,28 @@ export const getMatches = async (): Promise<Match[]> => {
 export const getMatch = async (id: number): Promise<Match> => {
   const cached = getCached<Match>(CACHE_KEYS.MATCH(id));
   if (cached) return cached;
-  const match = await request<Match>(`/matches/${id}`);
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
+  const match = await request<Match>(`/matches/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
   setCached(CACHE_KEYS.MATCH(id), match);
   return match;
 };
 
 export const createMatch = async (payload: NewMatch): Promise<{ id: number }> => {
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
   const res = await request<{ id: number }>('/matches', {
     method: 'POST',
+    headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    },
     body: payload
   });
   invalidateCachePattern('matches:');
@@ -254,8 +309,15 @@ export const createMatch = async (payload: NewMatch): Promise<{ id: number }> =>
 };
 
 export const deleteMatch = async (id: number): Promise<{ deleted: number }> => {
+  const raw = localStorage.getItem("pong:user");
+  const user = raw ? JSON.parse(raw) : null;
+  const token = user?.token;
   const res = await request<{ deleted: number }>(`/matches/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    },
   });
   invalidateCachePattern('matches:');
   invalidateCachePattern('stats:');

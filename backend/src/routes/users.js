@@ -1,5 +1,5 @@
-import { getAllUsers, getUserById, createUser, deleteUser } from '../controllers/usersController.js';
-
+import { getAllUsers, getUserById, createUser } from '../controllers/usersController.js';
+import {fastify} from '../app.js';
 const userSchema = {
   body: {
     type: 'object',
@@ -12,9 +12,9 @@ const userSchema = {
 };
 
 export default async function routes(fastify) {
-  fastify.get('/', getAllUsers);
-  fastify.get('/:id', getUserById);
+  fastify.get('/', { preHandler: [fastify.authenticate] }, getAllUsers);
+  fastify.get('/:id', { preHandler: [fastify.authenticate] }, getUserById);
   fastify.post('/', { schema: userSchema }, createUser);
-  fastify.delete('/:id', deleteUser);
+  //fastify.delete('/:id', { preHandler: [fastify.authenticate] }, deleteUser);
   fastify.options('*', async (_, reply) => reply.send());
 }

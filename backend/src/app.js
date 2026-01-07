@@ -1,12 +1,13 @@
 // src/app.js
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { PORT, HOST, NODE_ENV } from './config.js';
+import { PORT, HOST, NODE_ENV, JWT_KEY } from './config.js';
+
+import fastifyJwt from "fastify-jwt";
 
 import usersRoutes from './routes/users.js';
 import matchesRoutes from './routes/matches.js';
 import statsRoutes from './routes/stats.js';
-
 
 // ====== Logging “humano” ======
 const LOG_LEVEL = process.env.LOG_LEVEL || (NODE_ENV === 'production' ? 'warn' : 'info');
@@ -28,7 +29,20 @@ const logger = PRETTY
     }
   : { level: LOG_LEVEL };
 
-const fastify = Fastify({ logger });
+export const fastify = Fastify({ logger });
+
+fastify.register(fastifyJwt, {
+  secret: JWT_KEY , // usa una variable de entorno en producción
+});
+
+fastify.decorate("authenticate", async function (request, reply) {
+  try {
+    await request.jwtVerify();
+  } catch (err) {
+    reply.send(err);
+  }
+});
+
 
 await fastify.register(cors, {
   origin: (origin, cb) => {

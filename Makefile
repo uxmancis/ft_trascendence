@@ -5,6 +5,17 @@
 NAME        := ft_transcendence
 COMPOSE     := docker compose
 COMPOSE_YML := docker-compose.yml
+ENV_FILE 	:= backend/.env
+HOST_IP 	:= $(shell hostname -I | awk '{print $$1}')
+
+define ENV_CONTENT
+PORT=3000
+HOST=0.0.0.0
+DB_PATH=/data/sqlite.db
+NODE_ENV=development
+JWT_KEY=super-secret-key
+endef
+export ENV_CONTENT
 
 # Colores (42-style)
 GREEN  := \033[0;32m
@@ -22,8 +33,19 @@ all: up
 
 ## 🟢 Arranca el proyecto
 up:
+	@echo "$(GREEN)▶ Creating .env file if missing$(RESET)"
+	@[ -f $(ENV_FILE) ] || echo "$$ENV_CONTENT" > $(ENV_FILE)
 	@echo "$(GREEN)▶ Starting $(NAME)...$(RESET)"
 	@$(COMPOSE) -f $(COMPOSE_YML) up -d --build
+	@echo "$(GREEN)⏳ Waiting for services to be ready...$(RESET)"
+	@until docker compose ps | grep -q "nginx.*Up"; do sleep 1; done
+	@echo ""
+	@echo "$(GREEN)========================================$(RESET)"
+	@echo "$(GREEN)🌍 Application available at:$(RESET)"
+	@echo ""
+	@echo "$(GREEN)➡️  https://localhost:8443$(RESET)"
+	@echo "$(GREEN)➡️  https://$(HOST_IP):8443$(RESET)"
+	@echo "$(GREEN)========================================$(RESET)"
 
 ## 🔵 Para contenedores (sin borrar nada)
 down:
@@ -58,6 +80,8 @@ fclean:
 	@echo "$(RED)▶ Full cleanup (containers + volumes)...$(RESET)"
 	@$(COMPOSE) -f $(COMPOSE_YML) down -v --remove-orphans
 	@docker system prune -f
+	@rm -f $(ENV_FILE)
+	@rm -f ./database/data/sqlite.db
 
 ## 🔁 Rebuild total
 re: fclean up

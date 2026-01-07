@@ -189,7 +189,7 @@ export function setupLive4v4() {
 
   const help = new Rectangle('help');
   help.thickness = 0; help.background = 'rgba(0,0,0,0.35)'; help.width = '70%'; help.height = '25%'; help.top = '30%'; help.cornerRadius = 10; gui.addControl(help);
-  const helpText = new TextBlock('helpText', 'Controls:\nP1: W/S  •  P2: I/K  •  P3: L/Ñ  •  P4: C/V\nStart/Pause: Space  •  Click to start');
+  const helpText = new TextBlock('helpText', 'Controls:\nP1: W/S  •  P2: I/K  •  P3: C/V  •  P4: L/Ñ\nStart/Pause: Space  •  Click to start');
   helpText.color = 'white'; helpText.fontSize = 20; helpText.textWrapping = true; help.addControl(helpText);
   const hint = new TextBlock('hint', '[ CLICK TO START ]'); hint.color = 'white'; hint.fontSize = 22; hint.top = '40%'; gui.addControl(hint);
 
@@ -388,12 +388,12 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       if (keys.i) p2.position.z = clampZ(p2.position.z + paddleSpeed * dt);
 
       // P3 (bottom): L/Ñ
-      if (keys.l) p3.position.x = clampX(p3.position.x - paddleSpeed * dt);
-      if (keys.ñ) p3.position.x = clampX(p3.position.x + paddleSpeed * dt);
+      if (keys.c) p3.position.x = clampX(p3.position.x - paddleSpeed * dt);
+      if (keys.v) p3.position.x = clampX(p3.position.x + paddleSpeed * dt);
 
       // P4 (top): C/V
-      if (keys.c) p4.position.x = clampX(p4.position.x - paddleSpeed * dt);
-      if (keys.v) p4.position.x = clampX(p4.position.x + paddleSpeed * dt);
+      if (keys.l) p4.position.x = clampX(p4.position.x - paddleSpeed * dt);
+      if (keys.ñ) p4.position.x = clampX(p4.position.x + paddleSpeed * dt);
 
       // Ball movement
       ball.position.x += ballVel.x * dt;
@@ -425,7 +425,7 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       }
       // Lado ARRIBA (P3)
       if (ball.position.z - ballR < bounds.top) {
-         if (lastPlayerHit && lastPlayerHit !== 'p3') {
+         if (lastPlayerHit && lastPlayerHit !== 'p4') {
             scorePoint(lastPlayerHit);
           } else {
           ball.position.z = bounds.top + ballR;
@@ -435,7 +435,7 @@ function scorePoint(scorer: 'p1' | 'p2' | 'p3' | 'p4') {
       
       // Lado ABAJO (P4)
       else if (ball.position.z + ballR > bounds.bottom) {
-        if (lastPlayerHit && lastPlayerHit !== 'p4') {
+        if (lastPlayerHit && lastPlayerHit !== 'p3') {
             scorePoint(lastPlayerHit);
         } else {
           ball.position.z = bounds.bottom - ballR;

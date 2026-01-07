@@ -20,7 +20,7 @@ services:
       - /app/node_modules
       - ./database/data:/data
     ports:
-      - "3000:3000"
+      - "3000"
 
   # =========================
   # 🎨 Frontend (Vite dev)
@@ -44,5 +44,4 @@ services:
       - frontend
       - backend
     ports:
-      - "8080:80"
       - "8443:443"
